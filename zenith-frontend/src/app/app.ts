@@ -1,16 +1,12 @@
-import { Component, inject } from '@angular/core';
-import { AuthService } from './services/auth.service';
-import { LoginComponent } from './components/login/login.component';
-import { DashboardComponent } from './components/dashboard/dashboard.component';
-import { ToastContainerComponent } from './components/toast-container/toast-container.component';
+import { Component, signal } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-root',
-  standalone: true,
-  imports: [LoginComponent, DashboardComponent, ToastContainerComponent],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
 export class App {
-  public readonly authService = inject(AuthService);
+  protected readonly title = signal('zenith-frontend');
 }
