@@ -1,9 +1,9 @@
-import * as usuariosService from "./usuarios.service.js";
+import * as notasService from "./notas.service.js";
 
-export const obtenerPerfil = async (req, res) => {
+export const obtenerNotas = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const result = await usuariosService.obtenerPerfil(id_usuario);
+        const result = await notasService.obtenerNotas(id_usuario);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
@@ -12,10 +12,11 @@ export const obtenerPerfil = async (req, res) => {
     }
 };
 
-export const editarPerfil = async (req, res) => {
+export const obtenerNotaPorId = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const result = await usuariosService.editarPerfil(id_usuario, req.body);
+        const { id_nota } = req.params;
+        const result = await notasService.obtenerNotaPorId(id_usuario, id_nota);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
@@ -24,11 +25,11 @@ export const editarPerfil = async (req, res) => {
     }
 };
 
-export const eliminarPerfil = async (req, res) => {
+export const crearNota = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const result = await usuariosService.eliminarPerfil(id_usuario);
-        return res.status(200).json(result);
+        const result = await notasService.crearNota(id_usuario, req.body);
+        return res.status(201).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
             message: error.message
