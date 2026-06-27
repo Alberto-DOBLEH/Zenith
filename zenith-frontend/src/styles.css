@@ -1,1 +1,63 @@
 /* You can add global styles to this file, and also import other style files */
+
+:root {
+    --background: #0B0C1A;
+    --foreground: #E8E9F3;
+    --card: #131425;
+    --card-foreground: #E8E9F3;
+    --popover: #131425;
+    --popover-foreground: #E8E9F3;
+    --primary: #6366F1;
+    --primary-foreground: #ffffff;
+    --secondary: #1A1B2E;
+    --secondary-foreground: #E8E9F3;
+    --muted: #1A1B2E;
+    --muted-foreground: #717182;
+    --accent: #1E1F35;
+    --accent-foreground: #A5B4FC;
+    --destructive: #EF4444;
+    --destructive-foreground: #ffffff;
+    --border: rgba(255, 255, 255, 0.06);
+    --input: transparent;
+    --input-background: #1A1B2E;
+    --switch-background: #3A3B52;
+    --font-weight-medium: 500;
+    --font-weight-normal: 400;
+    --ring: #6366F1;
+    --chart-1: #6366F1;
+    --chart-2: #10B981;
+    --chart-3: #F59E0B;
+    --chart-4: #EC4899;
+    --chart-5: #06B6D4;
+    --sidebar: #0F1020;
+    --sidebar-foreground: #E8E9F3;
+    --sidebar-primary: #6366F1;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #1E1F35;
+    --sidebar-accent-foreground: #A5B4FC;
+    --sidebar-border: rgba(255, 255, 255, 0.06);
+    --sidebar-ring: #6366F1;
+}
+
+* {
+    margin: 0;
+}
+
+.boton-principal {
+    background-color: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.inputs-texto {
+    background-color: var(--input-background);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}

@@ -1,0 +1,69 @@
+body {
+    background-color: var(--background);
+}
+
+.componente-global {
+    background-color: transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    width: 100%;
+}
+
+.icono-mini {
+    height: 10rem;
+    width: auto;
+}
+
+.auth-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    background-color: var(--card);
+    border-radius: 1rem;
+    border: 0.2rem solid var(--border);
+    padding: 1rem;
+    margin: 1rem;
+}
+
+.tabs-auth {
+    background-color: var(--switch-background);
+    border-radius: 99rem;
+    display: flex;
+    align-items: center;
+    width: 12rem;
+    justify-content: space-between;
+}
+
+.tabs-auth button {
+    background-color: transparent;
+    border-radius: 99rem;
+    margin: 0.3em;
+    padding: 0.3em;
+    border: none;
+    outline: none;
+    color: var(--muted-foreground)
+}
+
+.tabs-auth .activo {
+    background-color: var(--secondary);
+    color: var(--foreground);
+}
+
+.form-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 1rem;
+    padding: 1rem;
+}
+
+.form-login .inputs-texto {
+    margin: 0.5rem;
+    width: 12rem;
+}
