@@ -13,21 +13,31 @@
             @if (pestanaActiva === 'login') {
             <div class="form-login">
                 <p>Correo/Usuario/Telefono</p>
-                <input class="inputs-texto" type="text" placeholder="Usuario">
+                <input class="inputs-texto" type="text">
                 <p>Contraseña</p>
-                <input class="inputs-texto" type="password" placeholder="Contraseña">
+                <input class="inputs-texto" type="password">
                 <a>¿Olvidaste tu contraseña?</a>
-                <button class="boton-principal">Iniciar Sesión</button>
+                <button class="boton-principal" routerLink="/dashboard">Iniciar Sesión</button>
             </div>
             }
             @else {
             <div class="form-registro">
                 <p>Nombre</p>
-                <input type="text" placeholder="Nombre">
-                <p>Correo/Usuario/Telefono</p>
-                <input type="text" placeholder="Usuario">
+                <input class="inputs-texto" type="text">
+                <p>Primer Apellido</p>
+                <input class="inputs-texto" type="text">
+                <p>Segundo Apellido</p>
+                <input class="inputs-texto" type="text">
+                <p>Nombre de Usuario</p>
+                <input class="inputs-texto" type="text">
+                <p>Correo</p>
+                <input class="inputs-texto" type="text">
+                <p>Telefono</p>
+                <input class="inputs-texto" type="text">
                 <p>Contraseña</p>
-                <input type="password" placeholder="Contraseña">
+                <input class="inputs-texto" type="password">
+                <p>Confirmar contraseña</p>
+                <input class="inputs-texto" type="password">
                 <button class="boton-principal">Registrarse</button>
             </div>
             }

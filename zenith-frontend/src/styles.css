@@ -41,13 +41,13 @@
 
 * {
     margin: 0;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 .boton-principal {
     background-color: var(--primary);
     color: #fff;
     border: none;
-    padding: 10px 20px;
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -55,9 +55,11 @@
 
 .inputs-texto {
     background-color: var(--input-background);
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
-    cursor: pointer;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    cursor: text;
     transition: all 0.3s ease;
+    color: var(--foreground);
+    outline: none;
+    font-size: 1rem;
 }

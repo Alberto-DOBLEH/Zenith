@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { Autenticacion } from './auth/autenticacion/autenticacion';
+import { Dashboard } from './principales/dashboard/dashboard';
 
 export const routes: Routes = [
     {
@@ -11,6 +12,9 @@ export const routes: Routes = [
         redirectTo: '/autenticacion',
         pathMatch: 'full'
 
+    },
+    {
+        path: 'dashboard',
+        component: Dashboard
     }
-
 ];
