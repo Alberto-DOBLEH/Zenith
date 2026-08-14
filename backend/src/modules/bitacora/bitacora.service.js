@@ -1,18 +1,29 @@
 import db from "../../config/db.js";
 
-export const registrarProgreso = async (id_usuario, datos) => {
-    const { habito, valor_realizado } = datos;
+const fechaHoy = () => {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset();
+    return new Date(ahora.getTime() - offset * 60000)
+        .toISOString()
+        .split("T")[0];
+};
 
-    if (!habito || valor_realizado === undefined || valor_realizado === null) {
+export const registrarProgreso = async (id_usuario, datos) => {
+    const { habito, incremento, valor_realizado, estado } = datos;
+
+    if (!habito) {
         throw {
             status: 400,
-            message: "habito y valor_realizado son obligatorios"
+            message: "habito es obligatorio"
         };
     }
 
-    // Verificar que el hábito pertenece al usuario y obtener su meta
+    // Verificar que el hábito pertenece al usuario y obtener tipo + meta
     const habitoResult = await db.query(
-        "SELECT id_habito, meta FROM habitos WHERE id_habito = $1 AND usuario = $2",
+        `SELECT h.id_habito, h.meta, h.tipo_habito, t.nombre AS tipo_nombre
+        FROM habitos h
+        INNER JOIN tipos_habitos t ON h.tipo_habito = t.id_tipo_habito
+        WHERE h.id_habito = $1 AND h.usuario = $2`,
         [habito, id_usuario]
     );
 
@@ -23,59 +34,128 @@ export const registrarProgreso = async (id_usuario, datos) => {
         };
     }
 
-    const { meta } = habitoResult.rows[0];
+    const { meta, tipo_nombre } = habitoResult.rows[0];
+    const hoy = fechaHoy();
 
-    // Determinar estado: C (completado) o N (no completado)
-    const estado = meta !== null && valor_realizado >= meta ? "C" : "N";
+    // Obtener registro previo del día (para acumular en repeticiones)
+    const previo = await db.query(
+        "SELECT valor_realizado FROM registro_habitos WHERE habito = $1 AND fecha = $2",
+        [habito, hoy]
+    );
+    const valorPrevio = previo.rows.length > 0 ? previo.rows[0].valor_realizado || 0 : 0;
 
-    const hoy = new Date().toISOString().split("T")[0];
+    let nuevoValor = null;
+    if (valor_realizado !== undefined && valor_realizado !== null) {
+        nuevoValor = valor_realizado;
+    } else if (incremento !== undefined && incremento !== null) {
+        nuevoValor = parseFloat(valorPrevio) + parseFloat(incremento);
+    }
+
+    let nuevoEstado;
+
+    switch (tipo_nombre) {
+        case "Normal":
+            nuevoEstado = estado === "NO_COMPLETADO" ? "NO_COMPLETADO" : "COMPLETADO";
+            break;
+
+        case "Repeticion": {
+            if (nuevoValor === null) {
+                throw {
+                    status: 400,
+                    message: "repeticion requiere incremento o valor_realizado"
+                };
+            }
+            if (nuevoValor < 0) {
+                throw {
+                    status: 400,
+                    message: "el valor de repeticiones no puede ser negativo"
+                };
+            }
+            if (nuevoValor === 0) {
+                nuevoEstado = "NO_COMPLETADO";
+            } else if (meta !== null && nuevoValor >= meta) {
+                nuevoEstado = "COMPLETADO";
+            } else {
+                nuevoEstado = "PARCIAL";
+            }
+            break;
+        }
+
+        case "Evitado":
+            nuevoEstado = estado === "EVITADO" ? "EVITADO" : "RECAIDA";
+            break;
+
+        case "Tiempo":
+            nuevoEstado = estado || "PARCIAL";
+            break;
+
+        default:
+            throw {
+                status: 400,
+                message: "Tipo de habito no soportado"
+            };
+    }
+
+    const estadosValidos = ["COMPLETADO", "PARCIAL", "NO_COMPLETADO", "EVITADO", "RECAIDA"];
+    if (!estadosValidos.includes(nuevoEstado)) {
+        throw {
+            status: 400,
+            message: "estado invalido"
+        };
+    }
 
     await db.query(
-        `INSERT INTO registro_habitos (habito, fecha, estado, fecha_programada, valor_realizado)
-        VALUES ($1, CURRENT_TIMESTAMP, $2, $3, $4)`,
-        [habito, estado, hoy, valor_realizado]
+        `INSERT INTO registro_habitos (habito, fecha, estado, valor_realizado, fecha_inicio, fecha_completado)
+        VALUES ($1, $2, $3, $4,
+            CASE WHEN $5 THEN CURRENT_TIMESTAMP ELSE NULL END,
+            CASE WHEN $3 = 'COMPLETADO' THEN CURRENT_TIMESTAMP ELSE NULL END)
+        ON CONFLICT (habito, fecha) DO UPDATE SET
+            estado = EXCLUDED.estado,
+            valor_realizado = EXCLUDED.valor_realizado,
+            fecha_completado = CASE
+                WHEN EXCLUDED.estado = 'COMPLETADO'
+                    THEN COALESCE(registro_habitos.fecha_completado, CURRENT_TIMESTAMP)
+                ELSE NULL
+            END`,
+        [habito, hoy, nuevoEstado, nuevoValor, nuevoEstado === "PARCIAL"]
     );
 
-    return { message: "registro guardado con exito" };
+    return { message: "registro guardado con exito", estado: nuevoEstado, valor_realizado: nuevoValor };
+};
+
+const fechaISO = (fecha) => {
+    const offset = fecha.getTimezoneOffset();
+    return new Date(fecha.getTime() - offset * 60000).toISOString().split("T")[0];
 };
 
 const obtenerRangoFechas = (periodo) => {
-    const ahora = new Date();
-    let fechaInicio;
+    const hoy = new Date();
 
     switch (periodo) {
         case "dia":
-            fechaInicio = new Date(ahora);
-            fechaInicio.setHours(0, 0, 0, 0);
-            break;
+            return fechaISO(hoy);
         case "semana":
-            fechaInicio = new Date(ahora);
-            fechaInicio.setDate(ahora.getDate() - 7);
-            break;
+            return fechaISO(new Date(hoy.getTime() - 7 * 86400000));
         case "mes":
-            fechaInicio = new Date(ahora);
-            fechaInicio.setMonth(ahora.getMonth() - 1);
-            break;
+            return fechaISO(addMeses(hoy, -1));
         case "trimestre":
-            fechaInicio = new Date(ahora);
-            fechaInicio.setMonth(ahora.getMonth() - 3);
-            break;
+            return fechaISO(addMeses(hoy, -3));
         case "semestre":
-            fechaInicio = new Date(ahora);
-            fechaInicio.setMonth(ahora.getMonth() - 6);
-            break;
+            return fechaISO(addMeses(hoy, -6));
         case "anual":
-            fechaInicio = new Date(ahora);
-            fechaInicio.setFullYear(ahora.getFullYear() - 1);
-            break;
+            return fechaISO(addMeses(hoy, -12));
         default:
             throw {
                 status: 400,
                 message: "periodo no valido. Use: dia, semana, mes, trimestre, semestre, anual"
             };
     }
+};
 
-    return fechaInicio.toISOString();
+const addMeses = (fecha, cantidad) => {
+    const nueva = new Date(fecha);
+    nueva.setMonth(nueva.getMonth() + cantidad);
+    return nueva;
 };
 
 export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo) => {
@@ -87,21 +167,24 @@ export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo) => {
     }
 
     const fechaInicio = obtenerRangoFechas(periodo);
+    const hoy = fechaHoy();
 
     const result = await db.query(
         `SELECT
             rh.id_registro_habito,
+            h.id_habito,
             h.nombre AS habito,
-            rh.fecha_programada,
+            rh.fecha,
             rh.valor_realizado,
             h.meta,
             rh.estado
         FROM registro_habitos rh
         INNER JOIN habitos h ON rh.habito = h.id_habito
         WHERE h.usuario = $1
-            AND rh.fecha_registro >= $2
-        ORDER BY rh.fecha_programada DESC`,
-        [id_usuario, fechaInicio]
+            AND rh.fecha >= $2
+            AND rh.fecha <= $3
+        ORDER BY rh.fecha DESC`,
+        [id_usuario, fechaInicio, hoy]
     );
 
     return result.rows;

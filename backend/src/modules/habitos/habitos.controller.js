@@ -1,5 +1,16 @@
 import * as habitosService from "./habitos.service.js";
 
+export const obtenerTiposHabitos = async (req, res) => {
+    try {
+        const result = await habitosService.obtenerTiposHabitos();
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            message: error.message
+        });
+    }
+};
+
 export const crearHabito = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;

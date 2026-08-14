@@ -1,14 +1,20 @@
 import db from "../../config/db.js";
 
+const fechaHoy = () => {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset();
+    return new Date(ahora.getTime() - offset * 60000).toISOString().split("T")[0];
+};
+
 export const obtenerNotas = async (id_usuario) => {
     const result = await db.query(
         `SELECT
             id_nota,
-            fecha_creacion,
-            nota
+            fecha,
+            contenido
         FROM notas
         WHERE usuario = $1
-        ORDER BY fecha_creacion DESC`,
+        ORDER BY fecha DESC`,
         [id_usuario]
     );
 
@@ -19,8 +25,8 @@ export const obtenerNotaPorId = async (id_usuario, id_nota) => {
     const result = await db.query(
         `SELECT
             id_nota,
-            fecha_creacion,
-            nota
+            fecha,
+            contenido
         FROM notas
         WHERE id_nota = $1 AND usuario = $2`,
         [id_nota, id_usuario]
@@ -36,23 +42,72 @@ export const obtenerNotaPorId = async (id_usuario, id_nota) => {
     return result.rows[0];
 };
 
-export const crearNota = async (id_usuario, datos) => {
-    const { nota } = datos;
+export const obtenerNotaPorFecha = async (id_usuario, fecha) => {
+    const result = await db.query(
+        `SELECT
+            id_nota,
+            fecha,
+            contenido
+        FROM notas
+        WHERE usuario = $1 AND fecha = $2`,
+        [id_usuario, fecha]
+    );
 
-    if (!nota) {
+    return result.rows[0] || null;
+};
+
+export const crearNota = async (id_usuario, datos) => {
+    const { contenido } = datos;
+
+    if (!contenido) {
         throw {
             status: 400,
-            message: "El campo nota es obligatorio"
+            message: "El campo contenido es obligatorio"
         };
     }
 
-    const hoy = new Date().toISOString().split("T")[0];
+    const hoy = fechaHoy();
 
-    await db.query(
-        `INSERT INTO notas (usuario, fecha_creacion, nota)
-        VALUES ($1, $2, $3)`,
-        [id_usuario, hoy, nota]
+    const result = await db.query(
+        `INSERT INTO notas (usuario, fecha, contenido)
+        VALUES ($1, $2, $3)
+        ON CONFLICT (usuario, fecha) DO UPDATE SET
+            contenido = EXCLUDED.contenido,
+            fecha_modificacion = CURRENT_TIMESTAMP
+        RETURNING id_nota, fecha, contenido`,
+        [id_usuario, hoy, contenido]
     );
 
-    return { message: "nota guardada con exito" };
+    return { message: "nota guardada con exito", nota: result.rows[0] };
+};
+
+export const editarNota = async (id_usuario, id_nota, datos) => {
+    const { contenido } = datos;
+
+    if (!contenido) {
+        throw {
+            status: 400,
+            message: "El campo contenido es obligatorio"
+        };
+    }
+
+    const nota = await obtenerNotaPorId(id_usuario, id_nota);
+
+    // Solo se puede editar la nota del día actual
+    if (nota.fecha !== fechaHoy()) {
+        throw {
+            status: 403,
+            message: "Solo es posible editar la nota del dia actual"
+        };
+    }
+
+    const result = await db.query(
+        `UPDATE notas
+        SET contenido = $1, fecha_modificacion = CURRENT_TIMESTAMP
+        WHERE id_nota = $2 AND usuario = $3
+        RETURNING id_nota, fecha, contenido`,
+        [contenido, id_nota, id_usuario]
+    );
+
+    return { message: "nota modificada con exito", nota: result.rows[0] };
 };

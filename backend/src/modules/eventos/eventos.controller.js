@@ -1,9 +1,9 @@
-import * as notasService from "./notas.service.js";
+import * as eventosService from "./eventos.service.js";
 
-export const obtenerNotas = async (req, res) => {
+export const obtenerEventos = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const result = await notasService.obtenerNotas(id_usuario);
+        const result = await eventosService.obtenerEventos(id_usuario);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
@@ -12,11 +12,11 @@ export const obtenerNotas = async (req, res) => {
     }
 };
 
-export const obtenerNotaPorId = async (req, res) => {
+export const obtenerEventoPorId = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const { id_nota } = req.params;
-        const result = await notasService.obtenerNotaPorId(id_usuario, id_nota);
+        const { id_evento } = req.params;
+        const result = await eventosService.obtenerEventoPorId(id_usuario, id_evento);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
@@ -25,26 +25,10 @@ export const obtenerNotaPorId = async (req, res) => {
     }
 };
 
-export const obtenerNotaPorFecha = async (req, res) => {
+export const crearEvento = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const { fecha } = req.query;
-        if (!fecha) {
-            return res.status(400).json({ message: "El parametro fecha es obligatorio" });
-        }
-        const result = await notasService.obtenerNotaPorFecha(id_usuario, fecha);
-        return res.status(200).json(result);
-    } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
-    }
-};
-
-export const crearNota = async (req, res) => {
-    try {
-        const id_usuario = req.user.id_usuario;
-        const result = await notasService.crearNota(id_usuario, req.body);
+        const result = await eventosService.crearEvento(id_usuario, req.body);
         return res.status(201).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
@@ -53,11 +37,24 @@ export const crearNota = async (req, res) => {
     }
 };
 
-export const editarNota = async (req, res) => {
+export const editarEvento = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const { id_nota } = req.params;
-        const result = await notasService.editarNota(id_usuario, id_nota, req.body);
+        const { id_evento } = req.params;
+        const result = await eventosService.editarEvento(id_usuario, id_evento, req.body);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            message: error.message
+        });
+    }
+};
+
+export const eliminarEvento = async (req, res) => {
+    try {
+        const id_usuario = req.user.id_usuario;
+        const { id_evento } = req.params;
+        const result = await eventosService.eliminarEvento(id_usuario, id_evento);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({

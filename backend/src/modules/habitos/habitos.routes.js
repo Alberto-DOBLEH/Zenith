@@ -4,12 +4,14 @@ import {
     obtenerHabitos,
     obtenerHabitoPorId,
     editarHabito,
-    eliminarHabito
+    eliminarHabito,
+    obtenerTiposHabitos
 } from "./habitos.controller.js";
 import { verifyToken } from "../../middleware/verifyToken.js";
 
 const router = Router();
 
+router.get("/tipos", verifyToken, obtenerTiposHabitos);
 router.post("/", verifyToken, crearHabito);
 router.get("/", verifyToken, obtenerHabitos);
 router.get("/:id_habito", verifyToken, obtenerHabitoPorId);

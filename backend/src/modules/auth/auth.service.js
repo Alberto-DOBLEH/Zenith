@@ -88,7 +88,7 @@ export const registrarUsuario = async (userData) => {
             telefono,
             username,
             hashedPassword,
-            'A'
+            'ACTIVO'
         ]
     );
 

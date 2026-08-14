@@ -1,34 +1,9 @@
-import * as actividadesService from "./actividades.service.js";
+import * as pomodoroService from "./pomodoro.service.js";
 
-export const obtenerActividades = async (req, res) => {
+export const crearSesion = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const result = await actividadesService.obtenerActividades(id_usuario);
-        return res.status(200).json(result);
-    } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
-    }
-};
-
-export const obtenerActividadPorId = async (req, res) => {
-    try {
-        const id_usuario = req.user.id_usuario;
-        const { id_actividad } = req.params;
-        const result = await actividadesService.obtenerActividadPorId(id_usuario, id_actividad);
-        return res.status(200).json(result);
-    } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
-    }
-};
-
-export const crearActividad = async (req, res) => {
-    try {
-        const id_usuario = req.user.id_usuario;
-        const result = await actividadesService.crearActividad(id_usuario, req.body);
+        const result = await pomodoroService.crearSesion(id_usuario, req.body);
         return res.status(201).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
@@ -37,11 +12,10 @@ export const crearActividad = async (req, res) => {
     }
 };
 
-export const editarActividad = async (req, res) => {
+export const obtenerSesiones = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const { id_actividad } = req.params;
-        const result = await actividadesService.editarActividad(id_usuario, id_actividad, req.body);
+        const result = await pomodoroService.obtenerSesiones(id_usuario);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
@@ -50,11 +24,37 @@ export const editarActividad = async (req, res) => {
     }
 };
 
-export const eliminarActividad = async (req, res) => {
+export const obtenerSesionPorId = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const { id_actividad } = req.params;
-        const result = await actividadesService.eliminarActividad(id_usuario, id_actividad);
+        const { id_sesion } = req.params;
+        const result = await pomodoroService.obtenerSesionPorId(id_usuario, id_sesion);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            message: error.message
+        });
+    }
+};
+
+export const avanzarSesion = async (req, res) => {
+    try {
+        const id_usuario = req.user.id_usuario;
+        const { id_sesion } = req.params;
+        const result = await pomodoroService.avanzarSesion(id_usuario, id_sesion, req.body);
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(error.status || 500).json({
+            message: error.message
+        });
+    }
+};
+
+export const eliminarSesion = async (req, res) => {
+    try {
+        const id_usuario = req.user.id_usuario;
+        const { id_sesion } = req.params;
+        const result = await pomodoroService.eliminarSesion(id_usuario, id_sesion);
         return res.status(200).json(result);
     } catch (error) {
         return res.status(error.status || 500).json({
