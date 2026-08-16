@@ -6,6 +6,14 @@ const fechaHoy = () => {
     return new Date(ahora.getTime() - offset * 60000).toISOString().split("T")[0];
 };
 
+const fechaCorta = (fecha) => {
+    if (fecha instanceof Date) {
+        const offset = fecha.getTimezoneOffset();
+        return new Date(fecha.getTime() - offset * 60000).toISOString().split("T")[0];
+    }
+    return String(fecha).slice(0, 10);
+};
+
 export const obtenerNotas = async (id_usuario) => {
     const result = await db.query(
         `SELECT
@@ -94,7 +102,7 @@ export const editarNota = async (id_usuario, id_nota, datos) => {
     const nota = await obtenerNotaPorId(id_usuario, id_nota);
 
     // Solo se puede editar la nota del día actual
-    if (nota.fecha !== fechaHoy()) {
+    if (fechaCorta(nota.fecha) !== fechaHoy()) {
         throw {
             status: 403,
             message: "Solo es posible editar la nota del dia actual"

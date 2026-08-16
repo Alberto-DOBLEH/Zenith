@@ -1,0 +1,73 @@
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--header-height);
+    box-sizing: border-box;
+    padding: 0 1.5rem;
+    background-color: var(--card);
+    border-bottom: 1px solid var(--border);
+    z-index: 40;
+}
+
+.header-izquierda {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.boton-hamburguesa {
+    display: none;
+    background: transparent;
+    border: none;
+    color: var(--foreground);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    line-height: 1;
+}
+
+.logo-mini {
+    height: 1.9rem;
+    width: auto;
+}
+
+.nombre-app {
+    color: var(--foreground);
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.boton-perfil {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.4rem;
+    height: 2.4rem;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    overflow: hidden;
+    cursor: pointer;
+    background-color: var(--muted);
+    transition: border-color 0.3s ease;
+}
+
+.boton-perfil:hover {
+    border-color: var(--primary);
+}
+
+.boton-perfil img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 768px) {
+    .boton-hamburguesa {
+        display: block;
+    }
+
+    .nombre-app {
+        display: none;
+    }
+}

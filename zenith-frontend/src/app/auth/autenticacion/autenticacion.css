@@ -149,3 +149,49 @@ Seccion de registro
     margin: 0rem;
     align-self: flex-start;
 }
+
+/*
+-------------------------------
+Mensajes y errores
+-------------------------------
+*/
+
+.mensaje-error {
+    background-color: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.4);
+    color: #FCA5A5;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    margin: 0.8rem 1rem 0 1rem;
+    width: 18rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mensaje-exito {
+    background-color: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.4);
+    color: #6EE7B7;
+    border-radius: 0.5rem;
+    padding: 0.6rem 0.8rem;
+    margin: 0.8rem 1rem 0 1rem;
+    width: 18rem;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.texto-error {
+    color: #FCA5A5;
+    font-size: 0.7rem;
+    align-self: flex-start;
+    margin-bottom: 0.3rem;
+}
+
+.boton-principal:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}

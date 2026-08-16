@@ -1,0 +1,2 @@
+-- Seed local (vacío por ahora).
+-- Los catálogos base (tipos_habitos, avatares) ya los inserta la migración 20260813220000_backend_reconciliacion.sql

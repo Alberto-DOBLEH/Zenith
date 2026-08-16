@@ -10,36 +10,92 @@
                 <button [class.activo]="pestanaActiva === 'registro'" (click)="cambiarPestana('registro')">
                     Registrarse</button>
             </div>
-            @if (pestanaActiva === 'login') {
-            <div class="form-login">
-                <p>Correo/Usuario/Telefono</p>
-                <input class="inputs-texto" type="text">
-                <p>Contraseña</p>
-                <input class="inputs-texto" type="password">
-                <a>¿Olvidaste tu contraseña?</a>
-                <button class="boton-principal" routerLink="/dashboard">Iniciar Sesión</button>
+
+            @if (mensajeError) {
+            <div class="mensaje-error">
+                <i class="bi bi-exclamation-circle"></i>
+                {{ mensajeError }}
             </div>
             }
-            @else {
-            <div class="form-registro">
-                <p>Nombre</p>
-                <input class="inputs-texto" type="text">
-                <p>Primer Apellido</p>
-                <input class="inputs-texto" type="text">
-                <p>Segundo Apellido</p>
-                <input class="inputs-texto" type="text">
-                <p>Nombre de Usuario</p>
-                <input class="inputs-texto" type="text">
-                <p>Correo</p>
-                <input class="inputs-texto" type="text">
-                <p>Telefono</p>
-                <input class="inputs-texto" type="text">
-                <p>Contraseña</p>
-                <input class="inputs-texto" type="password">
-                <p>Confirmar contraseña</p>
-                <input class="inputs-texto" type="password">
-                <button class="boton-principal">Registrarse</button>
+
+            @if (mensajeExito) {
+            <div class="mensaje-exito">
+                <i class="bi bi-check-circle"></i>
+                {{ mensajeExito }}
             </div>
+            }
+
+            @if (pestanaActiva === 'login') {
+            <form [formGroup]="formLogin" (ngSubmit)="iniciarSesion()" class="form-login">
+                <p>Correo/Usuario/Telefono</p>
+                <input class="inputs-texto" type="text" formControlName="login" placeholder="correo, usuario o teléfono">
+                @if (mostrarError('login', 'login')) {
+                <span class="texto-error">Este campo es obligatorio</span>
+                }
+
+                <p>Contraseña</p>
+                <input class="inputs-texto" type="password" formControlName="contraseña">
+                @if (mostrarError('contraseña', 'login')) {
+                <span class="texto-error">Este campo es obligatorio</span>
+                }
+
+                <a>¿Olvidaste tu contraseña?</a>
+                <button class="boton-principal" type="submit" [disabled]="cargando">
+                    {{ cargando ? 'Iniciando...' : 'Iniciar Sesión' }}
+                </button>
+            </form>
+            }
+            @else {
+            <form [formGroup]="formRegistro" (ngSubmit)="registrar()" class="form-registro">
+                <p>Nombre</p>
+                <input class="inputs-texto" type="text" formControlName="nombre">
+                @if (mostrarError('nombre', 'registro')) {
+                <span class="texto-error">Este campo es obligatorio</span>
+                }
+
+                <p>Primer Apellido</p>
+                <input class="inputs-texto" type="text" formControlName="primer_apellido">
+                @if (mostrarError('primer_apellido', 'registro')) {
+                <span class="texto-error">Este campo es obligatorio</span>
+                }
+
+                <p>Segundo Apellido</p>
+                <input class="inputs-texto" type="text" formControlName="segundo_apellido">
+
+                <p>Nombre de Usuario</p>
+                <input class="inputs-texto" type="text" formControlName="username" placeholder="3-16 caracteres (letras, números, _)">
+                @if (mostrarError('username', 'registro')) {
+                <span class="texto-error">Username inválido (3-16 caracteres: letras, números o _)</span>
+                }
+
+                <p>Correo</p>
+                <input class="inputs-texto" type="text" formControlName="correo">
+                @if (mostrarError('correo', 'registro')) {
+                <span class="texto-error">Correo inválido</span>
+                }
+
+                <p>Teléfono</p>
+                <input class="inputs-texto" type="text" formControlName="telefono" placeholder="10 dígitos">
+                @if (mostrarError('telefono', 'registro')) {
+                <span class="texto-error">El teléfono debe tener 10 dígitos</span>
+                }
+
+                <p>Contraseña</p>
+                <input class="inputs-texto" type="password" formControlName="contraseña" placeholder="Mín. 8, mayúscula, minúscula, número y símbolo">
+                @if (mostrarError('contraseña', 'registro')) {
+                <span class="texto-error">Debe tener 8+ caracteres con mayúscula, minúscula, número y símbolo</span>
+                }
+
+                <p>Confirmar contraseña</p>
+                <input class="inputs-texto" type="password" formControlName="confirmar_contraseña">
+                @if (formRegistro.errors?.['noCoinciden'] && formRegistro.get('confirmar_contraseña')?.touched) {
+                <span class="texto-error">Las contraseñas no coinciden</span>
+                }
+
+                <button class="boton-principal" type="submit" [disabled]="cargando">
+                    {{ cargando ? 'Creando cuenta...' : 'Registrarse' }}
+                </button>
+            </form>
             }
         </div>
     </div>

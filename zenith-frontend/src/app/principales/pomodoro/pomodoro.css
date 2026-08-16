@@ -1,0 +1,243 @@
+.pomodoro {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.encabezado h1 {
+    color: var(--foreground);
+    font-size: 1.6rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.subtitulo {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.zona-sesion {
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.configurar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    width: 100%;
+    max-width: 30rem;
+}
+
+.configurar h2 {
+    color: var(--foreground);
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.campo-fila {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    width: 100%;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.campo span {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+}
+
+.campo .inputs-texto {
+    padding: 0.6rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.boton-iniciar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.4rem;
+}
+
+.temporizador {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.circulo-tiempo {
+    width: 15rem;
+    height: 15rem;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    background:
+        radial-gradient(closest-side, var(--card) 79%, transparent 80% 100%),
+        conic-gradient(var(--primary) var(--progreso), var(--switch-background) 0);
+    transition: background 0.3s ease;
+}
+
+.fase {
+    color: var(--primary);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.tiempo {
+    color: var(--foreground);
+    font-size: 2.6rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+.ciclos {
+    color: var(--muted-foreground);
+    font-size: 0.85rem;
+}
+
+.controles {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.boton-circulo {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+}
+
+.historial {
+    padding: 1.25rem;
+}
+
+.historial-titulo h2 {
+    color: var(--foreground);
+    font-size: 1.1rem;
+    margin: 0 0 1rem 0;
+}
+
+.vacio {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+    padding: 0.5rem 0;
+}
+
+.lista-sesiones {
+    display: flex;
+    flex-direction: column;
+}
+
+.fila-sesion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.7rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.fila-sesion:last-child {
+    border-bottom: none;
+}
+
+.fila-sesion.activa .sesion-nombre {
+    color: var(--primary);
+}
+
+.fila-principal {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    min-width: 0;
+}
+
+.fila-principal:disabled {
+    cursor: default;
+}
+
+.sesion-nombre {
+    color: var(--foreground);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+.sesion-fecha {
+    color: var(--muted-foreground);
+    font-size: 0.78rem;
+    margin: 0.1rem 0 0 0;
+    text-transform: capitalize;
+}
+
+.sesion-progreso {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.terminado {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.terminado i {
+    font-size: 2.5rem;
+    color: #F59E0B;
+}
+
+.terminado h2 {
+    color: var(--foreground);
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.terminado p {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.terminado .boton-principal {
+    padding: 0.6rem 1.2rem;
+    margin-top: 0.5rem;
+}
+
+@media (max-width: 480px) {
+    .campo-fila {
+        grid-template-columns: 1fr;
+    }
+
+    .circulo-tiempo {
+        width: 12rem;
+        height: 12rem;
+    }
+}

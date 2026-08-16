@@ -1,0 +1,231 @@
+<div class="eventos">
+    <header class="encabezado">
+        <div>
+            <h1>Eventos</h1>
+            <p class="subtitulo">Tu semana organizada.</p>
+        </div>
+        <button class="boton-principal boton-crear" (click)="abrirCrear()">
+            <i class="bi bi-plus-lg"></i> Nuevo evento
+        </button>
+    </header>
+
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    <div class="disposicion">
+        <section class="tarjeta calendario">
+            <div class="barra-calendario">
+                <h2>{{ etiquetaMes() }}</h2>
+                <div class="navegacion">
+                    <button class="boton-icono" (click)="semanaAnterior()" aria-label="Semana anterior">
+                        <i class="bi bi-chevron-left"></i>
+                    </button>
+                    <button class="boton-secundario boton-hoy" (click)="irASemanaActual()" title="Ir a la semana actual">{{ rangoSemana() }}</button>
+                    <button class="boton-icono" (click)="semanaSiguiente()" aria-label="Semana siguiente">
+                        <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            @if (cargando()) {
+                <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando...</p>
+            } @else {
+                <div class="contenedor-calendario">
+                    <div class="grid-calendario">
+                        <div class="columna-horas">
+                            <div class="celda-cabecera"></div>
+                            @for (hora of horas(); track hora) {
+                                <div class="celda-hora">{{ etiquetaHora(hora) }}</div>
+                            }
+                        </div>
+
+                        @for (dia of diasSemana(); track dia.getTime()) {
+                            <div class="columna-dia" [class.hoy]="esHoy(dia)">
+                                <div class="celda-cabecera" [class.hoy]="esHoy(dia)">{{ etiquetaDia(dia) }}</div>
+                                <div class="cuerpo-dia">
+                                    @for (hora of horas(); track hora) {
+                                        <div class="celda"></div>
+                                    }
+                                    @for (evento of eventosDelDia(dia); track evento.id_evento) {
+                                        @if (bloqueDelDia(evento, dia)!.esInicio) {
+                                            <button
+                                                class="bloque-evento"
+                                                [style.top]="bloqueDelDia(evento, dia)!.top + '%'"
+                                                [style.height]="bloqueDelDia(evento, dia)!.height + '%'"
+                                                [style.background-color]="evento.color || '#6366F1'"
+                                                (click)="verDetalles(evento)">
+                                                {{ evento.titulo }}
+                                            </button>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </section>
+
+        <aside class="tarjeta lista-proximos">
+            <h2>Próximos eventos</h2>
+            @if (proximos().length === 0) {
+                <p class="vacio">Sin eventos próximos.</p>
+            } @else {
+                @for (evento of proximos(); track evento.id_evento) {
+                    <button class="fila-evento" (click)="verDetalles(evento)">
+                        <span class="punto-evento" [style.background-color]="evento.color || '#6366F1'"></span>
+                        <div>
+                            <p class="evento-titulo">{{ evento.titulo }}</p>
+                            <p class="evento-fecha">{{ formatearFecha(evento.fecha_inicio) }}</p>
+                        </div>
+                    </button>
+                }
+            }
+        </aside>
+    </div>
+</div>
+
+@if (modalFormAbierto()) {
+    <div class="overlay" (click)="cerrarForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicion() ? 'Editar evento' : 'Nuevo evento' }}</h2>
+                <button class="boton-icono" (click)="cerrarForm()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form (ngSubmit)="guardar()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Título</span>
+                        <input class="inputs-texto" [(ngModel)]="formTitulo" name="titulo" placeholder="Ej. Examen parcial">
+                    </label>
+
+                    <label class="campo">
+                        <span>Descripción</span>
+                        <textarea class="inputs-texto" [(ngModel)]="formDescripcion" name="descripcion" rows="3" placeholder="Opcional"></textarea>
+                    </label>
+
+                    <div class="campo-fila">
+                        <label class="campo">
+                            <span>Fecha</span>
+                            <input class="inputs-texto" type="date" [(ngModel)]="formFecha" name="fecha">
+                        </label>
+                        <label class="campo">
+                            <span>Hora de inicio</span>
+                            <input class="inputs-texto" type="time" [(ngModel)]="formHora" name="hora">
+                        </label>
+                        <label class="campo">
+                            <span>Duración (minutos)</span>
+                            <input class="inputs-texto" type="number" min="15" step="15" [(ngModel)]="formDuracion" name="duracion">
+                        </label>
+                    </div>
+
+                    <div class="campo">
+                        <span>Color</span>
+                        <div class="paleta">
+                            @for (color of colores; track color) {
+                                <button
+                                    type="button"
+                                    class="muestra-color"
+                                    [class.seleccionado]="formColor === color"
+                                    [style.background-color]="color"
+                                    (click)="formColor = color"
+                                    [attr.aria-label]="'Color ' + color"></button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="campo">
+                        <div class="aviso-cabecera">
+                            <span>Avisos / recordatorios</span>
+                            <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAviso()">
+                                <i class="bi bi-plus-lg"></i> Agregar
+                            </button>
+                        </div>
+                        @for (aviso of formAvisos; track $index) {
+                            <div class="fila-aviso">
+                                <input class="inputs-texto" type="datetime-local" [(ngModel)]="formAvisos[$index]" [name]="'aviso' + $index">
+                                <button type="button" class="boton-icono peligro" (click)="quitarAviso($index)" aria-label="Quitar aviso">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        }
+                    </div>
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarForm()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">
+                        {{ guardando() ? 'Guardando...' : (modoEdicion() ? 'Guardar cambios' : 'Crear evento') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalDetallesAbierto() && eventoDetalle()) {
+    <div class="overlay" (click)="cerrarDetalles()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ eventoDetalle()!.titulo }}</h2>
+                <button class="boton-icono" (click)="cerrarDetalles()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <div class="detalle-fila">
+                    <span class="detalle-etiqueta">Fecha</span>
+                    <span class="detalle-valor">{{ formatearFecha(eventoDetalle()!.fecha_inicio) }} — {{ formatearFecha(eventoDetalle()!.fecha_fin) }}</span>
+                </div>
+                @if (eventoDetalle()!.descripcion) {
+                    <div class="detalle-fila">
+                        <span class="detalle-etiqueta">Descripción</span>
+                        <span class="detalle-valor">{{ eventoDetalle()!.descripcion }}</span>
+                    </div>
+                }
+                @if ((eventoDetalle()!.avisos || []).length > 0) {
+                    <div class="detalle-fila">
+                        <span class="detalle-etiqueta">Avisos</span>
+                        <ul class="detalle-lista">
+                            @for (aviso of eventoDetalle()!.avisos; track aviso) {
+                                <li>{{ formatearFecha(aviso) }}</li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+            <div class="modal-pie">
+                <button class="boton-peligro" (click)="preguntarEliminar()">Eliminar</button>
+                <button class="boton-secundario" (click)="abrirEditar(eventoDetalle()!)">Editar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (modalEliminarAbierto() && eventoAEliminar()) {
+    <div class="overlay" (click)="cancelarEliminar()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Eliminar evento</h2>
+                <button class="boton-icono" (click)="cancelarEliminar()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <p class="texto-eliminar">¿Seguro que quieres eliminar el evento <strong>"{{ eventoAEliminar()!.titulo }}"</strong>?</p>
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cancelarEliminar()">Cancelar</button>
+                <button class="boton-peligro" (click)="confirmarEliminar()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+}

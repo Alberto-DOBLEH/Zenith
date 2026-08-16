@@ -1,0 +1,65 @@
+<div class="notas">
+    <header class="encabezado">
+        <div>
+            <h1>Notas</h1>
+            <p class="subtitulo">Tu nota del día y el historial.</p>
+        </div>
+    </header>
+
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    @if (mensajeExito()) {
+        <div class="mensaje-exito"><i class="bi bi-check-circle"></i>{{ mensajeExito() }}</div>
+    }
+
+    @if (cargando()) {
+        <div class="lista-cargando tarjeta"><i class="bi bi-arrow-repeat girando"></i> Cargando...</div>
+    } @else {
+        <div class="disposicion">
+            <section class="tarjeta nota-dia">
+                <div class="nota-cabecera">
+                    <h2>{{ vistaHistorial() ? 'Nota del ' + formatearFecha(vistaHistorial()!.fecha) : 'Nota del día' }}</h2>
+                    @if (vistaHistorial()) {
+                        <button class="boton-icono" (click)="cerrarVistaHistorial()" aria-label="Volver a la nota del día">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    }
+                </div>
+
+                <textarea
+                    class="inputs-texto textarea-nota"
+                    [class.lectura]="vistaHistorial() !== null"
+                    rows="14"
+                    [(ngModel)]="contenido"
+                    [readonly]="vistaHistorial() !== null"
+                    placeholder="Escribe tu nota del día..."></textarea>
+
+                <div class="nota-pie">
+                    <span class="nota-fecha">{{ fechaHoy }}</span>
+                    @if (!vistaHistorial()) {
+                        <button class="boton-principal" (click)="guardar()" [disabled]="guardando()">
+                            {{ guardando() ? 'Guardando...' : (notaDia() ? 'Guardar nota del día' : 'Crear nota del día') }}
+                        </button>
+                    }
+                </div>
+            </section>
+
+            <aside class="tarjeta historial">
+                <h2>Historial</h2>
+
+                @if (historial().length === 0) {
+                    <p class="vacio">Aún no tienes notas anteriores.</p>
+                } @else {
+                    @for (nota of historial(); track nota.id_nota) {
+                        <button class="tarjeta-nota" [class.activa]="vistaHistorial()?.id_nota === nota.id_nota" (click)="verNota(nota)">
+                            <p class="nota-titulo">Nota — {{ formatearFecha(nota.fecha) }}</p>
+                            <p class="nota-preview">{{ resumen(nota.contenido) }}</p>
+                        </button>
+                    }
+                }
+            </aside>
+        </div>
+    }
+</div>

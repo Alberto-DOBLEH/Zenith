@@ -1,0 +1,27 @@
+.app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    background-color: var(--background);
+}
+
+.cuerpo {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.contenido-principal {
+    flex: 1;
+    min-width: 0;
+    padding: 1.5rem;
+    overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+    .contenido-principal {
+        padding: 1rem;
+    }
+}

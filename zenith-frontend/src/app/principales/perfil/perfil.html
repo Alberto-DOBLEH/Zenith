@@ -1,0 +1,230 @@
+<div class="perfil">
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    @if (mensaje()) {
+        <div class="mensaje-exito"><i class="bi bi-check-circle"></i>{{ mensaje() }}</div>
+    }
+
+    @if (cargando()) {
+        <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando...</p>
+    } @else if (usuario) {
+        <header class="cabecera-perfil">
+            <div class="avatar-grande">
+                @if (avatarRuta()) {
+                    <img [src]="avatarRuta()" alt="Foto de perfil">
+                } @else {
+                    <span class="avatar-iniciales">{{ iniciales() }}</span>
+                }
+            </div>
+            <div>
+                <h1>{{ nombreCompleto() }}</h1>
+                <p class="subtitulo">@{{ usuario.username }}</p>
+            </div>
+        </header>
+
+        <div class="grilla-tarjetas">
+            <section class="tarjeta tarjeta-perfil">
+                <div class="tarjeta-titulo">
+                    <h2><i class="bi bi-person-lines-fill"></i> Información</h2>
+                    <button class="boton-secundario" (click)="abrirEditarDatos()">Cambiar datos</button>
+                </div>
+                <div class="fila-perfil">
+                    <span class="etiqueta">Nombre completo</span>
+                    <span class="valor">{{ nombreCompleto() }}</span>
+                </div>
+                <div class="fila-perfil">
+                    <span class="etiqueta">Nombre de usuario</span>
+                    <span class="valor">@{{ usuario.username }}</span>
+                </div>
+                <div class="fila-perfil">
+                    <span class="etiqueta">Fecha de nacimiento</span>
+                    <span class="valor">{{ formatearFecha(usuario.fecha_nacimiento) }}</span>
+                </div>
+                <div class="fila-perfil">
+                    <span class="etiqueta">País</span>
+                    <span class="valor">{{ usuario.pais || '—' }}</span>
+                </div>
+            </section>
+
+            <section class="tarjeta tarjeta-perfil">
+                <div class="tarjeta-titulo">
+                    <h2><i class="bi bi-shield-lock"></i> Autenticación</h2>
+                    <button class="boton-secundario" (click)="abrirCambiarPassword()">Cambiar contraseña</button>
+                </div>
+                <div class="fila-perfil">
+                    <span class="etiqueta">Correo</span>
+                    <span class="valor">{{ usuario.correo }}</span>
+                </div>
+                <div class="fila-perfil">
+                    <span class="etiqueta">Teléfono</span>
+                    <span class="valor">{{ formatearTelefono(usuario.telefono) }}</span>
+                </div>
+            </section>
+
+            <section class="tarjeta tarjeta-perfil">
+                <div class="tarjeta-titulo">
+                    <h2><i class="bi bi-shield-exclamation"></i> Administración</h2>
+                    <button class="boton-peligro" (click)="abrirEliminarCuenta()">Eliminar cuenta</button>
+                </div>
+                <p class="aviso-peligro">
+                    Al eliminar tu cuenta se borrarán permanentemente tus hábitos, notas, eventos y progreso. Esta acción no se puede deshacer.
+                </p>
+            </section>
+        </div>
+
+        <div class="pie-perfil">
+            <button class="boton-secundario boton-cerrar-sesion" (click)="abrirCerrarSesion()">
+                <i class="bi bi-box-arrow-right"></i> Cerrar sesión
+            </button>
+        </div>
+    }
+</div>
+
+@if (modalDatos()) {
+    <div class="overlay" (click)="cerrarEditarDatos()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Cambiar datos</h2>
+                <button class="boton-icono" (click)="cerrarEditarDatos()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <div class="campo-fila">
+                    <label class="campo">
+                        <span>Nombre</span>
+                        <input class="inputs-texto" type="text" [(ngModel)]="formNombre" name="nombre">
+                    </label>
+                    <label class="campo">
+                        <span>Primer apellido</span>
+                        <input class="inputs-texto" type="text" [(ngModel)]="formPrimerApellido" name="primerApellido">
+                    </label>
+                </div>
+                <label class="campo">
+                    <span>Segundo apellido</span>
+                    <input class="inputs-texto" type="text" [(ngModel)]="formSegundoApellido" name="segundoApellido">
+                </label>
+                <div class="campo-fila">
+                    <label class="campo">
+                        <span>Fecha de nacimiento</span>
+                        <input class="inputs-texto" type="date" [(ngModel)]="formFechaNacimiento" name="fechaNacimiento">
+                    </label>
+                    <label class="campo">
+                        <span>País</span>
+                        <input class="inputs-texto" type="text" [(ngModel)]="formPais" name="pais">
+                    </label>
+                </div>
+
+                <div class="campo">
+                    <span>Avatar</span>
+                    <div class="selector-avatares">
+                        <button type="button"
+                            class="opcion-avatar"
+                            [class.seleccionado]="formAvatar === null"
+                            (click)="formAvatar = null"
+                            [attr.title]="'Sin avatar'">
+                            <span class="avatar-iniciales">{{ iniciales() }}</span>
+                        </button>
+                        @for (avatar of avatares(); track avatar.id_avatar) {
+                            <button type="button"
+                                class="opcion-avatar"
+                                [class.seleccionado]="formAvatar === avatar.id_avatar"
+                                (click)="formAvatar = avatar.id_avatar"
+                                [attr.title]="avatar.nombre">
+                                <img [src]="avatar.ruta_imagen" [alt]="avatar.nombre">
+                            </button>
+                        }
+                    </div>
+                </div>
+
+                @if (errorDatos()) {
+                    <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ errorDatos() }}</div>
+                }
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cerrarEditarDatos()">Cancelar</button>
+                <button class="boton-principal" [disabled]="guardando()" (click)="guardarDatos()">
+                    {{ guardando() ? 'Guardando...' : 'Guardar cambios' }}
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (modalPassword()) {
+    <div class="overlay" (click)="cerrarCambiarPassword()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Cambiar contraseña</h2>
+                <button class="boton-icono" (click)="cerrarCambiarPassword()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <label class="campo">
+                    <span>Contraseña actual</span>
+                    <input class="inputs-texto" type="password" [(ngModel)]="pwActual" name="pwActual">
+                </label>
+                <label class="campo">
+                    <span>Nueva contraseña</span>
+                    <input class="inputs-texto" type="password" [(ngModel)]="pwNueva" name="pwNueva">
+                </label>
+                @if (errorPassword()) {
+                    <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ errorPassword() }}</div>
+                }
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cerrarCambiarPassword()">Cancelar</button>
+                <button class="boton-principal" [disabled]="guardandoPassword()" (click)="guardarPassword()">
+                    {{ guardandoPassword() ? 'Guardando...' : 'Actualizar contraseña' }}
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (modalEliminar()) {
+    <div class="overlay" (click)="cerrarEliminarCuenta()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Eliminar cuenta</h2>
+                <button class="boton-icono" (click)="cerrarEliminarCuenta()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <p class="texto-eliminar">
+                    ¿Seguro que quieres eliminar tu cuenta permanentemente? Se borrarán todos tus datos.
+                </p>
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cerrarEliminarCuenta()">Cancelar</button>
+                <button class="boton-peligro" [disabled]="eliminando()" (click)="confirmarEliminarCuenta()">
+                    {{ eliminando() ? 'Eliminando...' : 'Eliminar' }}
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (modalCerrar()) {
+    <div class="overlay" (click)="cerrarCerrarSesion()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Cerrar sesión</h2>
+                <button class="boton-icono" (click)="cerrarCerrarSesion()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <p class="texto-eliminar">¿Seguro que quieres cerrar tu sesión?</p>
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cerrarCerrarSesion()">Cancelar</button>
+                <button class="boton-principal" (click)="confirmarCerrarSesion()">Cerrar sesión</button>
+            </div>
+        </div>
+    </div>
+}

@@ -106,9 +106,9 @@ export const registrarProgreso = async (id_usuario, datos) => {
 
     await db.query(
         `INSERT INTO registro_habitos (habito, fecha, estado, valor_realizado, fecha_inicio, fecha_completado)
-        VALUES ($1, $2, $3, $4,
+        VALUES ($1, $2, $3::public.estado_registro_habito, $4,
             CASE WHEN $5 THEN CURRENT_TIMESTAMP ELSE NULL END,
-            CASE WHEN $3 = 'COMPLETADO' THEN CURRENT_TIMESTAMP ELSE NULL END)
+            CASE WHEN $3::text = 'COMPLETADO' THEN CURRENT_TIMESTAMP ELSE NULL END)
         ON CONFLICT (habito, fecha) DO UPDATE SET
             estado = EXCLUDED.estado,
             valor_realizado = EXCLUDED.valor_realizado,

@@ -1,0 +1,97 @@
+<div class="pomodoro">
+    <header class="encabezado">
+        <div>
+            <h1>Pomodoro</h1>
+            <p class="subtitulo">Ciclos de 25 min de trabajo y 5 min de descanso.</p>
+        </div>
+    </header>
+
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    @if (mensaje()) {
+        <div class="mensaje-exito"><i class="bi bi-check-circle"></i>{{ mensaje() }}</div>
+    }
+
+    @if (sesionTerminada()) {
+        <div class="terminado tarjeta">
+            <i class="bi bi-trophy"></i>
+            <h2>¡Sesión completada!</h2>
+            <p>{{ mensaje() }}</p>
+            <button class="boton-principal" (click)="cerrarSesionTerminada()">Nueva sesión</button>
+        </div>
+    }
+
+    <div class="zona-sesion tarjeta">
+        @if (!sesionActiva()) {
+            <div class="configurar">
+                <h2>Iniciar sesión</h2>
+                <div class="campo-fila">
+                    <label class="campo">
+                        <span>Minutos objetivo</span>
+                        <input class="inputs-texto" type="number" min="1" [(ngModel)]="minutosObjetivo">
+                    </label>
+                    <label class="campo">
+                        <span>Hábito de tiempo (opcional)</span>
+                        <select class="inputs-texto" [(ngModel)]="habitoSeleccionado" [disabled]="habitoBloqueado()">
+                            <option [ngValue]="null">Sin hábito</option>
+                            @for (habito of habitosTiempo(); track habito.id_habito) {
+                                <option [ngValue]="habito.id_habito">{{ habito.nombre }}</option>
+                            }
+                        </select>
+                    </label>
+                </div>
+                <button class="boton-principal boton-iniciar" (click)="iniciar()">
+                    <i class="bi bi-play-fill"></i> Iniciar
+                </button>
+            </div>
+        } @else {
+            <div class="temporizador">
+                <div class="circulo-tiempo" [style.--progreso]="progresoCirculo() + '%'">
+                    <span class="fase">{{ etiquetaFase() }}</span>
+                    <span class="tiempo">{{ tiempoFormateado() }}</span>
+                    <span class="ciclos">Ciclo {{ cicloActual() }} / {{ sesionActiva()!.ciclos_objetivo }}</span>
+                </div>
+
+                <div class="controles">
+                    <button class="boton-secundario boton-circulo" (click)="alternar()">
+                        <i class="bi" [class.bi-play-fill]="!corriendo()" [class.bi-pause-fill]="corriendo()"></i>
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <section class="historial tarjeta">
+        <div class="historial-titulo">
+            <h2>Historial de sesiones</h2>
+        </div>
+
+        @if (cargando()) {
+            <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando...</p>
+        } @else if (sesiones().length === 0) {
+            <p class="vacio">Aún no tienes sesiones.</p>
+        } @else {
+            <div class="lista-sesiones">
+                @for (sesion of sesiones(); track sesion.id_sesion) {
+                    <div class="fila-sesion" [class.activa]="esHoy(sesion)">
+                        <button class="fila-principal" (click)="retomar(sesion)" [disabled]="sesionActiva() !== null || !!sesion.fecha_fin">
+                            <div>
+                                <p class="sesion-nombre">{{ sesion.habito_nombre || 'Sesión externa' }}</p>
+                                <p class="sesion-fecha">{{ formatearFecha(sesion.fecha_inicio) }}</p>
+                            </div>
+                            <span class="sesion-progreso">
+                                {{ sesion.minutos_realizados ?? 0 }} / {{ sesion.minutos_objetivo }} min ·
+                                {{ sesion.ciclos_completados ?? 0 }}/{{ sesion.ciclos_objetivo }} ciclos
+                            </span>
+                        </button>
+                        <button class="boton-icono peligro" (click)="eliminarSesion(sesion)" aria-label="Eliminar sesión">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+    </section>
+</div>

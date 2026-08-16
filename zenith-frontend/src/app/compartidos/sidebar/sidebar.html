@@ -1,1 +1,36 @@
-<p>sidebar works!</p>
+@if (abierta()) {
+    <div class="cortina" (click)="cerrar()"></div>
+}
+
+<aside class="sidebar" [class.abierta]="abierta()">
+    <div class="sidebar-cabecera">
+        <img class="logo" src="zenith_icon_app.png" alt="Zenith">
+        <span class="titulo">Zenith</span>
+        <button class="boton-cerrar-movil" (click)="cerrar()" aria-label="Cerrar menú">
+            <i class="bi bi-x-lg"></i>
+        </button>
+    </div>
+
+    <nav class="navegacion">
+        <a routerLink="/dashboard" routerLinkActive="activo" (click)="cerrar()">
+            <i class="bi bi-house"></i>
+            <span>Principal</span>
+        </a>
+        <a routerLink="/habitos" routerLinkActive="activo" (click)="cerrar()">
+            <i class="bi bi-check2-circle"></i>
+            <span>Hábitos</span>
+        </a>
+        <a routerLink="/notas" routerLinkActive="activo" (click)="cerrar()">
+            <i class="bi bi-journal-text"></i>
+            <span>Notas</span>
+        </a>
+        <a routerLink="/eventos" routerLinkActive="activo" (click)="cerrar()">
+            <i class="bi bi-calendar3"></i>
+            <span>Eventos</span>
+        </a>
+        <a routerLink="/pomodoro" routerLinkActive="activo" (click)="cerrar()">
+            <i class="bi bi-clock"></i>
+            <span>Pomodoro</span>
+        </a>
+    </nav>
+</aside>

@@ -1,0 +1,41 @@
+@if (habito()) {
+    <div class="overlay" (click)="cerrar.emit()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ habito()!.nombre }}</h2>
+                <button class="boton-icono" (click)="cerrar.emit()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                @if (habito()!.descripcion) {
+                    <p class="descripcion">{{ habito()!.descripcion }}</p>
+                }
+
+                <div class="fila-detalle">
+                    <span class="etiqueta">Tipo</span>
+                    <span>{{ habito()!.tipo_nombre }}</span>
+                </div>
+
+                @if (habito()!.meta != null) {
+                    <div class="fila-detalle">
+                        <span class="etiqueta">Objetivo</span>
+                        <span>{{ habito()!.meta }} {{ habito()!.unidad || '' }}</span>
+                    </div>
+                }
+
+                <div class="fila-detalle">
+                    <span class="etiqueta">Clasificación</span>
+                    <span [class.bueno]="habito()!.esBueno" [class.malo]="!habito()!.esBueno">
+                        {{ habito()!.esBueno ? 'Bueno' : 'Malo' }}
+                    </span>
+                </div>
+
+                <div class="fila-detalle">
+                    <span class="etiqueta">Frecuencia</span>
+                    <span>{{ frecuenciaTexto(habito()!.frecuencia, habito()!.dias, habito()!.dia_del_mes) }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}

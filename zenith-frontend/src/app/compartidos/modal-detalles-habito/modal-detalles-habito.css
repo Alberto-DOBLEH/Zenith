@@ -1,0 +1,33 @@
+.descripcion {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0 0 1rem 0;
+}
+
+.fila-detalle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.55rem 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--foreground);
+    font-size: 0.92rem;
+}
+
+.fila-detalle:last-child {
+    border-bottom: none;
+}
+
+.etiqueta {
+    color: var(--muted-foreground);
+}
+
+.bueno {
+    color: #10B981;
+    font-weight: 600;
+}
+
+.malo {
+    color: #EF4444;
+    font-weight: 600;
+}

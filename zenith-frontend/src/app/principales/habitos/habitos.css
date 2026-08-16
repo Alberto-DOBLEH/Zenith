@@ -1,0 +1,198 @@
+.habitos {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.encabezado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.encabezado h1 {
+    color: var(--foreground);
+    font-size: 1.6rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.contador-total {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.boton-crear {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1.1rem;
+    text-decoration: none;
+}
+
+.estado-inicial {
+    color: var(--muted-foreground);
+    padding: 3rem;
+    text-align: center;
+}
+
+.lista-cargando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+}
+
+.estado-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 3rem;
+    text-align: center;
+}
+
+.estado-vacio i {
+    font-size: 2.5rem;
+    color: var(--primary);
+}
+
+.estado-vacio h2 {
+    color: var(--foreground);
+    font-size: 1.2rem;
+    margin: 0;
+}
+
+.estado-vacio p {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.estado-vacio .boton-principal {
+    padding: 0.6rem 1.2rem;
+    margin-top: 0.5rem;
+}
+
+.lista {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.fila-habito {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.9rem 1rem;
+    border-right: 4px solid #10B981;
+}
+
+.fila-habito.malo {
+    border-right-color: #EF4444;
+}
+
+.fila-principal {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    padding: 0;
+    min-width: 0;
+}
+
+.habito-nombre {
+    color: var(--foreground);
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.habito-tipo {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    border: 1px solid var(--border);
+    background-color: var(--muted);
+    padding: 0.15rem 0.5rem;
+    border-radius: 1rem;
+    flex-shrink: 0;
+}
+
+.fila-acciones {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.campo span {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+}
+
+.campo .inputs-texto {
+    padding: 0.6rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+textarea.inputs-texto {
+    resize: vertical;
+}
+
+.campo-fila {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+}
+
+.dias-semana {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.dia-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--foreground);
+    font-size: 0.85rem;
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.45rem 0.7rem;
+    cursor: pointer;
+}
+
+.dia-check input {
+    accent-color: var(--primary);
+}
+
+.texto-eliminar {
+    color: var(--foreground);
+    font-size: 0.95rem;
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .campo-fila {
+        grid-template-columns: 1fr;
+    }
+}

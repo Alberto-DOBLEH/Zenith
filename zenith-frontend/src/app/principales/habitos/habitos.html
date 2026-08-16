@@ -1,0 +1,159 @@
+<div class="habitos">
+    <header class="encabezado">
+        <div>
+            <h1>Hábitos</h1>
+            <p class="contador-total">{{ habitos().length }} {{ habitos().length === 1 ? 'hábito' : 'hábitos' }}</p>
+        </div>
+        <button class="boton-principal boton-crear" (click)="abrirCrear()">
+            <i class="bi bi-plus-lg"></i> Crear hábito
+        </button>
+    </header>
+
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    @if (cargando()) {
+        <div class="lista-cargando tarjeta"><i class="bi bi-arrow-repeat girando"></i> Cargando hábitos...</div>
+    } @else if (habitos().length === 0) {
+        <div class="estado-vacio tarjeta">
+            <i class="bi bi-check2-circle"></i>
+            <h2>No tienes hábitos</h2>
+            <p>Crea tu primer hábito para empezar a construir tu racha.</p>
+            <button class="boton-principal" (click)="abrirCrear()">Crear un hábito</button>
+        </div>
+    } @else {
+        <div class="lista">
+            @for (habito of habitos(); track habito.id_habito) {
+                <div class="fila-habito tarjeta" [class.malo]="!esBueno(habito)">
+                    <button class="fila-principal" (click)="verDetalles(habito)">
+                        <span class="habito-nombre">{{ habito.nombre }}</span>
+                        <span class="habito-tipo">{{ habito.tipo_nombre }}</span>
+                    </button>
+                    <div class="fila-acciones">
+                        <button class="boton-icono" (click)="abrirEditar(habito)" aria-label="Editar">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="boton-icono peligro" (click)="preguntarEliminar(habito)" aria-label="Eliminar">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@if (modalFormAbierto()) {
+    <div class="overlay" (click)="cerrarForm()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicion() ? 'Editar hábito' : 'Crear hábito' }}</h2>
+                <button class="boton-icono" (click)="cerrarForm()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form [formGroup]="form" (ngSubmit)="guardar()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Nombre</span>
+                        <input class="inputs-texto" formControlName="nombre" placeholder="Ej. Leer 10 páginas">
+                    </label>
+
+                    <label class="campo">
+                        <span>Descripción</span>
+                        <textarea class="inputs-texto" formControlName="descripcion" rows="3" placeholder="Opcional"></textarea>
+                    </label>
+
+                    <label class="campo">
+                        <span>Tipo</span>
+                        <select class="inputs-texto" formControlName="tipo_habito">
+                            @for (tipo of tipos(); track tipo.id_tipo_habito) {
+                                <option [ngValue]="tipo.id_tipo_habito">{{ tipo.nombre }}</option>
+                            }
+                        </select>
+                    </label>
+
+                    <label class="campo">
+                        <span>Frecuencia</span>
+                        <select class="inputs-texto" formControlName="frecuencia">
+                            <option value="DIARIO">Diario</option>
+                            <option value="SEMANAL">Semanal</option>
+                            <option value="MENSUAL">Mensual</option>
+                        </select>
+                    </label>
+
+                    @if (requiereObjetivo(form.value.tipo_habito)) {
+                        <div class="campo-fila">
+                            <label class="campo">
+                                <span>Objetivo</span>
+                                <input class="inputs-texto" type="number" min="1" formControlName="meta">
+                            </label>
+                            <label class="campo">
+                                <span>Unidad</span>
+                                <input class="inputs-texto" formControlName="unidad" placeholder="Ej. páginas">
+                            </label>
+                        </div>
+                    }
+
+                    @if (form.value.frecuencia === 'SEMANAL') {
+                        <div class="campo">
+                            <span>Días de la semana</span>
+                            <div class="dias-semana">
+                                @for (dia of diasSemana; track dia) {
+                                    <label class="dia-check">
+                                        <input type="checkbox"
+                                            [checked]="(form.value.dias ?? []).includes(dia)"
+                                            (change)="alternarDia(dia)">
+                                        <span>{{ nombresDias[dia] }}</span>
+                                    </label>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @if (form.value.frecuencia === 'MENSUAL') {
+                        <label class="campo">
+                            <span>Día del mes</span>
+                            <input class="inputs-texto" type="number" min="1" max="31" formControlName="dia_del_mes" placeholder="1-31">
+                        </label>
+                    }
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarForm()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="cargandoForm()">
+                        {{ cargandoForm() ? 'Guardando...' : (modoEdicion() ? 'Guardar cambios' : 'Crear hábito') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalEliminarAbierto() && habitoAEliminar()) {
+    <div class="overlay" (click)="cancelarEliminar()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Eliminar hábito</h2>
+                <button class="boton-icono" (click)="cancelarEliminar()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <p class="texto-eliminar">¿Seguro que quieres eliminar el hábito <strong>"{{ habitoAEliminar()!.nombre }}"</strong>? Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cancelarEliminar()">Cancelar</button>
+                <button class="boton-peligro" (click)="confirmarEliminar()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+}
+
+<app-modal-detalles-habito [habito]="habitosDetalles()" (cerrar)="habitosDetalles.set(null)"></app-modal-detalles-habito>
