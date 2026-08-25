@@ -1,4 +1,5 @@
 import * as dashboardService from "./dashboard.service.js";
+import { enviarError } from "../../middleware/errorHandler.js";
 
 export const obtenerResumen = async (req, res) => {
     try {
@@ -6,8 +7,6 @@ export const obtenerResumen = async (req, res) => {
         const result = await dashboardService.obtenerResumen(id_usuario);
         return res.status(200).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };

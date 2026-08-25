@@ -1,4 +1,5 @@
 import * as notasService from "./notas.service.js";
+import { enviarError } from "../../middleware/errorHandler.js";
 
 export const obtenerNotas = async (req, res) => {
     try {
@@ -6,9 +7,7 @@ export const obtenerNotas = async (req, res) => {
         const result = await notasService.obtenerNotas(id_usuario);
         return res.status(200).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };
 
@@ -19,9 +18,7 @@ export const obtenerNotaPorId = async (req, res) => {
         const result = await notasService.obtenerNotaPorId(id_usuario, id_nota);
         return res.status(200).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };
 
@@ -35,9 +32,7 @@ export const obtenerNotaPorFecha = async (req, res) => {
         const result = await notasService.obtenerNotaPorFecha(id_usuario, fecha);
         return res.status(200).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };
 
@@ -47,9 +42,7 @@ export const crearNota = async (req, res) => {
         const result = await notasService.crearNota(id_usuario, req.body);
         return res.status(201).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };
 
@@ -60,8 +53,6 @@ export const editarNota = async (req, res) => {
         const result = await notasService.editarNota(id_usuario, id_nota, req.body);
         return res.status(200).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };

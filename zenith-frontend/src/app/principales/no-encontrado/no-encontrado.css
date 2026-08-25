@@ -1,0 +1,39 @@
+.contenedor-404 {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background-color: var(--background);
+}
+
+.codigo {
+    font-size: clamp(6rem, 20vw, 11rem);
+    font-weight: 700;
+    line-height: 1;
+    color: var(--primary);
+    text-shadow: 0 0 60px rgba(99, 102, 241, 0.45);
+}
+
+.titulo {
+    font-size: clamp(1.5rem, 4vw, 2.25rem);
+    color: var(--foreground);
+}
+
+.descripcion {
+    max-width: 32rem;
+    color: var(--muted-foreground);
+    line-height: 1.6;
+}
+
+.boton-volver {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    text-decoration: none;
+}

@@ -51,6 +51,12 @@ export const obtenerNotaPorId = async (id_usuario, id_nota) => {
 };
 
 export const obtenerNotaPorFecha = async (id_usuario, fecha) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
+        throw {
+            status: 400,
+            message: "La fecha debe tener el formato YYYY-MM-DD"
+        };
+    }
     const result = await db.query(
         `SELECT
             id_nota,

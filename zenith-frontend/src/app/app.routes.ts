@@ -40,6 +40,6 @@ export const routes: Routes = [
     },
     {
         path: '**',
-        redirectTo: ''
+        loadComponent: () => import('./principales/no-encontrado/no-encontrado').then(m => m.NoEncontrado)
     }
 ];

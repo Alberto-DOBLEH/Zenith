@@ -1,4 +1,5 @@
 import * as authService from "./auth.service.js";
+import { enviarError } from "../../middleware/errorHandler.js";
 
 export const registro = async (req, res) => {
     try {
@@ -7,9 +8,7 @@ export const registro = async (req, res) => {
         return res.status(201).json(result);
 
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };
 
@@ -23,8 +22,6 @@ export const login = async (req, res) => {
         return res.status(200).json(result);
 
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };

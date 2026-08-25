@@ -21,6 +21,19 @@ Aplicación web de seguimiento de hábitos para la materia Desarrollo Web 2.
 - Los servicios lanzan errores con `{ status, message }`; los controllers lo transforman en JSON.
 - El esquema de BD usa **enums** para estados (ver `supabase/migrations/`).
 
+## Seguridad y pruebas
+
+- **Suite de pruebas de seguridad** (auth, IDOR, SQLi, XSS, headers, rate limit): `cd backend && npm test`. Levanta su propio servidor en el puerto **3100** (no toca el de dev en 3000) y requiere Supabase local corriendo (`npx supabase start`). Al terminar elimina los usuarios de prueba. Si se re-corre de inmediato, el test de rate limit queda reseteado por levantar servidor nuevo; si el de registro fallara por límite, subir `RATE_LIMIT_REGISTRO` al arrancar.
+- **Hardening backend**: `helmet()` (headers de seguridad), CORS allowlist desde `CORS_ORIGIN` (comas; sin valor = todos los orígenes para dev), `express-rate-limit` en login (10 fallos/15 min, no cuenta éxitos) y registro (50/15 min), `GET /health`, error handler JSON genérico en producción (sin detalles de `pg`/stack), `validarId` en rutas con `:id`, y fail-fast en `server.js` si faltan `JWT_SECRET`/`DB_*`. `JWT_SECRET` se genera con `openssl rand -hex 32`.
+- **`npm audit` backend**: 0 vulnerabilidades. **Frontend**: 11 hallazgos en `undici`/`esbuild` son solo del **tooling de build** de Angular 21 (no llegan al bundle desplegado); el fix real exige Angular 22, se dejan documentadas.
+
+## Deploy
+
+- **Supabase**: `supabase db push` aplica las migraciones al proyecto remoto. La conexión usa el rol `postgres` (bypass RLS); seguridad a nivel de app.
+- **Backend (Render)**: env vars `DB_USER`, `DB_HOST` (pooler `aws-0-us-west-1.pooler.supabase.com`), `DB_NAME`, `DB_PASSWORD`, `DB_PORT=6543`, `DB_SSL=true`, `JWT_SECRET` (`openssl rand -hex 32`), `JWT_EXPIRES_IN=7d`, `NODE_ENV=production`, `CORS_ORIGIN=https://<proyecto>.vercel.app`. Render asigna `PORT` automáticamente; no configurarlo. Nunca subir `.env` al repo (ya ignorado).
+- **Frontend (Vercel)**: root directory `zenith-frontend`, build `ng build` (usa `environment.prod.ts` vía `fileReplacements`; actualizar su `apiUrl` al dominio real de Render antes de buildear), output `dist/zenith-frontend/browser`, y `vercel.json` con rewrites SPA (deep links → `index.html`). La ruta `**` muestra la página 404.
+- Verificación post-deploy con curl: `GET /health` en Render, deep links (`/perfil`, `/notas`) → 200 en Vercel, y login/registro de extremo a extremo. La suite de seguridad puede apuntarse al deploy con `BASE_URL`.
+
 ## Plan de trabajo del frontend
 
 El plan completo de implementación del frontend (arquitectura, sistema de diseño, secciones por prioridad y endpoints) vive en `Docs/plan-frontend.md`. Al retomar trabajo del frontend, consultarlo primero; las secciones se marcan ✅/⬜ según avance. La siguiente sección pendiente es la **Sección 1** (layout principal + dashboard con datos reales).
@@ -28,6 +41,15 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 ## Registro de cambios por fecha
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
+
+### 2026-08-17
+- **Hardening de seguridad (preparación para deploy)**:
+  - Backend: `helmet()`, CORS allowlist desde `CORS_ORIGIN`, `express-rate-limit` en login (10 fallos/15 min, no cuenta éxitos) y registro (50/15 min), `GET /health`, error handler JSON genérico (`enviarError`, oculta detalles de `pg`/stack en producción) en los 10 controllers, `validarId` en todas las rutas con `:id`, y fail-fast en `server.js` si faltan `JWT_SECRET`/`DB_*`. `nodemon` movido a `devDependencies`.
+  - Fix real encontrado por la suite: `GET /api/notas/por-fecha` con fecha inválida daba 500 con detalle de pg → ahora valida `YYYY-MM-DD` y responde 400.
+  - **Suite de pruebas de seguridad** `backend/scripts/pruebas-seguridad.js` (`node --test`): health/headers, validación de registro, login sin revelar existencia, token inválido/manipulado/vencido, batería de SQLi sin fuga de errores, validación de ids, IDOR (usuario A no accede a recursos de B: hábito/nota/evento/pomodoro/estadísticas → 404), XSS almacenado (el backend devuelve el payload tal cual; el render seguro lo garantiza Angular) y rate limit (429). Se corre con `npm test` desde `backend`: levanta su propio servidor en el puerto 3100 y lo cierra. **9/9 pass**.
+  - Frontend: `environment.prod.ts` con `apiUrl` placeholder de Render + `fileReplacements` en `angular.json` (production), y `vercel.json` con rewrites SPA. **Pantalla 404** (`principales/no-encontrado`, ruta `**` en vez de redirect).
+  - `npm audit`: backend **0 vulnerabilidades**; frontend 11 hallazgos en `undici`/`esbuild` (solo tooling de build de Angular 21, no llegan al bundle; fix real exige Angular 22).
+  - Verificado: suite 9/9, `ng build` OK, `ng test` 12/12.
 
 ### 2026-08-15
 - **Frontend — Sección 3 del plan completada** (ver `Docs/plan-frontend.md`):

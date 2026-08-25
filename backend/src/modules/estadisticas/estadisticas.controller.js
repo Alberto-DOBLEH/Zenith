@@ -1,4 +1,5 @@
 import * as estadisticasService from "./estadisticas.service.js";
+import { enviarError } from "../../middleware/errorHandler.js";
 
 export const obtenerEstadisticasGenerales = async (req, res) => {
     try {
@@ -7,9 +8,7 @@ export const obtenerEstadisticasGenerales = async (req, res) => {
         const result = await estadisticasService.obtenerEstadisticasGenerales(id_usuario, periodo);
         return res.status(200).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };
 
@@ -20,8 +19,6 @@ export const obtenerEstadisticasHabito = async (req, res) => {
         const result = await estadisticasService.obtenerEstadisticasHabito(id_usuario, id_habito);
         return res.status(200).json(result);
     } catch (error) {
-        return res.status(error.status || 500).json({
-            message: error.message
-        });
+        return enviarError(res, error);
     }
 };
