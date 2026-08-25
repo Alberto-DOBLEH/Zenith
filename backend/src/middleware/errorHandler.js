@@ -1,10 +1,12 @@
 export const enviarError = (res, error) => {
     const status = error.status || 500;
     console.error("ERROR DETAIL:", error.message, error.code, error.detail);
+    const mensaje =
+        status < 500 || process.env.NODE_ENV !== "production"
+            ? error.message
+            : "Error interno del servidor";
     return res.status(status).json({
-        message: error.message || "Error interno del servidor",
-        code: error.code,
-        detail: error.detail
+        message: mensaje
     });
 };
 
