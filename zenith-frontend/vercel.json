@@ -1,4 +1,7 @@
 {
+  "buildCommand": "ng build",
+  "outputDirectory": "dist/zenith-frontend/browser",
+  "framework": "angular",
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ]
