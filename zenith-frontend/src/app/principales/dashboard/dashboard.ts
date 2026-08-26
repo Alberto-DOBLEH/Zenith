@@ -175,6 +175,11 @@ export class Dashboard implements OnInit, OnDestroy {
     const labels: string[] = [];
     const valores: (number | null)[] = [];
 
+    const porFecha = new Map<string, DiaEstadistica>();
+    for (const d of dias) {
+      porFecha.set(String(d.fecha).slice(0, 10), d);
+    }
+
     for (let i = 6; i >= 0; i--) {
       const dia = new Date();
       dia.setDate(dia.getDate() - i);
@@ -182,7 +187,7 @@ export class Dashboard implements OnInit, OnDestroy {
       labels.push(etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1, 4));
 
       const fechaStr = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, '0')}-${String(dia.getDate()).padStart(2, '0')}`;
-      const delDia = dias.find(d => d.fecha === fechaStr);
+      const delDia = porFecha.get(fechaStr);
       if (!delDia || delDia.total_programados === 0) {
         valores.push(null);
         continue;
