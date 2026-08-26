@@ -294,10 +294,6 @@
     .columnas {
         grid-template-columns: 1fr;
     }
-
-    .grilla-graficas {
-        grid-template-columns: 1fr;
-    }
 }
 
 .seccion-graficas {
@@ -311,6 +307,10 @@
     gap: 1rem;
 }
 
+.grafica {
+    min-width: 0;
+}
+
 .grafica-titulo {
     color: var(--muted-foreground);
     font-size: 0.85rem;
@@ -321,4 +321,15 @@
     position: relative;
     height: 16rem;
     overflow: hidden;
+}
+
+@media (max-width: 600px) {
+    .grilla-graficas {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .contenedor-grafica {
+        height: 14rem;
+    }
 }
