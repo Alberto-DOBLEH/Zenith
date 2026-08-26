@@ -1,16 +1,17 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 
+const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
 export const tokenInterceptor: HttpInterceptorFn = (req, next) => {
     const token = localStorage.getItem('zenith_token');
 
+    const headers: Record<string, string> = {
+        'X-Timezone': timezone
+    };
+
     if (token) {
-        const clonada = req.clone({
-            setHeaders: {
-                Authorization: `Bearer ${token}`
-            }
-        });
-        return next(clonada);
+        headers['Authorization'] = `Bearer ${token}`;
     }
 
-    return next(req);
+    return next(req.clone({ setHeaders: headers }));
 };

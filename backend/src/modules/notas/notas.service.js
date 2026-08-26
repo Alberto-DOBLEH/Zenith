@@ -1,18 +1,5 @@
 import db from "../../config/db.js";
-
-const fechaHoy = () => {
-    const ahora = new Date();
-    const offset = ahora.getTimezoneOffset();
-    return new Date(ahora.getTime() - offset * 60000).toISOString().split("T")[0];
-};
-
-const fechaCorta = (fecha) => {
-    if (fecha instanceof Date) {
-        const offset = fecha.getTimezoneOffset();
-        return new Date(fecha.getTime() - offset * 60000).toISOString().split("T")[0];
-    }
-    return String(fecha).slice(0, 10);
-};
+import { fechaHoySQL } from "../../config/fecha.js";
 
 export const obtenerNotas = async (id_usuario) => {
     const result = await db.query(
@@ -70,7 +57,7 @@ export const obtenerNotaPorFecha = async (id_usuario, fecha) => {
     return result.rows[0] || null;
 };
 
-export const crearNota = async (id_usuario, datos) => {
+export const crearNota = async (id_usuario, datos, timezone) => {
     const { contenido } = datos;
 
     if (!contenido) {
@@ -80,22 +67,22 @@ export const crearNota = async (id_usuario, datos) => {
         };
     }
 
-    const hoy = fechaHoy();
+    const hoy = fechaHoySQL(timezone);
 
     const result = await db.query(
         `INSERT INTO notas (usuario, fecha, contenido)
-        VALUES ($1, $2, $3)
+        VALUES ($1, ${hoy}, $2)
         ON CONFLICT (usuario, fecha) DO UPDATE SET
             contenido = EXCLUDED.contenido,
             fecha_modificacion = CURRENT_TIMESTAMP
         RETURNING id_nota, fecha, contenido`,
-        [id_usuario, hoy, contenido]
+        [id_usuario, contenido]
     );
 
     return { message: "nota guardada con exito", nota: result.rows[0] };
 };
 
-export const editarNota = async (id_usuario, id_nota, datos) => {
+export const editarNota = async (id_usuario, id_nota, datos, timezone) => {
     const { contenido } = datos;
 
     if (!contenido) {
@@ -107,8 +94,14 @@ export const editarNota = async (id_usuario, id_nota, datos) => {
 
     const nota = await obtenerNotaPorId(id_usuario, id_nota);
 
-    // Solo se puede editar la nota del día actual
-    if (fechaCorta(nota.fecha) !== fechaHoy()) {
+    // Solo se puede editar la nota del día actual (en la timezone del usuario)
+    const hoy = fechaHoySQL(timezone);
+    const esHoy = await db.query(
+        `SELECT $1::date = ${hoy} AS es_hoy`,
+        [nota.fecha]
+    );
+
+    if (!esHoy.rows[0].es_hoy) {
         throw {
             status: 403,
             message: "Solo es posible editar la nota del dia actual"

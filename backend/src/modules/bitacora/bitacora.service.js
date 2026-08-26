@@ -1,14 +1,7 @@
 import db from "../../config/db.js";
+import { fechaHoySQL, fechaInicioSQL } from "../../config/fecha.js";
 
-const fechaHoy = () => {
-    const ahora = new Date();
-    const offset = ahora.getTimezoneOffset();
-    return new Date(ahora.getTime() - offset * 60000)
-        .toISOString()
-        .split("T")[0];
-};
-
-export const registrarProgreso = async (id_usuario, datos) => {
+export const registrarProgreso = async (id_usuario, datos, timezone) => {
     const { habito, incremento, valor_realizado, estado } = datos;
 
     if (!habito) {
@@ -36,12 +29,12 @@ export const registrarProgreso = async (id_usuario, datos) => {
 
     const { meta, tipo_nombre } = habitoResult.rows[0];
     const tipo = tipo_nombre.trim().toLowerCase();
-    const hoy = fechaHoy();
+    const hoy = fechaHoySQL(timezone);
 
     // Obtener registro previo del día (para acumular en repeticiones)
     const previo = await db.query(
-        "SELECT valor_realizado FROM registro_habitos WHERE habito = $1 AND fecha = $2",
-        [habito, hoy]
+        `SELECT valor_realizado FROM registro_habitos WHERE habito = $1 AND fecha = ${hoy}`,
+        [habito]
     );
     const valorPrevio = previo.rows.length > 0 ? previo.rows[0].valor_realizado || 0 : 0;
 
@@ -108,9 +101,9 @@ export const registrarProgreso = async (id_usuario, datos) => {
 
     await db.query(
         `INSERT INTO registro_habitos (habito, fecha, estado, valor_realizado, fecha_inicio, fecha_completado)
-        VALUES ($1, $2, $3::public.estado_registro_habito, $4,
-            CASE WHEN $5 THEN CURRENT_TIMESTAMP ELSE NULL END,
-            CASE WHEN $3::text = 'COMPLETADO' THEN CURRENT_TIMESTAMP ELSE NULL END)
+        VALUES ($1, ${hoy}, $2::public.estado_registro_habito, $3,
+            CASE WHEN $4 THEN CURRENT_TIMESTAMP ELSE NULL END,
+            CASE WHEN $2::text = 'COMPLETADO' THEN CURRENT_TIMESTAMP ELSE NULL END)
         ON CONFLICT (habito, fecha) DO UPDATE SET
             estado = EXCLUDED.estado,
             valor_realizado = EXCLUDED.valor_realizado,
@@ -119,33 +112,20 @@ export const registrarProgreso = async (id_usuario, datos) => {
                     THEN COALESCE(registro_habitos.fecha_completado, CURRENT_TIMESTAMP)
                 ELSE NULL
             END`,
-        [habito, hoy, nuevoEstado, nuevoValor, nuevoEstado === "PARCIAL"]
+        [habito, nuevoEstado, nuevoValor, nuevoEstado === "PARCIAL"]
     );
 
     return { message: "registro guardado con exito", estado: nuevoEstado, valor_realizado: nuevoValor };
 };
 
-const fechaISO = (fecha) => {
-    const offset = fecha.getTimezoneOffset();
-    return new Date(fecha.getTime() - offset * 60000).toISOString().split("T")[0];
-};
-
-const obtenerRangoFechas = (periodo) => {
-    const hoy = new Date();
-
+const diasPorPeriodo = (periodo) => {
     switch (periodo) {
-        case "dia":
-            return fechaISO(hoy);
-        case "semana":
-            return fechaISO(new Date(hoy.getTime() - 7 * 86400000));
-        case "mes":
-            return fechaISO(addMeses(hoy, -1));
-        case "trimestre":
-            return fechaISO(addMeses(hoy, -3));
-        case "semestre":
-            return fechaISO(addMeses(hoy, -6));
-        case "anual":
-            return fechaISO(addMeses(hoy, -12));
+        case "dia": return 1;
+        case "semana": return 7;
+        case "mes": return 30;
+        case "trimestre": return 90;
+        case "semestre": return 180;
+        case "anual": return 365;
         default:
             throw {
                 status: 400,
@@ -154,13 +134,7 @@ const obtenerRangoFechas = (periodo) => {
     }
 };
 
-const addMeses = (fecha, cantidad) => {
-    const nueva = new Date(fecha);
-    nueva.setMonth(nueva.getMonth() + cantidad);
-    return nueva;
-};
-
-export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo) => {
+export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo, timezone) => {
     if (!periodo) {
         throw {
             status: 400,
@@ -168,8 +142,9 @@ export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo) => {
         };
     }
 
-    const fechaInicio = obtenerRangoFechas(periodo);
-    const hoy = fechaHoy();
+    const dias = diasPorPeriodo(periodo);
+    const fechaInicio = fechaInicioSQL(timezone, dias);
+    const hoy = fechaHoySQL(timezone);
 
     const result = await db.query(
         `SELECT
@@ -183,10 +158,10 @@ export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo) => {
         FROM registro_habitos rh
         INNER JOIN habitos h ON rh.habito = h.id_habito
         WHERE h.usuario = $1
-            AND rh.fecha >= $2
-            AND rh.fecha <= $3
+            AND rh.fecha >= ${fechaInicio}
+            AND rh.fecha <= ${hoy}
         ORDER BY rh.fecha DESC`,
-        [id_usuario, fechaInicio, hoy]
+        [id_usuario]
     );
 
     return result.rows;

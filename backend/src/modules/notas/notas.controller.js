@@ -39,7 +39,7 @@ export const obtenerNotaPorFecha = async (req, res) => {
 export const crearNota = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
-        const result = await notasService.crearNota(id_usuario, req.body);
+        const result = await notasService.crearNota(id_usuario, req.body, req.timezone);
         return res.status(201).json(result);
     } catch (error) {
         return enviarError(res, error);
@@ -50,7 +50,7 @@ export const editarNota = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
         const { id_nota } = req.params;
-        const result = await notasService.editarNota(id_usuario, id_nota, req.body);
+        const result = await notasService.editarNota(id_usuario, id_nota, req.body, req.timezone);
         return res.status(200).json(result);
     } catch (error) {
         return enviarError(res, error);

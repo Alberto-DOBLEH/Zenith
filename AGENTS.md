@@ -30,7 +30,7 @@ Aplicación web de seguimiento de hábitos para la materia Desarrollo Web 2.
 ## Deploy
 
 - **Supabase**: `supabase db push` aplica las migraciones al proyecto remoto. La conexión usa el rol `postgres` (bypass RLS); seguridad a nivel de app.
-- **Backend (Render)**: env vars `DB_USER`, `DB_HOST` (pooler `aws-0-us-west-1.pooler.supabase.com`), `DB_NAME`, `DB_PASSWORD`, `DB_PORT=6543`, `DB_SSL=true`, `JWT_SECRET` (`openssl rand -hex 32`), `JWT_EXPIRES_IN=7d`, `NODE_ENV=production`, `CORS_ORIGIN=https://<proyecto>.vercel.app`. Render asigna `PORT` automáticamente; no configurarlo. Nunca subir `.env` al repo (ya ignorado).
+- **Backend (Render)**: env vars `DB_USER=postgres.fimeoxsgabbttjqtxwek`, `DB_HOST` (pooler `aws-0-us-west-1.pooler.supabase.com`), `DB_NAME=postgres`, `DB_PASSWORD`, `DB_PORT=6543`, `DB_SSL=true`, `JWT_SECRET` (`openssl rand -hex 32`), `JWT_EXPIRES_IN=7d`, `NODE_ENV=production`, `CORS_ORIGIN=https://<proyecto>.vercel.app`. Render asigna `PORT` automáticamente; no configurarlo. Nunca subir `.env` al repo (ya ignorado).
 - **Frontend (Vercel)**: root directory `zenith-frontend`, build `ng build` (usa `environment.prod.ts` vía `fileReplacements`; actualizar su `apiUrl` al dominio real de Render antes de buildear), output `dist/zenith-frontend/browser`, y `vercel.json` con rewrites SPA (deep links → `index.html`). La ruta `**` muestra la página 404.
 - Verificación post-deploy con curl: `GET /health` en Render, deep links (`/perfil`, `/notas`) → 200 en Vercel, y login/registro de extremo a extremo. La suite de seguridad puede apuntarse al deploy con `BASE_URL`.
 

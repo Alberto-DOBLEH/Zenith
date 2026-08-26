@@ -1,12 +1,7 @@
 import db from "../../config/db.js";
+import { fechaHoySQL } from "../../config/fecha.js";
 
 const MINUTOS_CICLO = 25;
-
-const fechaHoy = () => {
-    const ahora = new Date();
-    const offset = ahora.getTimezoneOffset();
-    return new Date(ahora.getTime() - offset * 60000).toISOString().split("T")[0];
-};
 
 const calcularCiclos = (minutos) => Math.ceil(minutos / MINUTOS_CICLO);
 
@@ -102,7 +97,7 @@ export const obtenerSesionPorId = async (id_usuario, id_sesion) => {
     return result.rows[0];
 };
 
-export const avanzarSesion = async (id_usuario, id_sesion, datos) => {
+export const avanzarSesion = async (id_usuario, id_sesion, datos, timezone) => {
     const { minutos_realizados, ciclos_completados, finalizar } = datos;
 
     const sesion = await obtenerSesionPorId(id_usuario, id_sesion);
@@ -125,13 +120,14 @@ export const avanzarSesion = async (id_usuario, id_sesion, datos) => {
         // Si la sesión estaba ligada a un hábito y se completaron los ciclos,
         // se marca el hábito como completado en la bitácora de hoy
         if (sesion.habito && nuevosCiclos >= sesion.ciclos_objetivo) {
+            const hoy = fechaHoySQL(timezone);
             await db.query(
                 `INSERT INTO registro_habitos (habito, fecha, estado, fecha_completado)
-                VALUES ($1, $2, 'COMPLETADO', CURRENT_TIMESTAMP)
+                VALUES ($1, ${hoy}, 'COMPLETADO', CURRENT_TIMESTAMP)
                 ON CONFLICT (habito, fecha) DO UPDATE SET
                     estado = 'COMPLETADO',
                     fecha_completado = COALESCE(registro_habitos.fecha_completado, CURRENT_TIMESTAMP)`,
-                [sesion.habito, fechaHoy()]
+                [sesion.habito]
             );
         }
 

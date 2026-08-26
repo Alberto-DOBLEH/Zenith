@@ -1,5 +1,7 @@
 import jwt from "jsonwebtoken";
 
+const TIMEZONE_DEFAULT = "UTC";
+
 export const verifyToken = (req, res, next) => {
 
     const authHeader =
@@ -18,6 +20,8 @@ export const verifyToken = (req, res, next) => {
             process.env.JWT_SECRET
         );
         req.user = decoded;
+        // Timezone del usuario desde el header X-Timezone
+        req.timezone = req.headers["x-timezone"] || TIMEZONE_DEFAULT;
         next();
     } catch (error) {
         return res.status(401).json({

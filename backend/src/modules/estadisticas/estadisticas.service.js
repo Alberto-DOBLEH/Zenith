@@ -1,41 +1,52 @@
 import db from "../../config/db.js";
+import { fechaHoySQL, fechaInicioSQL } from "../../config/fecha.js";
 
-const fechaISO = (fecha) => {
-    const offset = fecha.getTimezoneOffset();
-    return new Date(fecha.getTime() - offset * 60000).toISOString().split("T")[0];
+const fechaLocal = (fecha) => {
+    const y = fecha.getFullYear();
+    const m = String(fecha.getMonth() + 1).padStart(2, "0");
+    const d = String(fecha.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
 };
 
-const obtenerFechaInicioPorPeriodo = (periodo) => {
-    const ahora = new Date();
+const filtroFrecuencia = (alias, fechaExpr) => `
+    (
+        ${alias}.frecuencia = 'DIARIO'
+        OR (${alias}.frecuencia = 'SEMANAL' AND EXISTS (
+            SELECT 1 FROM habito_dias hd
+            WHERE hd.habito = ${alias}.id_habito
+                AND hd.dia = CASE EXTRACT(DOW FROM ${fechaExpr})
+                    WHEN 0 THEN 'DOMINGO'::dia_semana
+                    WHEN 1 THEN 'LUNES'::dia_semana
+                    WHEN 2 THEN 'MARTES'::dia_semana
+                    WHEN 3 THEN 'MIERCOLES'::dia_semana
+                    WHEN 4 THEN 'JUEVES'::dia_semana
+                    WHEN 5 THEN 'VIERNES'::dia_semana
+                    WHEN 6 THEN 'SABADO'::dia_semana
+                END
+        ))
+        OR (${alias}.frecuencia = 'MENSUAL' AND EXTRACT(DAY FROM ${fechaExpr}) = ${alias}.dia_del_mes)
+    )
+`;
+
+const diasPorPeriodo = (periodo) => {
     switch (periodo) {
-        case "semana":
-            ahora.setDate(ahora.getDate() - 7);
-            break;
-        case "trimestre":
-            ahora.setMonth(ahora.getMonth() - 3);
-            break;
-        case "semestre":
-            ahora.setMonth(ahora.getMonth() - 6);
-            break;
-        case "anual":
-            ahora.setFullYear(ahora.getFullYear() - 1);
-            break;
+        case "semana": return 7;
+        case "trimestre": return 90;
+        case "semestre": return 180;
+        case "anual": return 365;
         case "mes":
-        default:
-            ahora.setMonth(ahora.getMonth() - 1);
+        default: return 30;
     }
-    return fechaISO(ahora);
 };
 
-const calcularRacha = (fechasCompletadas) => {
+const calcularRacha = (fechasCompletadas, hoy) => {
     if (fechasCompletadas.length === 0) return { racha_actual: 0, racha_maxima: 0 };
 
-    const hoy = fechaISO(new Date());
     const set = new Set(fechasCompletadas);
 
     let rachaActual = 0;
     let cursor = new Date(hoy + "T00:00:00");
-    while (set.has(fechaISO(cursor))) {
+    while (set.has(fechaLocal(cursor))) {
         rachaActual++;
         cursor.setDate(cursor.getDate() - 1);
     }
@@ -61,18 +72,23 @@ const calcularRacha = (fechasCompletadas) => {
     return { racha_actual: rachaActual, racha_maxima: rachaMaxima };
 };
 
-export const obtenerEstadisticasGenerales = async (id_usuario, periodo) => {
-    const fechaInicio = obtenerFechaInicioPorPeriodo(periodo);
+export const obtenerEstadisticasGenerales = async (id_usuario, periodo, timezone) => {
+    const dias = diasPorPeriodo(periodo);
+    const fechaInicio = fechaInicioSQL(timezone, dias);
+    const hoy = fechaHoySQL(timezone);
 
-    // Registros del período (solo hábitos positivos, no evitados)
+    const hoyStr = (await db.query(`SELECT ${hoy}::text AS hoy`)).rows[0].hoy;
+
+    // Registros del período (solo hábitos positivos, no evitados, programados para ese día)
     const registrosResult = await db.query(
         `SELECT rh.estado
         FROM registro_habitos rh
         INNER JOIN habitos h ON rh.habito = h.id_habito
         WHERE h.usuario = $1
             AND h.tipo_habito <> 4
-            AND rh.fecha >= $2`,
-        [id_usuario, fechaInicio]
+            AND rh.fecha >= ${fechaInicio}
+            AND ${filtroFrecuencia("h", "rh.fecha::date")}`,
+        [id_usuario]
     );
 
     const registros = registrosResult.rows;
@@ -81,7 +97,7 @@ export const obtenerEstadisticasGenerales = async (id_usuario, periodo) => {
     const noCompletados = total - completados;
     const cumplimiento = total > 0 ? Math.round((completados / total) * 100) : 0;
 
-    // Fechas con todos los hábitos completados, para racha general
+    // Fechas con todos los hábitos programados completados, para racha general
     const rachaResult = await db.query(
         `SELECT DISTINCT rh.fecha
         FROM registro_habitos rh
@@ -89,18 +105,20 @@ export const obtenerEstadisticasGenerales = async (id_usuario, periodo) => {
         WHERE h.usuario = $1
             AND h.tipo_habito <> 4
             AND rh.estado = 'COMPLETADO'
+            AND ${filtroFrecuencia("h", "rh.fecha::date")}
         GROUP BY rh.fecha
         HAVING COUNT(DISTINCT rh.habito) = (
             SELECT COUNT(*) FROM habitos h2
             WHERE h2.usuario = $1 AND h2.estado = 'ACTIVO' AND h2.tipo_habito <> 4
+                AND ${filtroFrecuencia("h2", "rh.fecha::date")}
         )
         ORDER BY rh.fecha DESC`,
         [id_usuario]
     );
 
-    const fechas = rachaResult.rows.map(r => fechaISO(new Date(r.fecha)));
+    const fechas = rachaResult.rows.map(r => fechaLocal(new Date(r.fecha)));
 
-    const { racha_actual, racha_maxima } = calcularRacha(fechas);
+    const { racha_actual, racha_maxima } = calcularRacha(fechas, hoyStr);
 
     return {
         cumplimiento,
@@ -112,7 +130,6 @@ export const obtenerEstadisticasGenerales = async (id_usuario, periodo) => {
 };
 
 export const obtenerEstadisticasHabito = async (id_usuario, id_habito) => {
-    // Verificar que el hábito pertenece al usuario
     const habitoResult = await db.query(
         "SELECT id_habito, nombre FROM habitos WHERE id_habito = $1 AND usuario = $2",
         [id_habito, id_usuario]
@@ -127,7 +144,6 @@ export const obtenerEstadisticasHabito = async (id_usuario, id_habito) => {
 
     const habito = habitoResult.rows[0];
 
-    // Registros del hábito
     const registrosResult = await db.query(
         `SELECT estado, fecha
         FROM registro_habitos
@@ -143,9 +159,10 @@ export const obtenerEstadisticasHabito = async (id_usuario, id_habito) => {
 
     const fechasCompletadas = registros
         .filter(r => r.estado === "COMPLETADO")
-        .map(r => fechaISO(new Date(r.fecha)));
+        .map(r => fechaLocal(new Date(r.fecha)));
 
-    const { racha_actual, racha_maxima } = calcularRacha(fechasCompletadas);
+    const hoy = fechaLocal(new Date());
+    const { racha_actual, racha_maxima } = calcularRacha(fechasCompletadas, hoy);
 
     return {
         id_habito: habito.id_habito,
