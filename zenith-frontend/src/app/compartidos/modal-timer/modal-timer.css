@@ -53,7 +53,22 @@
     font-size: 1rem;
 }
 
-.timer-terminado {
+.boton-detener {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 2rem;
+    font-size: 1rem;
+    background-color: #EF4444;
+    color: white;
+}
+
+.boton-detener:hover {
+    background-color: #DC2626;
+}
+
+.timer-terminado,
+.timer-incompleto {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -62,24 +77,32 @@
     padding: 1rem 0;
 }
 
-.timer-terminado i {
+.timer-terminado i,
+.timer-incompleto i {
     font-size: 2.5rem;
     color: #F59E0B;
 }
 
-.timer-terminado h3 {
+.timer-incompleto i {
+    color: #F97316;
+}
+
+.timer-terminado h3,
+.timer-incompleto h3 {
     color: var(--foreground);
     font-size: 1.2rem;
     margin: 0;
 }
 
-.timer-terminado p {
+.timer-terminado p,
+.timer-incompleto p {
     color: var(--muted-foreground);
     font-size: 0.9rem;
     margin: 0;
 }
 
-.timer-terminado .boton-principal {
+.timer-terminado .boton-principal,
+.timer-incompleto .boton-principal {
     margin-top: 0.5rem;
     padding: 0.6rem 1.5rem;
 }

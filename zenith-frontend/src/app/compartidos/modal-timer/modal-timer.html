@@ -2,9 +2,11 @@
     <div class="modal" (click)="$event.stopPropagation()">
         <div class="modal-cabecera">
             <h2>{{ nombreHabito }}</h2>
-            <button class="boton-icono" (click)="cerrarModal()" aria-label="Cerrar">
-                <i class="bi bi-x-lg"></i>
-            </button>
+            @if (estado() !== 'iniciado') {
+                <button class="boton-icono" (click)="cerrarModal()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
         </div>
 
         <div class="modal-cuerpo timer-body">
@@ -12,13 +14,22 @@
                 <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
             }
 
-            @if (completado()) {
-                <div class="timer-terminado">
-                    <i class="bi bi-trophy"></i>
-                    <h3>¡Completado!</h3>
-                    <p>Hábito marcado como completado.</p>
-                    <button class="boton-principal" (click)="cerrarModal()">Cerrar</button>
-                </div>
+            @if (estado() === 'terminado') {
+                @if (completadoBackend()) {
+                    <div class="timer-terminado">
+                        <i class="bi bi-trophy"></i>
+                        <h3>¡Completado!</h3>
+                        <p>Hábito marcado como completado.</p>
+                        <button class="boton-principal" (click)="cerrarModal()">Cerrar</button>
+                    </div>
+                } @else {
+                    <div class="timer-incompleto">
+                        <i class="bi bi-exclamation-circle"></i>
+                        <h3>Incompleto</h3>
+                        <p>Temporizador detenido sin completar el hábito.</p>
+                        <button class="boton-principal" (click)="cerrarModal()">Cerrar</button>
+                    </div>
+                }
             } @else {
                 <div class="circulo-tiempo" [style.--progreso]="progreso + '%'">
                     @if (pomodoro) {
@@ -31,10 +42,15 @@
                 </div>
 
                 <div class="controles-timer">
-                    <button class="boton-principal boton-play" (click)="alternar()">
-                        <i class="bi" [class.bi-play-fill]="!corriendo()" [class.bi-pause-fill]="corriendo()"></i>
-                        {{ corriendo() ? 'Pausar' : 'Iniciar' }}
-                    </button>
+                    @if (estado() === 'sin_iniciar') {
+                        <button class="boton-principal boton-play" (click)="iniciar()">
+                            <i class="bi bi-play-fill"></i> Iniciar
+                        </button>
+                    } @else {
+                        <button class="boton-principal boton-detener" (click)="detener()">
+                            <i class="bi bi-stop-fill"></i> Detener
+                        </button>
+                    }
                 </div>
             }
         </div>

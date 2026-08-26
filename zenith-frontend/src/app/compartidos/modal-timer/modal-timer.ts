@@ -23,10 +23,10 @@ export class ModalTimer implements OnDestroy {
   private readonly suscripciones: Subscription[] = [];
   private temporizador: ReturnType<typeof setInterval> | null = null;
 
-  corriendo = signal(false);
+  estado = signal<'sin_iniciar' | 'iniciado' | 'terminado'>('sin_iniciar');
   tiempoRestante = signal(0);
-  completado = signal(false);
   error = signal('');
+  completadoBackend = signal(false);
 
   fase = signal<'trabajo' | 'descanso'>('trabajo');
   cicloActual = signal(1);
@@ -62,23 +62,16 @@ export class ModalTimer implements OnDestroy {
     return this.fase() === 'trabajo' ? 'Trabajo' : 'Descanso';
   }
 
-  alternar() {
-    if (this.corriendo()) {
-      this.pausar();
-    } else {
-      this.correr();
-    }
-  }
-
-  private correr() {
-    this.corriendo.set(true);
-    if (this.temporizador) return;
+  iniciar() {
+    if (this.estado() !== 'sin_iniciar') return;
+    this.estado.set('iniciado');
     this.temporizador = setInterval(() => this.tick(), 1000);
   }
 
-  private pausar() {
-    this.corriendo.set(false);
+  detener() {
+    if (this.estado() !== 'iniciado') return;
     this.detenerTemporizador();
+    this.marcarNoCompletado();
   }
 
   private detenerTemporizador() {
@@ -96,7 +89,6 @@ export class ModalTimer implements OnDestroy {
         this.avanzarFase();
       } else {
         this.detenerTemporizador();
-        this.corriendo.set(false);
         this.marcarCompletado();
       }
     }
@@ -107,7 +99,6 @@ export class ModalTimer implements OnDestroy {
       this.cicloActual.update(c => c + 1);
       if (this.cicloActual() > this.ciclosTotales()) {
         this.detenerTemporizador();
-        this.corriendo.set(false);
         this.marcarCompletado();
         return;
       }
@@ -123,7 +114,22 @@ export class ModalTimer implements OnDestroy {
     this.suscripciones.push(
       this.bitacoraService.registrar({ habito: this.habitoId, estado: 'COMPLETADO' }).subscribe({
         next: () => {
-          this.completado.set(true);
+          this.completadoBackend.set(true);
+          this.estado.set('terminado');
+        },
+        error: (error) => {
+          this.error.set(this.authService.manejarError(error));
+        }
+      })
+    );
+  }
+
+  private marcarNoCompletado() {
+    this.suscripciones.push(
+      this.bitacoraService.registrar({ habito: this.habitoId, estado: 'NO_COMPLETADO' }).subscribe({
+        next: () => {
+          this.completadoBackend.set(false);
+          this.estado.set('terminado');
         },
         error: (error) => {
           this.error.set(this.authService.manejarError(error));
@@ -133,6 +139,7 @@ export class ModalTimer implements OnDestroy {
   }
 
   cerrarModal() {
+    if (this.estado() === 'iniciado') return;
     this.detenerTemporizador();
     this.cerrar.emit();
   }
