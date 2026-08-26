@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/servicios/auth.service';
@@ -14,10 +14,10 @@ export class Autenticacion {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
-  pestanaActiva: 'login' | 'registro' = 'login';
-  cargando = false;
-  mensajeError = '';
-  mensajeExito = '';
+  pestanaActiva = signal<'login' | 'registro'>('login');
+  cargando = signal(false);
+  mensajeError = signal('');
+  mensajeExito = signal('');
 
   formLogin = this.fb.group({
     login: ['', Validators.required],
@@ -36,9 +36,9 @@ export class Autenticacion {
   }, { validators: this.coincidenContraseñas });
 
   cambiarPestana(pestana: 'login' | 'registro') {
-    this.pestanaActiva = pestana;
-    this.mensajeError = '';
-    this.mensajeExito = '';
+    this.pestanaActiva.set(pestana);
+    this.mensajeError.set('');
+    this.mensajeExito.set('');
   }
 
   coincidenContraseñas(group: { get: (campo: string) => { value: string } | null }) {
@@ -53,26 +53,26 @@ export class Autenticacion {
       return;
     }
 
-    this.cargando = true;
-    this.mensajeError = '';
+    this.cargando.set(true);
+    this.mensajeError.set('');
     const { login, contraseña } = this.formLogin.value;
 
     this.authService.login(login!, contraseña!).subscribe({
       next: () => {
         this.authService.cargarPerfil().subscribe({
           next: () => {
-            this.cargando = false;
+            this.cargando.set(false);
             this.router.navigate(['/dashboard']);
           },
           error: (error) => {
-            this.cargando = false;
-            this.mensajeError = this.authService.manejarError(error);
+            this.cargando.set(false);
+            this.mensajeError.set(this.authService.manejarError(error));
           }
         });
       },
       error: (error) => {
-        this.cargando = false;
-        this.mensajeError = this.authService.manejarError(error);
+        this.cargando.set(false);
+        this.mensajeError.set(this.authService.manejarError(error));
       }
     });
   }
@@ -83,8 +83,8 @@ export class Autenticacion {
       return;
     }
 
-    this.cargando = true;
-    this.mensajeError = '';
+    this.cargando.set(true);
+    this.mensajeError.set('');
 
     const datos = {
       nombre: this.formRegistro.value.nombre!,
@@ -98,14 +98,15 @@ export class Autenticacion {
 
     this.authService.registrar(datos).subscribe({
       next: () => {
-        this.cargando = false;
-        this.mensajeExito = 'Cuenta creada correctamente. Inicia sesión.';
-        this.cambiarPestana('login');
+        this.cargando.set(false);
+        this.mensajeExito.set('Cuenta creada correctamente. Inicia sesión.');
+        this.mensajeError.set('');
+        this.pestanaActiva.set('login');
         this.formLogin.reset();
       },
       error: (error) => {
-        this.cargando = false;
-        this.mensajeError = this.authService.manejarError(error);
+        this.cargando.set(false);
+        this.mensajeError.set(this.authService.manejarError(error));
       }
     });
   }
