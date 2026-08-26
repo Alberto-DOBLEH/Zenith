@@ -286,8 +286,9 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   bloqueado(habito: HabitoVista): boolean {
-    return (habito.tipo_habito === 1 && habito.estado === 'COMPLETADO') ||
-      (habito.tipo_habito === 4 && habito.estado === 'EVITADO');
+    if (habito.estado === 'COMPLETADO' && habito.tipo_habito !== 4) return true;
+    if (habito.estado === 'EVITADO' && habito.tipo_habito === 4) return true;
+    return false;
   }
 
   alternarHabito(habito: HabitoVista) {
@@ -318,7 +319,7 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   incrementarRepeticion(habito: HabitoVista) {
-    if (this.cargandoRegistro()) return;
+    if (this.cargandoRegistro() || this.bloqueado(habito)) return;
     this.cargandoRegistro.set(true);
 
     this.suscripciones.push(

@@ -84,7 +84,7 @@
                                         (click)="$event.stopPropagation()">
                                 } @else if (habito.tipo_habito === 3) {
                                     <span class="contador">{{ habito.valor_realizado ?? 0 }}</span>
-                                    <button class="boton-secundario boton-sumar" [disabled]="cargandoRegistro()"
+                                    <button class="boton-secundario boton-sumar" [disabled]="cargandoRegistro() || bloqueado(habito)"
                                         (click)="incrementarRepeticion(habito)">
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
