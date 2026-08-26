@@ -55,10 +55,14 @@ export const registrarProgreso = async (id_usuario, datos) => {
 
     switch (tipo_nombre) {
         case "Normal":
+        case "NORMAL":
             nuevoEstado = estado === "NO_COMPLETADO" ? "NO_COMPLETADO" : "COMPLETADO";
             break;
 
-        case "Repeticion": {
+        case "Repeticion":
+        case "REPETICION":
+        case "Repeticiones":
+        case "REPETICIONES": {
             if (nuevoValor === null) {
                 throw {
                     status: 400,
@@ -82,17 +86,19 @@ export const registrarProgreso = async (id_usuario, datos) => {
         }
 
         case "Evitado":
+        case "EVITADO":
             nuevoEstado = estado === "EVITADO" ? "EVITADO" : "RECAIDA";
             break;
 
         case "Tiempo":
+        case "TIEMPO":
             nuevoEstado = estado || "PARCIAL";
             break;
 
         default:
             throw {
                 status: 400,
-                message: "Tipo de habito no soportado"
+                message: "Tipo de hábito no soportado"
             };
     }
 
