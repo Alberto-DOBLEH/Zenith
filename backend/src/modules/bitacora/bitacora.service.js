@@ -147,20 +147,43 @@ export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo, timezone) 
     const hoy = fechaHoySQL(timezone);
 
     const result = await db.query(
-        `SELECT
-            rh.id_registro_habito,
-            h.id_habito,
-            h.nombre AS habito,
-            rh.fecha,
-            rh.valor_realizado,
-            h.meta,
-            rh.estado
-        FROM registro_habitos rh
-        INNER JOIN habitos h ON rh.habito = h.id_habito
-        WHERE h.usuario = $1
-            AND rh.fecha >= ${fechaInicio}
-            AND rh.fecha <= ${hoy}
-        ORDER BY rh.fecha DESC`,
+        `WITH fechas AS (
+            SELECT generate_series(${fechaInicio}, ${hoy}, '1 day'::interval)::date AS fecha
+        ),
+        habitos_programados AS (
+            SELECT h.id_habito, f.fecha
+            FROM habitos h
+            CROSS JOIN fechas f
+            WHERE h.usuario = $1
+                AND h.estado = 'ACTIVO'
+                AND (
+                    h.frecuencia = 'DIARIO'
+                    OR (h.frecuencia = 'SEMANAL' AND EXISTS (
+                        SELECT 1 FROM habito_dias hd
+                        WHERE hd.habito = h.id_habito
+                            AND hd.dia = CASE EXTRACT(DOW FROM f.fecha)
+                                WHEN 0 THEN 'DOMINGO'::dia_semana
+                                WHEN 1 THEN 'LUNES'::dia_semana
+                                WHEN 2 THEN 'MARTES'::dia_semana
+                                WHEN 3 THEN 'MIERCOLES'::dia_semana
+                                WHEN 4 THEN 'JUEVES'::dia_semana
+                                WHEN 5 THEN 'VIERNES'::dia_semana
+                                WHEN 6 THEN 'SABADO'::dia_semana
+                            END
+                    ))
+                    OR (h.frecuencia = 'MENSUAL' AND EXTRACT(DAY FROM f.fecha) = h.dia_del_mes)
+                )
+        )
+        SELECT
+            hp.fecha,
+            COUNT(*) AS total_programados,
+            COUNT(*) FILTER (WHERE rh.estado = 'COMPLETADO') AS completados,
+            COUNT(*) FILTER (WHERE rh.estado IS NOT NULL AND rh.estado <> 'COMPLETADO') AS otros
+        FROM habitos_programados hp
+        LEFT JOIN registro_habitos rh
+            ON rh.habito = hp.id_habito AND rh.fecha = hp.fecha
+        GROUP BY hp.fecha
+        ORDER BY hp.fecha ASC`,
         [id_usuario]
     );
 

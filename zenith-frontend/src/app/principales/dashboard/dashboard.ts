@@ -5,7 +5,7 @@ import { Chart, registerables } from 'chart.js';
 import { AuthService } from '../../core/servicios/auth.service';
 import { DashboardService, HabitoResumen, ResumenDashboard } from '../../core/servicios/dashboard.service';
 import { HabitosService, Habito } from '../../core/servicios/habitos.service';
-import { BitacoraService, RegistroBitacora } from '../../core/servicios/bitacora.service';
+import { BitacoraService, DiaEstadistica } from '../../core/servicios/bitacora.service';
 import { EventosService, Evento } from '../../core/servicios/eventos.service';
 import { EstadisticasService, Estadisticas } from '../../core/servicios/estadisticas.service';
 import { ModalDetallesHabito, DetallesHabito } from '../../compartidos/modal-detalles-habito/modal-detalles-habito';
@@ -171,7 +171,7 @@ export class Dashboard implements OnInit, OnDestroy {
     );
   }
 
-  private calcularSemana(registros: RegistroBitacora[]): DatosSemana {
+  private calcularSemana(dias: DiaEstadistica[]): DatosSemana {
     const labels: string[] = [];
     const valores: (number | null)[] = [];
 
@@ -181,23 +181,16 @@ export class Dashboard implements OnInit, OnDestroy {
       const etiqueta = dia.toLocaleDateString('es-MX', { weekday: 'short' });
       labels.push(etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1, 4));
 
-      const delDia = registros.filter(r => this.mismoDiaLocal(r.fecha, dia));
-      if (delDia.length === 0) {
+      const fechaStr = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, '0')}-${String(dia.getDate()).padStart(2, '0')}`;
+      const delDia = dias.find(d => d.fecha === fechaStr);
+      if (!delDia || delDia.total_programados === 0) {
         valores.push(null);
         continue;
       }
-      const completados = delDia.filter(r => r.estado === 'COMPLETADO').length;
-      valores.push(Math.round((completados / delDia.length) * 100));
+      valores.push(Math.round((delDia.completados / delDia.total_programados) * 100));
     }
 
     return { labels, valores };
-  }
-
-  private mismoDiaLocal(fechaISO: string, dia: Date): boolean {
-    const fecha = new Date(fechaISO);
-    return fecha.getFullYear() === dia.getFullYear()
-      && fecha.getMonth() === dia.getMonth()
-      && fecha.getDate() === dia.getDate();
   }
 
   private dibujarSemanal(canvas: HTMLCanvasElement, datos: DatosSemana) {

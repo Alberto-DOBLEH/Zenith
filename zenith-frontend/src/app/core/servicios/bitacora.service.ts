@@ -8,14 +8,11 @@ export interface RespuestaBitacora {
     valor_realizado: number | null;
 }
 
-export interface RegistroBitacora {
-    id_registro_habito: number;
-    id_habito: number;
-    habito: string;
+export interface DiaEstadistica {
     fecha: string;
-    valor_realizado: number | null;
-    meta: number | null;
-    estado: string;
+    total_programados: number;
+    completados: number;
+    otros: number;
 }
 
 export interface RegistrarProgresoPayload {
@@ -33,7 +30,7 @@ export class BitacoraService {
         return this.api.post<RespuestaBitacora>('/bitacora', datos);
     }
 
-    obtenerPorPeriodo(periodo: string): Observable<RegistroBitacora[]> {
-        return this.api.get<RegistroBitacora[]>('/bitacora', { periodo });
+    obtenerPorPeriodo(periodo: string): Observable<DiaEstadistica[]> {
+        return this.api.get<DiaEstadistica[]>('/bitacora', { periodo });
     }
 }

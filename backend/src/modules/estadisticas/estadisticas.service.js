@@ -79,23 +79,35 @@ export const obtenerEstadisticasGenerales = async (id_usuario, periodo, timezone
 
     const hoyStr = (await db.query(`SELECT ${hoy}::text AS hoy`)).rows[0].hoy;
 
-    // Registros del período (solo hábitos positivos, no evitados, programados para ese día)
+    // Generar cuadrícula de hábitos programados × fechas del período,
+    // LEFT JOIN con registros reales para que los no marcados cuenten como no completados
     const registrosResult = await db.query(
-        `SELECT rh.estado
-        FROM registro_habitos rh
-        INNER JOIN habitos h ON rh.habito = h.id_habito
-        WHERE h.usuario = $1
-            AND h.tipo_habito <> 4
-            AND rh.fecha >= ${fechaInicio}
-            AND ${filtroFrecuencia("h", "rh.fecha::date")}`,
+        `WITH fechas AS (
+            SELECT generate_series(${fechaInicio}, ${hoy}, '1 day'::interval)::date AS fecha
+        ),
+        habitos_programados AS (
+            SELECT h.id_habito, f.fecha
+            FROM habitos h
+            CROSS JOIN fechas f
+            WHERE h.usuario = $1
+                AND h.estado = 'ACTIVO'
+                AND h.tipo_habito <> 4
+                AND ${filtroFrecuencia("h", "f.fecha")}
+        )
+        SELECT
+            COUNT(*) AS total,
+            COUNT(*) FILTER (WHERE rh.estado = 'COMPLETADO') AS completados
+        FROM habitos_programados hp
+        LEFT JOIN registro_habitos rh
+            ON rh.habito = hp.id_habito AND rh.fecha = hp.fecha`,
         [id_usuario]
     );
 
-    const registros = registrosResult.rows;
-    const total = registros.length;
-    const completados = registros.filter(r => r.estado === "COMPLETADO").length;
-    const noCompletados = total - completados;
-    const cumplimiento = total > 0 ? Math.round((completados / total) * 100) : 0;
+    const { total, completados } = registrosResult.rows[0];
+    const totalNum = parseInt(total, 10);
+    const completadosNum = parseInt(completados, 10);
+    const noCompletados = totalNum - completadosNum;
+    const cumplimiento = totalNum > 0 ? Math.round((completadosNum / totalNum) * 100) : 0;
 
     // Fechas con todos los hábitos programados completados, para racha general
     const rachaResult = await db.query(
