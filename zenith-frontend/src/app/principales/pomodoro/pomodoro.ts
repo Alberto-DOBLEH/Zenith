@@ -33,6 +33,7 @@ export class Pomodoro implements OnInit, OnDestroy {
   minutosObjetivo = 25;
   habitoSeleccionado: number | null = null;
   habitoBloqueado = signal(false);
+  modo = signal<'pomodoro' | 'continuo'>('pomodoro');
 
   sesionActiva = signal<SesionPomodoro | null>(null);
   fase = signal<'trabajo' | 'descanso'>('trabajo');
@@ -42,6 +43,7 @@ export class Pomodoro implements OnInit, OnDestroy {
   ciclosCompletados = signal(0);
   minutosRealizados = signal(0);
   sesionTerminada = signal(false);
+  esContinuo = signal(false);
 
   ngOnInit() {
     this.cargarDatos();
@@ -92,7 +94,7 @@ export class Pomodoro implements OnInit, OnDestroy {
     this.mensaje.set('');
 
     this.suscripciones.push(
-      this.pomodoroService.crearSesion(this.minutosObjetivo, this.habitoSeleccionado).subscribe({
+      this.pomodoroService.crearSesion(this.minutosObjetivo, this.habitoSeleccionado, this.modo()).subscribe({
         next: (respuesta) => {
           const sesion = {
             ...respuesta.sesion,
@@ -101,7 +103,7 @@ export class Pomodoro implements OnInit, OnDestroy {
             minutos_realizados: 0,
             ciclos_completados: 0
           } as SesionPomodoro;
-          this.cargarSesionEnCurso(sesion);
+          this.cargarSesionEnCurso(sesion, this.modo() === 'continuo');
         },
         error: (error) => this.error.set(this.authService.manejarError(error))
       })
@@ -110,20 +112,29 @@ export class Pomodoro implements OnInit, OnDestroy {
 
   retomar(sesion: SesionPomodoro) {
     if (this.sesionActiva() || sesion.fecha_fin) return;
+    const continuo = sesion.ciclos_objetivo === 1;
     this.cargarSesionEnCurso({
       ...sesion,
       habito_nombre: sesion.habito_nombre || null
-    });
+    }, continuo);
   }
 
-  private cargarSesionEnCurso(sesion: SesionPomodoro) {
+  private cargarSesionEnCurso(sesion: SesionPomodoro, continuo = false) {
     this.sesionActiva.set(sesion);
+    this.esContinuo.set(continuo);
     this.ciclosCompletados.set(sesion.ciclos_completados || 0);
     this.minutosRealizados.set(sesion.minutos_realizados || 0);
     this.cicloActual.set(this.ciclosCompletados() + 1);
     this.fase.set('trabajo');
     this.sesionTerminada.set(false);
-    this.tiempoRestante.set(SEGUNDOS_TRABAJO);
+
+    if (continuo) {
+      const totalSegundos = sesion.minutos_objetivo * 60;
+      const yaAvanzado = (sesion.minutos_realizados || 0) * 60;
+      this.tiempoRestante.set(totalSegundos - yaAvanzado);
+    } else {
+      this.tiempoRestante.set(SEGUNDOS_TRABAJO);
+    }
     this.correr();
   }
 
@@ -159,14 +170,21 @@ export class Pomodoro implements OnInit, OnDestroy {
     if (!this.sesionActiva()) return;
     this.tiempoRestante.update(restante => restante - 1);
 
-    if (this.fase() === 'trabajo') {
+    if (this.esContinuo()) {
+      const totalSegundos = this.sesionActiva()!.minutos_objetivo * 60;
+      this.minutosRealizados.set(Math.round((totalSegundos - this.tiempoRestante()) / 60));
+    } else if (this.fase() === 'trabajo') {
       this.minutosRealizados.set(Math.round(
         ((this.ciclosCompletados() * SEGUNDOS_TRABAJO) + (SEGUNDOS_TRABAJO - this.tiempoRestante())) / 60
       ));
     }
 
     if (this.tiempoRestante() <= 0) {
-      this.completarFase();
+      if (this.esContinuo()) {
+        this.finalizarSesion();
+      } else {
+        this.completarFase();
+      }
     }
   }
 
@@ -229,6 +247,7 @@ export class Pomodoro implements OnInit, OnDestroy {
   cerrarSesionTerminada() {
     this.sesionActiva.set(null);
     this.sesionTerminada.set(false);
+    this.esContinuo.set(false);
     this.cicloActual.set(1);
     this.ciclosCompletados.set(0);
     this.minutosRealizados.set(0);
@@ -259,11 +278,16 @@ export class Pomodoro implements OnInit, OnDestroy {
   }
 
   progresoCirculo(): number {
+    if (this.esContinuo()) {
+      const total = (this.sesionActiva()?.minutos_objetivo || this.minutosObjetivo) * 60;
+      return (1 - this.tiempoRestante() / total) * 100;
+    }
     const total = this.fase() === 'trabajo' ? SEGUNDOS_TRABAJO : SEGUNDOS_DESCANSO;
     return (1 - this.tiempoRestante() / total) * 100;
   }
 
   etiquetaFase(): string {
+    if (this.esContinuo()) return 'Tiempo';
     return this.fase() === 'trabajo' ? 'Trabajo' : 'Descanso';
   }
 

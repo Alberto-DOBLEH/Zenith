@@ -1,8 +1,8 @@
 <div class="pomodoro">
     <header class="encabezado">
         <div>
-            <h1>Pomodoro</h1>
-            <p class="subtitulo">Ciclos de 25 min de trabajo y 5 min de descanso.</p>
+            <h1>Temporizador</h1>
+            <p class="subtitulo">Estudia con Pomodoro o usa tiempo corrido.</p>
         </div>
     </header>
 
@@ -27,6 +27,24 @@
         @if (!sesionActiva()) {
             <div class="configurar">
                 <h2>Iniciar sesión</h2>
+
+                <div class="toggle-modo">
+                    <button [class.activo]="modo() === 'pomodoro'" (click)="modo.set('pomodoro')">
+                        <i class="bi bi-hourglass-split"></i> Pomodoro
+                    </button>
+                    <button [class.activo]="modo() === 'continuo'" (click)="modo.set('continuo')">
+                        <i class="bi bi-play-circle"></i> Continuo
+                    </button>
+                </div>
+
+                <p class="modo-descripcion">
+                    @if (modo() === 'pomodoro') {
+                        Ciclos de 25 min de trabajo y 5 min de descanso.
+                    } @else {
+                        Tiempo corrido sin interrupciones.
+                    }
+                </p>
+
                 <div class="campo-fila">
                     <label class="campo">
                         <span>Minutos objetivo</span>
@@ -51,7 +69,11 @@
                 <div class="circulo-tiempo" [style.--progreso]="progresoCirculo() + '%'">
                     <span class="fase">{{ etiquetaFase() }}</span>
                     <span class="tiempo">{{ tiempoFormateado() }}</span>
-                    <span class="ciclos">Ciclo {{ cicloActual() }} / {{ sesionActiva()!.ciclos_objetivo }}</span>
+                    @if (!esContinuo()) {
+                        <span class="ciclos">Ciclo {{ cicloActual() }} / {{ sesionActiva()!.ciclos_objetivo }}</span>
+                    } @else {
+                        <span class="ciclos">{{ sesionActiva()!.minutos_objetivo }} min total</span>
+                    }
                 </div>
 
                 <div class="controles">
@@ -82,8 +104,12 @@
                                 <p class="sesion-fecha">{{ formatearFecha(sesion.fecha_inicio) }}</p>
                             </div>
                             <span class="sesion-progreso">
-                                {{ sesion.minutos_realizados ?? 0 }} / {{ sesion.minutos_objetivo }} min ·
-                                {{ sesion.ciclos_completados ?? 0 }}/{{ sesion.ciclos_objetivo }} ciclos
+                                {{ sesion.minutos_realizados ?? 0 }} / {{ sesion.minutos_objetivo }} min
+                                @if (sesion.ciclos_objetivo > 1) {
+                                    · {{ sesion.ciclos_completados ?? 0 }}/{{ sesion.ciclos_objetivo }} ciclos
+                                } @else {
+                                    · continuo
+                                }
                             </span>
                         </button>
                         <button class="boton-icono peligro" (click)="eliminarSesion(sesion)" aria-label="Eliminar sesión">

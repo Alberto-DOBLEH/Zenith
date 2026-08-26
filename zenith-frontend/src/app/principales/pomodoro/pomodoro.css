@@ -37,6 +37,43 @@
     margin: 0;
 }
 
+.toggle-modo {
+    display: flex;
+    gap: 0;
+    border-radius: 0.6rem;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    width: 100%;
+    max-width: 20rem;
+}
+
+.toggle-modo button {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    background: var(--secondary);
+    border: none;
+    color: var(--muted-foreground);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: all 0.2s ease;
+}
+
+.toggle-modo button.activo {
+    background: var(--primary);
+    color: var(--primary-foreground);
+}
+
+.modo-descripcion {
+    color: var(--muted-foreground);
+    font-size: 0.82rem;
+    margin: 0;
+    text-align: center;
+}
+
 .campo-fila {
     display: grid;
     grid-template-columns: 1fr 1fr;

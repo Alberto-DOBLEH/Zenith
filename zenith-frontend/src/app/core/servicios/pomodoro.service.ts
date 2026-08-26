@@ -41,10 +41,11 @@ export interface AvanzarSesionPayload {
 export class PomodoroService {
     private readonly api = inject(ApiService);
 
-    crearSesion(minutos_objetivo: number, habito?: number | null): Observable<RespuestaCrearSesion> {
+    crearSesion(minutos_objetivo: number, habito?: number | null, modo?: string): Observable<RespuestaCrearSesion> {
         return this.api.post<RespuestaCrearSesion>('/pomodoro', {
             habito: habito || null,
-            minutos_objetivo
+            minutos_objetivo,
+            modo: modo || 'pomodoro'
         });
     }
 

@@ -11,7 +11,7 @@ const fechaHoy = () => {
 const calcularCiclos = (minutos) => Math.ceil(minutos / MINUTOS_CICLO);
 
 export const crearSesion = async (id_usuario, datos) => {
-    const { habito, minutos_objetivo } = datos;
+    const { habito, minutos_objetivo, modo } = datos;
 
     if (!minutos_objetivo || minutos_objetivo <= 0) {
         throw {
@@ -34,7 +34,7 @@ export const crearSesion = async (id_usuario, datos) => {
         }
     }
 
-    const ciclos_objetivo = calcularCiclos(minutos_objetivo);
+    const ciclos_objetivo = modo === "continuo" ? 1 : calcularCiclos(minutos_objetivo);
 
     const result = await db.query(
         `INSERT INTO sesiones_pomodoro
