@@ -92,6 +92,13 @@ export class Dashboard implements OnInit, OnDestroy {
     return this.authService.usuario()?.nombre || '';
   }
 
+  get saludo(): string {
+    const hora = new Date().getHours();
+    if (hora < 12) return 'Buenos días';
+    if (hora < 19) return 'Buenas tardes';
+    return 'Buenas noches';
+  }
+
   ngOnInit() {
     if (!this.authService.usuario()) {
       this.authService.cargarPerfil().subscribe();
