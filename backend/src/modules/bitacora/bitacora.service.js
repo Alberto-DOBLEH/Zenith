@@ -175,7 +175,7 @@ export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo, timezone) 
                 )
         )
         SELECT
-            hp.fecha,
+            hp.fecha::text AS fecha,
             COUNT(*) AS total_programados,
             COUNT(*) FILTER (WHERE rh.estado = 'COMPLETADO') AS completados,
             COUNT(*) FILTER (WHERE rh.estado IS NOT NULL AND rh.estado <> 'COMPLETADO') AS otros
