@@ -157,6 +157,7 @@ export class Eventos implements OnInit, OnDestroy {
   }
 
   eventosDelDia(dia: Date): Evento[] {
+    this.semanaInicio.getFullYear();
     return this.eventos()
       .filter(e => this.mismoDiaCalendario(e.fecha_inicio, dia) || this.mismoDiaCalendario(e.fecha_fin, dia))
       .filter(e => this.bloqueDelDia(e, dia) !== null);
