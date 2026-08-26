@@ -33,7 +33,7 @@ export class ModalTimer implements OnDestroy {
   ciclosTotales = signal(1);
 
   ngOnInit() {
-    this.ciclosTotales.set(Math.ceil(this.minutos / 25));
+    this.ciclosTotales.set(Math.ceil(this.minutos / 30));
     this.tiempoRestante.set(this.pomodoro ? SEGUNDOS_TRABAJO : this.minutos * 60);
   }
 
