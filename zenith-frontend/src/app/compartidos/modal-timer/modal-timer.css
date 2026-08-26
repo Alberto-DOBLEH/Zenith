@@ -59,12 +59,13 @@
     gap: 0.5rem;
     padding: 0.7rem 2rem;
     font-size: 1rem;
-    background-color: #EF4444;
-    color: white;
+    background-color: var(--destructive) !important;
+    color: var(--destructive-foreground) !important;
+    border: none;
 }
 
 .boton-detener:hover {
-    background-color: #DC2626;
+    opacity: 0.9;
 }
 
 .timer-terminado,
@@ -77,14 +78,14 @@
     padding: 1rem 0;
 }
 
-.timer-terminado i,
-.timer-incompleto i {
+.timer-terminado i {
     font-size: 2.5rem;
-    color: #F59E0B;
+    color: var(--chart-3);
 }
 
 .timer-incompleto i {
-    color: #F97316;
+    font-size: 2.5rem;
+    color: var(--destructive);
 }
 
 .timer-terminado h3,
