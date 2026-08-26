@@ -64,6 +64,7 @@ export class Dashboard implements OnInit, OnDestroy {
   timerHabitoId = signal(0);
   timerHabitoNombre = signal('');
   timerMinutos = signal(25);
+  timerPomodoro = signal(false);
   datosSemana = signal<DatosSemana | null>(null);
   estadisticas = signal<Estadisticas | null>(null);
 
@@ -389,6 +390,7 @@ export class Dashboard implements OnInit, OnDestroy {
     this.timerHabitoId.set(habito.id_habito);
     this.timerHabitoNombre.set(habito.nombre);
     this.timerMinutos.set(habito.meta ?? 25);
+    this.timerPomodoro.set(habito.pomodoro_habilitado ?? false);
     this.timerAbierto.set(true);
   }
 
