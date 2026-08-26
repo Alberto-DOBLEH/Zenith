@@ -35,6 +35,7 @@ export const registrarProgreso = async (id_usuario, datos) => {
     }
 
     const { meta, tipo_nombre } = habitoResult.rows[0];
+    const tipo = tipo_nombre.trim().toLowerCase();
     const hoy = fechaHoy();
 
     // Obtener registro previo del día (para acumular en repeticiones)
@@ -53,16 +54,13 @@ export const registrarProgreso = async (id_usuario, datos) => {
 
     let nuevoEstado;
 
-    switch (tipo_nombre) {
-        case "Normal":
-        case "NORMAL":
+    switch (tipo) {
+        case "normal":
             nuevoEstado = estado === "NO_COMPLETADO" ? "NO_COMPLETADO" : "COMPLETADO";
             break;
 
-        case "Repeticion":
-        case "REPETICION":
-        case "Repeticiones":
-        case "REPETICIONES": {
+        case "repeticion":
+        case "repeticiones": {
             if (nuevoValor === null) {
                 throw {
                     status: 400,
@@ -85,13 +83,11 @@ export const registrarProgreso = async (id_usuario, datos) => {
             break;
         }
 
-        case "Evitado":
-        case "EVITADO":
+        case "evitado":
             nuevoEstado = estado === "EVITADO" ? "EVITADO" : "RECAIDA";
             break;
 
-        case "Tiempo":
-        case "TIEMPO":
+        case "tiempo":
             nuevoEstado = estado || "PARCIAL";
             break;
 
