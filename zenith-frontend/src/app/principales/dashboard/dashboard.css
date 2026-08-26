@@ -2,6 +2,7 @@
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
+    overflow-x: hidden;
 }
 
 .estado-inicial {
@@ -301,6 +302,7 @@
 
 .seccion-graficas {
     padding: 1.25rem;
+    overflow: hidden;
 }
 
 .grilla-graficas {
@@ -318,4 +320,5 @@
 .contenedor-grafica {
     position: relative;
     height: 16rem;
+    overflow: hidden;
 }
