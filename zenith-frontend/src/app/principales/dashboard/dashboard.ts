@@ -9,6 +9,7 @@ import { BitacoraService, RegistroBitacora } from '../../core/servicios/bitacora
 import { EventosService, Evento } from '../../core/servicios/eventos.service';
 import { EstadisticasService, Estadisticas } from '../../core/servicios/estadisticas.service';
 import { ModalDetallesHabito, DetallesHabito } from '../../compartidos/modal-detalles-habito/modal-detalles-habito';
+import { ModalTimer } from '../../compartidos/modal-timer/modal-timer';
 
 Chart.register(...registerables);
 
@@ -25,11 +26,12 @@ interface HabitoVista extends HabitoResumen {
     frecuencia?: string;
     dias?: string[];
     dia_del_mes?: number | null;
+    pomodoro_habilitado?: boolean;
 }
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, ModalDetallesHabito],
+  imports: [RouterLink, ModalDetallesHabito, ModalTimer],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -58,6 +60,10 @@ export class Dashboard implements OnInit, OnDestroy {
   cargandoEventos = signal(true);
   cargandoRegistro = signal(false);
   habitosDetalles = signal<DetallesHabito | null>(null);
+  timerAbierto = signal(false);
+  timerHabitoId = signal(0);
+  timerHabitoNombre = signal('');
+  timerMinutos = signal(25);
   datosSemana = signal<DatosSemana | null>(null);
   estadisticas = signal<Estadisticas | null>(null);
 
@@ -268,7 +274,8 @@ export class Dashboard implements OnInit, OnDestroy {
       descripcion: info?.descripcion ?? null,
       frecuencia: info?.frecuencia,
       dias: info?.dias ?? [],
-      dia_del_mes: info?.dia_del_mes ?? null
+      dia_del_mes: info?.dia_del_mes ?? null,
+      pomodoro_habilitado: info?.pomodoro_habilitado ?? false
     };
   }
 
@@ -376,6 +383,18 @@ export class Dashboard implements OnInit, OnDestroy {
       dias: habito.dias ?? [],
       dia_del_mes: habito.dia_del_mes ?? null
     });
+  }
+
+  abrirTimer(habito: HabitoVista) {
+    this.timerHabitoId.set(habito.id_habito);
+    this.timerHabitoNombre.set(habito.nombre);
+    this.timerMinutos.set(habito.meta ?? 25);
+    this.timerAbierto.set(true);
+  }
+
+  cerrarTimer() {
+    this.timerAbierto.set(false);
+    this.cargarDatos();
   }
 
   formatearEvento(fecha: string): string {

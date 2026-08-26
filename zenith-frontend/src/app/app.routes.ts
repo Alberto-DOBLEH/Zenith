@@ -29,10 +29,6 @@ export const routes: Routes = [
                 loadComponent: () => import('./principales/eventos/eventos').then(m => m.Eventos)
             },
             {
-                path: 'pomodoro',
-                loadComponent: () => import('./principales/pomodoro/pomodoro').then(m => m.Pomodoro)
-            },
-            {
                 path: 'perfil',
                 loadComponent: () => import('./principales/perfil/perfil').then(m => m.Perfil)
             }

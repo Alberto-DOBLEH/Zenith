@@ -1,0 +1,36 @@
+<div class="overlay" (click)="cerrarModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-cabecera">
+            <h2>{{ nombreHabito }}</h2>
+            <button class="boton-icono" (click)="cerrarModal()" aria-label="Cerrar">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="modal-cuerpo timer-body">
+            @if (error()) {
+                <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+            }
+
+            @if (completado()) {
+                <div class="timer-terminado">
+                    <i class="bi bi-trophy"></i>
+                    <h3>¡Completado!</h3>
+                    <p>Hábito marcado como completado.</p>
+                    <button class="boton-principal" (click)="cerrarModal()">Cerrar</button>
+                </div>
+            } @else {
+                <div class="circulo-tiempo" [style.--progreso]="progreso + '%'">
+                    <span class="tiempo">{{ tiempoFormateado }}</span>
+                </div>
+
+                <div class="controles-timer">
+                    <button class="boton-principal boton-play" (click)="alternar()">
+                        <i class="bi" [class.bi-play-fill]="!corriendo()" [class.bi-pause-fill]="corriendo()"></i>
+                        {{ corriendo() ? 'Pausar' : 'Iniciar' }}
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>

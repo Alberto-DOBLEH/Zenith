@@ -89,9 +89,10 @@
                                         <i class="bi bi-plus-lg"></i>
                                     </button>
                                 } @else if (habito.tipo_habito === 2) {
-                                    <a class="boton-secundario boton-tiempo" [routerLink]="['/pomodoro']" [queryParams]="{ habito: habito.id_habito }">
+                                    <button class="boton-secundario boton-tiempo" [disabled]="bloqueado(habito)"
+                                        (click)="abrirTimer(habito); $event.stopPropagation()">
                                         <i class="bi bi-play-fill"></i>
-                                    </a>
+                                    </button>
                                 }
                             </div>
                         </div>
@@ -148,4 +149,13 @@
     }
 
     <app-modal-detalles-habito [habito]="habitosDetalles()" (cerrar)="habitosDetalles.set(null)"></app-modal-detalles-habito>
+
+    @if (timerAbierto()) {
+        <app-modal-timer
+            [habitoId]="timerHabitoId()"
+            [nombreHabito]="timerHabitoNombre()"
+            [minutos]="timerMinutos()"
+            (cerrar)="cerrarTimer()">
+        </app-modal-timer>
+    }
 </div>
