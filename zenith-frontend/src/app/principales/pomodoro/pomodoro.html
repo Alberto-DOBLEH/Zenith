@@ -1,7 +1,7 @@
 <div class="pomodoro">
     <header class="encabezado">
         <div>
-            <h1>Temporizador</h1>
+            <h1>Pomodoro</h1>
             <p class="subtitulo">Estudia con Pomodoro o usa tiempo corrido.</p>
         </div>
     </header>
@@ -26,7 +26,7 @@
     <div class="zona-sesion tarjeta">
         @if (!sesionActiva()) {
             <div class="configurar">
-                <h2>Iniciar sesión</h2>
+                <h2>{{ tituloSesion() }}</h2>
 
                 <div class="toggle-modo">
                     <button [class.activo]="modo() === 'pomodoro'" (click)="modo.set('pomodoro')">
@@ -58,7 +58,7 @@
                     </label>
                     <label class="campo">
                         <span>Hábito de tiempo (opcional)</span>
-                        <select class="inputs-texto" [(ngModel)]="habitoSeleccionado" [disabled]="habitoBloqueado()">
+                        <select class="inputs-texto" [(ngModel)]="habitoSeleccionado" (ngModelChange)="aplicarConfigHabito()" [disabled]="habitoBloqueado()">
                             <option [ngValue]="null">Sin hábito</option>
                             @for (habito of habitosTiempo(); track habito.id_habito) {
                                 <option [ngValue]="habito.id_habito">{{ habito.nombre }}</option>

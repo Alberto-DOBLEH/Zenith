@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription, take } from 'rxjs';
@@ -36,6 +36,14 @@ export class Pomodoro implements OnInit, OnDestroy {
   habitoBloqueado = signal(false);
   modo = signal<'pomodoro' | 'continuo'>('pomodoro');
 
+  tituloSesion = computed(() => {
+    if (this.habitoSeleccionado) {
+      const habito = this.habitosTiempo().find(h => h.id_habito === this.habitoSeleccionado);
+      return habito ? habito.nombre : 'Sesión de pomodoro';
+    }
+    return 'Sesión de pomodoro';
+  });
+
   sesionActiva = signal<SesionPomodoro | null>(null);
   fase = signal<'trabajo' | 'descanso'>('trabajo');
   corriendo = signal(false);
@@ -54,6 +62,7 @@ export class Pomodoro implements OnInit, OnDestroy {
       if (habitoParam) {
         this.habitoSeleccionado = Number(habitoParam);
         this.habitoBloqueado.set(true);
+        this.aplicarConfigHabito();
       }
     });
   }
@@ -61,6 +70,27 @@ export class Pomodoro implements OnInit, OnDestroy {
   ngOnDestroy() {
     this.detenerTemporizador();
     this.suscripciones.forEach(s => s.unsubscribe());
+  }
+
+  aplicarConfigHabito() {
+    if (!this.habitoSeleccionado) {
+      this.minutosObjetivo = 25;
+      this.unidadTiempo = 'minutos';
+      this.modo.set('pomodoro');
+      return;
+    }
+    const habito = this.habitosTiempo().find(h => h.id_habito === this.habitoSeleccionado);
+    if (habito) {
+      const metaMinutos = habito.meta ?? 25;
+      if (metaMinutos >= 60 && metaMinutos % 60 === 0) {
+        this.minutosObjetivo = metaMinutos / 60;
+        this.unidadTiempo = 'horas';
+      } else {
+        this.minutosObjetivo = metaMinutos;
+        this.unidadTiempo = 'minutos';
+      }
+      this.modo.set(habito.pomodoro_habilitado ? 'pomodoro' : 'continuo');
+    }
   }
 
   private cargarDatos() {
