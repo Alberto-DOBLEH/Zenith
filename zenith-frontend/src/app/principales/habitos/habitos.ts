@@ -46,6 +46,8 @@ export class Habitos implements OnInit, OnDestroy {
     frecuencia: ['DIARIO', Validators.required],
     meta: [null as number | null],
     unidad: [''],
+    unidadTiempo: ['minutos'],
+    pomodoroHabilitado: [false],
     dias: [[] as string[]],
     dia_del_mes: [null as number | null]
   });
@@ -112,6 +114,8 @@ export class Habitos implements OnInit, OnDestroy {
       frecuencia: 'DIARIO',
       meta: null,
       unidad: '',
+      unidadTiempo: 'minutos',
+      pomodoroHabilitado: false,
       dias: [],
       dia_del_mes: null
     });
@@ -122,13 +126,24 @@ export class Habitos implements OnInit, OnDestroy {
     this.modoEdicion.set(true);
     this.habitoEditandoId.set(habito.id_habito);
     this.mensajeForm.set('');
+
+    const esTiempo = habito.tipo_habito === 2;
+    let unidadTiempo = 'minutos';
+    let metaDisplay = habito.meta;
+    if (esTiempo && habito.meta && habito.meta >= 60 && habito.meta % 60 === 0) {
+      unidadTiempo = 'horas';
+      metaDisplay = habito.meta / 60;
+    }
+
     this.form.patchValue({
       tipo_habito: habito.tipo_habito,
       nombre: habito.nombre,
       descripcion: habito.descripcion || '',
       frecuencia: habito.frecuencia,
-      meta: habito.meta,
+      meta: metaDisplay,
       unidad: habito.unidad || '',
+      unidadTiempo,
+      pomodoroHabilitado: habito.pomodoro_habilitado,
       dias: habito.dias,
       dia_del_mes: habito.dia_del_mes
     });
@@ -174,13 +189,19 @@ export class Habitos implements OnInit, OnDestroy {
       return;
     }
 
+    let metaFinal = valores.meta ?? null;
+    if (valores.tipo_habito === 2 && metaFinal != null && valores.unidadTiempo === 'horas') {
+      metaFinal = metaFinal * 60;
+    }
+
     const payload: HabitoPayload = {
       tipo_habito: valores.tipo_habito!,
       nombre: valores.nombre!,
       descripcion: valores.descripcion || undefined,
       frecuencia: valores.frecuencia!,
-      meta: valores.meta ?? null,
+      meta: metaFinal,
       unidad: valores.unidad || undefined,
+      pomodoro_habilitado: valores.tipo_habito === 2 ? !!valores.pomodoroHabilitado : false,
       dias: valores.frecuencia === 'SEMANAL' ? valores.dias ?? [] : undefined,
       dia_del_mes: valores.frecuencia === 'MENSUAL' ? valores.dia_del_mes ?? null : undefined
     };

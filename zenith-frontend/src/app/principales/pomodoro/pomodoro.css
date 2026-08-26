@@ -98,6 +98,20 @@
     box-sizing: border-box;
 }
 
+.campo-con-unidad {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.campo-con-unidad .inputs-texto {
+    flex: 1;
+}
+
+.campo-con-unidad select {
+    flex: 0 0 auto;
+    width: 7rem;
+}
+
 .boton-iniciar {
     display: inline-flex;
     align-items: center;

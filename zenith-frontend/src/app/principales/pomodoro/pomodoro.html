@@ -47,8 +47,14 @@
 
                 <div class="campo-fila">
                     <label class="campo">
-                        <span>Minutos objetivo</span>
-                        <input class="inputs-texto" type="number" min="1" [(ngModel)]="minutosObjetivo">
+                        <span>Duración</span>
+                        <div class="campo-con-unidad">
+                            <input class="inputs-texto" type="number" min="1" [(ngModel)]="minutosObjetivo">
+                            <select class="inputs-texto" [(ngModel)]="unidadTiempo">
+                                <option value="minutos">Minutos</option>
+                                <option value="horas">Horas</option>
+                            </select>
+                        </div>
                     </label>
                     <label class="campo">
                         <span>Hábito de tiempo (opcional)</span>

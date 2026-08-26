@@ -42,6 +42,7 @@ const consultaSelectHabito = `
         h.dia_del_mes,
         h.estado,
         h.fecha_creacion,
+        h.pomodoro_habilitado,
         COALESCE(d.dias, '{}') AS dias
     FROM habitos h
     LEFT JOIN tipos_habitos t ON h.tipo_habito = t.id_tipo_habito
@@ -53,7 +54,7 @@ const consultaSelectHabito = `
 `;
 
 export const crearHabito = async (id_usuario, datos) => {
-    const { tipo_habito, nombre, descripcion, meta, unidad, frecuencia, dias, dia_del_mes } = datos;
+    const { tipo_habito, nombre, descripcion, meta, unidad, frecuencia, dias, dia_del_mes, pomodoro_habilitado } = datos;
 
     if (!tipo_habito || !nombre || !frecuencia) {
         throw {
@@ -86,8 +87,8 @@ export const crearHabito = async (id_usuario, datos) => {
         await client.query("BEGIN");
 
         const result = await client.query(
-            `INSERT INTO habitos (tipo_habito, usuario, nombre, descripcion, frecuencia, meta, unidad, dia_del_mes)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            `INSERT INTO habitos (tipo_habito, usuario, nombre, descripcion, frecuencia, meta, unidad, dia_del_mes, pomodoro_habilitado)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING id_habito`,
             [
                 tipo_habito,
@@ -97,7 +98,8 @@ export const crearHabito = async (id_usuario, datos) => {
                 frecuencia,
                 meta || null,
                 unidad || null,
-                dia_del_mes || null
+                dia_del_mes || null,
+                pomodoro_habilitado || false
             ]
         );
 
@@ -164,7 +166,7 @@ const normalizarHabito = (fila) => {
 };
 
 export const editarHabito = async (id_usuario, id_habito, datos) => {
-    const { nombre, descripcion, meta, unidad, frecuencia, dia_del_mes } = datos;
+    const { nombre, descripcion, meta, unidad, frecuencia, dia_del_mes, pomodoro_habilitado } = datos;
 
     const habito = await obtenerHabitoPorId(id_usuario, id_habito);
 
@@ -195,8 +197,9 @@ export const editarHabito = async (id_usuario, id_habito, datos) => {
                 meta = COALESCE($3, meta),
                 unidad = COALESCE($4, unidad),
                 frecuencia = COALESCE($5, frecuencia),
-                dia_del_mes = COALESCE($6, dia_del_mes)
-            WHERE id_habito = $7 AND usuario = $8`,
+                dia_del_mes = COALESCE($6, dia_del_mes),
+                pomodoro_habilitado = COALESCE($7, pomodoro_habilitado)
+            WHERE id_habito = $8 AND usuario = $9`,
             [
                 nombre || null,
                 descripcion || null,
@@ -204,6 +207,7 @@ export const editarHabito = async (id_usuario, id_habito, datos) => {
                 unidad || null,
                 frecuencia || null,
                 dia_del_mes || null,
+                pomodoro_habilitado !== undefined ? pomodoro_habilitado : null,
                 id_habito,
                 id_usuario
             ]

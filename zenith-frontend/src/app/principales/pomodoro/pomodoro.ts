@@ -31,6 +31,7 @@ export class Pomodoro implements OnInit, OnDestroy {
   habitosTiempo = signal<Habito[]>([]);
 
   minutosObjetivo = 25;
+  unidadTiempo = 'minutos';
   habitoSeleccionado: number | null = null;
   habitoBloqueado = signal(false);
   modo = signal<'pomodoro' | 'continuo'>('pomodoro');
@@ -87,14 +88,18 @@ export class Pomodoro implements OnInit, OnDestroy {
 
   iniciar() {
     if (!this.minutosObjetivo || this.minutosObjetivo <= 0) {
-      this.error.set('Indica una duración mayor a 0 minutos.');
+      this.error.set('Indica una duración mayor a 0.');
       return;
     }
     this.error.set('');
     this.mensaje.set('');
 
+    const minutosFinales = this.unidadTiempo === 'horas'
+      ? this.minutosObjetivo * 60
+      : this.minutosObjetivo;
+
     this.suscripciones.push(
-      this.pomodoroService.crearSesion(this.minutosObjetivo, this.habitoSeleccionado, this.modo()).subscribe({
+      this.pomodoroService.crearSesion(minutosFinales, this.habitoSeleccionado, this.modo()).subscribe({
         next: (respuesta) => {
           const sesion = {
             ...respuesta.sesion,

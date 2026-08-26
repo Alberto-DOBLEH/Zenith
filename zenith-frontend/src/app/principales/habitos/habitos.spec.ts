@@ -58,6 +58,7 @@ describe('Habitos', () => {
       dia_del_mes: null,
       estado: 'ACTIVO',
       fecha_creacion: '',
+      pomodoro_habilitado: false,
       dias: []
     };
     expect(component.esBueno(habito)).toBe(true);

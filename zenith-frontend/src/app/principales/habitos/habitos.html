@@ -92,9 +92,23 @@
                             </label>
                             <label class="campo">
                                 <span>Unidad</span>
-                                <input class="inputs-texto" formControlName="unidad" placeholder="Ej. páginas">
+                                @if (form.value.tipo_habito === 2) {
+                                    <select class="inputs-texto" formControlName="unidadTiempo">
+                                        <option value="minutos">Minutos</option>
+                                        <option value="horas">Horas</option>
+                                    </select>
+                                } @else {
+                                    <input class="inputs-texto" formControlName="unidad" placeholder="Ej. páginas">
+                                }
                             </label>
                         </div>
+                    }
+
+                    @if (form.value.tipo_habito === 2) {
+                        <label class="campo-check">
+                            <input type="checkbox" formControlName="pomodoroHabilitado">
+                            <span>Habilitar Pomodoro para este hábito</span>
+                        </label>
                     }
 
                     @if (form.value.frecuencia === 'SEMANAL') {

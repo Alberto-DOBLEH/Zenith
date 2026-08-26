@@ -19,6 +19,7 @@ export interface Habito {
     dia_del_mes: number | null;
     estado: string;
     fecha_creacion: string;
+    pomodoro_habilitado: boolean;
     dias: string[];
 }
 
@@ -29,6 +30,7 @@ export interface HabitoPayload {
     frecuencia: string;
     meta?: number | null;
     unidad?: string | null;
+    pomodoro_habilitado?: boolean;
     dias?: string[];
     dia_del_mes?: number | null;
 }
