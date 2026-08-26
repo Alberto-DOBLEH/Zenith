@@ -342,6 +342,23 @@ export class Dashboard implements OnInit, OnDestroy {
         : h)
     );
     this.recalcularResumen();
+    this.recargarGraficas();
+  }
+
+  private recargarGraficas() {
+    this.suscripciones.push(
+      this.bitacoraService.obtenerPorPeriodo('semana').subscribe({
+        next: (registros) => this.datosSemana.set(this.calcularSemana(registros)),
+        error: () => {}
+      })
+    );
+
+    this.suscripciones.push(
+      this.estadisticasService.obtenerGenerales().subscribe({
+        next: (estadisticas) => this.estadisticas.set(estadisticas),
+        error: () => {}
+      })
+    );
   }
 
   private recalcularResumen() {
