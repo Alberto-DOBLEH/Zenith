@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { AuthService } from '../../core/servicios/auth.service';
+import { AuthService, RegistroPayload } from '../../core/servicios/auth.service';
 
 @Component({
   selector: 'app-autenticacion',
@@ -30,7 +30,7 @@ export class Autenticacion {
     segundo_apellido: [''],
     username: ['', [Validators.required, Validators.pattern(/^[a-zA-Z0-9_]{3,16}$/)]],
     correo: ['', [Validators.required, Validators.email]],
-    telefono: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
+    telefono: ['', [Validators.pattern(/^\d{10}$/)]],
     contraseña: ['', [Validators.required, Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/)]],
     confirmar_contraseña: ['', Validators.required]
   }, { validators: this.coincidenContraseñas });
@@ -86,23 +86,27 @@ export class Autenticacion {
     this.cargando.set(true);
     this.mensajeError.set('');
 
-    const datos = {
+    const datos: RegistroPayload = {
       nombre: this.formRegistro.value.nombre!,
       primer_apellido: this.formRegistro.value.primer_apellido!,
       segundo_apellido: this.formRegistro.value.segundo_apellido || undefined,
       username: this.formRegistro.value.username!,
       correo: this.formRegistro.value.correo!,
-      telefono: this.formRegistro.value.telefono!,
       contraseña: this.formRegistro.value.contraseña!
     };
+
+    // Agregar teléfono solo si se proporcionó
+    const telefono = this.formRegistro.value.telefono;
+    if (telefono) {
+      datos.telefono = telefono;
+    }
 
     this.authService.registrar(datos).subscribe({
       next: () => {
         this.cargando.set(false);
-        this.mensajeExito.set('Cuenta creada correctamente. Inicia sesión.');
+        this.mensajeExito.set('Cuenta creada correctamente. Revisa tu correo para verificar tu cuenta.');
         this.mensajeError.set('');
-        this.pestanaActiva.set('login');
-        this.formLogin.reset();
+        this.formRegistro.reset();
       },
       error: (error) => {
         this.cargando.set(false);

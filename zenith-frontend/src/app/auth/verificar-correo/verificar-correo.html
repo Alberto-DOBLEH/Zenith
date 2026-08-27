@@ -1,0 +1,43 @@
+<body>
+    <div class="componente-global">
+        <img src="/zenith_icon_app_mini.png" alt="zenith-logo" class="icono-mini" />
+        <h1>Zenith</h1>
+        <h2>Habit Tracker</h2>
+        <div class="auth-card verificar-card">
+            @if (verificando()) {
+            <div class="verificando-container">
+                <div class="spinner"></div>
+                <h3>Verificando tu correo electrónico...</h3>
+                <p>Por favor espera un momento</p>
+            </div>
+            }
+
+            @if (exito()) {
+            <div class="exito-container">
+                <div class="icono-exito">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <h3>¡Correo verificado!</h3>
+                <p>Tu correo electrónico ha sido verificado correctamente.</p>
+                <p>Ahora puedes iniciar sesión en Zenith.</p>
+                <button class="boton-principal" (click)="irALogin()">
+                    Ir a Iniciar Sesión
+                </button>
+            </div>
+            }
+
+            @if (mensajeError()) {
+            <div class="error-container">
+                <div class="icono-error">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                </div>
+                <h3>Error de verificación</h3>
+                <p>{{ mensajeError() }}</p>
+                <button class="boton-principal" (click)="irALogin()">
+                    Volver al Login
+                </button>
+            </div>
+            }
+        </div>
+    </div>
+</body>

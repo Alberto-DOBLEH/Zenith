@@ -27,8 +27,8 @@
 
             @if (pestanaActiva() === 'login') {
             <form [formGroup]="formLogin" (ngSubmit)="iniciarSesion()" class="form-login">
-                <p>Correo/Usuario/Telefono</p>
-                <input class="inputs-texto" type="text" formControlName="login" placeholder="correo, usuario o teléfono">
+                <p>Correo/Usuario</p>
+                <input class="inputs-texto" type="text" formControlName="login" placeholder="correo o usuario">
                 @if (mostrarError('login', 'login')) {
                 <span class="texto-error">Este campo es obligatorio</span>
                 }
@@ -74,7 +74,7 @@
                 <span class="texto-error">Correo inválido</span>
                 }
 
-                <p>Teléfono</p>
+                <p>Teléfono (opcional)</p>
                 <input class="inputs-texto" type="text" formControlName="telefono" placeholder="10 dígitos">
                 @if (mostrarError('telefono', 'registro')) {
                 <span class="texto-error">El teléfono debe tener 10 dígitos</span>

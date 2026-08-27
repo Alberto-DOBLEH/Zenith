@@ -12,30 +12,30 @@ export const validarRegistro = (req, res, next) => {
         !nombre ||
         !primer_apellido ||
         !correo ||
-        !telefono ||
         !username ||
         !contraseña
     ) {
-        return res.status(400).json({ message: "Todos los campos son obligatorios" });
+        return res.status(400).json({ message: "Todos los campos son obligatorios (nombre, primer_apellido, correo, username, contraseña)" });
     }
 
-    if (telefono.length !== 10) {
-        return res.status(400).json({ message: "El telefono debe tener 10 digitos" });
+    // Teléfono es opcional, pero si se proporciona debe tener 10 dígitos
+    if (telefono && telefono.length !== 10) {
+        return res.status(400).json({ message: "El teléfono debe tener 10 dígitos" });
     }
 
     const expresionRegularCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!expresionRegularCorreo.test(correo)) {
-        return res.status(400).json({ message: "El correo no es valido" });
+        return res.status(400).json({ message: "El correo no es válido" });
     }
 
     const expresionRegularUsername = /^[a-zA-Z0-9_]{3,16}$/;
     if (!expresionRegularUsername.test(username)) {
-        return res.status(400).json({ message: "El username no es valido" });
+        return res.status(400).json({ message: "El username no es válido" });
     }
 
     const expresionRegularContraseña = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     if (!expresionRegularContraseña.test(contraseña)) {
-        return res.status(400).json({ message: "La contraseña no es valida" });
+        return res.status(400).json({ message: "La contraseña no es válida" });
     }
 
     next();

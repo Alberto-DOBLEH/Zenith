@@ -12,6 +12,18 @@ export const registro = async (req, res) => {
     }
 };
 
+export const verificarEmail = async (req, res) => {
+    try {
+        const { token } = req.params;
+        const result = await authService.verificarEmail(token);
+
+        return res.status(200).json(result);
+
+    } catch (error) {
+        return enviarError(res, error);
+    }
+};
+
 export const login = async (req, res) => {
     try {
 

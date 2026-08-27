@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import app from './src/app.js';
+import { iniciarScheduler } from './src/jobs/recordatorios.job.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -16,4 +17,7 @@ if (process.env.JWT_SECRET === "TU_SECRETO_LARGO_Y_ALEATORIO") {
 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
+    
+    // Iniciar scheduler de recordatorios
+    iniciarScheduler();
 });

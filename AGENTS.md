@@ -42,6 +42,22 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-08-26
+- **Verificación de correo electrónico + Avisos de eventos**:
+  - **Backend — Servicio de correo**: nuevo `backend/src/services/correo.service.js` con `nodemailer` (Gmail SMTP). Funciones: `enviarCorreo()`, `enviarVerificacion()` (HTML con botón de verificación + link), `enviarAvisoEvento()` (recordatorio de evento con fecha/descripción/duración).
+  - **Backend — Verificación de correo**:
+    - `auth.service.js`: `registrarUsuario()` ahora crea usuario con `email_verificado: FALSE`, genera token (UUID de 32 bytes), guarda en `tokens_verificacion` (con expiración 24h), y envía correo de verificación. `verificarEmail()` valida token (inválido/usado/expirado), marca `email_verificado: TRUE`.
+    - `loginUsuario()` ahora verifica `email_verificado` antes de generar JWT; si es `FALSE`, retorna 403 `"Debes verificar tu correo electrónico"`.
+    - `auth.routes.js`: nueva ruta `GET /api/auth/verificar-email/:token`.
+    - `auth.validation.js`: teléfono ahora es opcional en registro.
+  - **Backend — Scheduler de recordatorios**: nuevo `backend/src/jobs/recordatorios.job.js` con `node-cron` (cada 5 minutos). Busca recordatorios pendientes (`recordatorios_evento` donde `fecha_recordatorio` entre ahora y +5min, `enviado = FALSE`, usuario con `email_verificado = TRUE`), envía correos y marca como enviados. Iniciado automáticamente en `server.js`.
+  - **Migración**: `supabase/migrations/20260826000000_verificacion_correo.sql` — agrega `email_verificado` (BOOLEAN DEFAULT FALSE) a `usuarios`, crea tabla `tokens_verificacion` (id, usuario FK, token UNIQUE, expiracion, usado, created_at), quita NOT NULL de `telefono`.
+  - **Frontend — Verificar correo**: nuevo componente `auth/verificar-correo/` con 3 estados: verificando (spinner), éxito (icono verde + "Ir a Iniciar Sesión"), error (icono rojo + mensaje + "Volver al Login"). Ruta pública `/verificar-correo/:token`.
+  - **Frontend — Auth**: `auth.service.ts` agrega método `verificarCorreo(token)`. `RegistroPayload` ahora tiene `telefono` opcional. `autenticacion.ts`: registro muestra "Revisa tu correo para verificar tu cuenta" (ya no redirige a login), teléfono opcional (sin `Validators.required`). `autenticacion.html`: login muestra "Correo/Usuario" (sin teléfono).
+  - **Tests de seguridad actualizados**: `scripts/pruebas-seguridad.js` ahora verifica email después de cada registro (query directo a BD + llamada a `GET /api/auth/verificar-email/:token`). Nuevo test "login bloqueado sin verificar correo" (403 sin verificar, 200 después). Nuevo test "verificación de email: token inválido, ya usado". Quitado test de teléfono duplicado (ya no es obligatorio). Conexión a BD para queries de token. **10 tests** (antes 9).
+  - `nodemailer` y `node-cron` instalados en backend. Variables de entorno: `SMTP_HOST/PORT/USER/PASS/FROM`, `FRONTEND_URL`.
+  - Verificado: `ng build` OK, `ng test` 13/13 OK, `node --check server.js` OK. Tests de seguridad requieren `supabase start` (BD local).
+
 ### 2026-08-17
 - **Hardening de seguridad (preparación para deploy)**:
   - Backend: `helmet()`, CORS allowlist desde `CORS_ORIGIN`, `express-rate-limit` en login (10 fallos/15 min, no cuenta éxitos) y registro (50/15 min), `GET /health`, error handler JSON genérico (`enviarError`, oculta detalles de `pg`/stack en producción) en los 10 controllers, `validarId` en todas las rutas con `:id`, y fail-fast en `server.js` si faltan `JWT_SECRET`/`DB_*`. `nodemon` movido a `devDependencies`.

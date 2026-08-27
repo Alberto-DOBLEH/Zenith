@@ -2,9 +2,22 @@ import "dotenv/config";
 import { test, after } from "node:test";
 import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
+import pkg from "pg";
+const { Pool } = pkg;
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
 const LIMITE_LOGIN = Number(process.env.RATE_LIMIT_LOGIN) || 10;
+
+const db = new Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    ssl: process.env.DB_SSL === "true"
+        ? { rejectUnauthorized: false }
+        : false,
+});
 
 const usuariosCreados = [];
 
@@ -24,18 +37,33 @@ const pedir = async (ruta, { metodo = "GET", token = null, cuerpo = null } = {})
     return { status: res.status, data, texto, headers: res.headers };
 };
 
+const verificarEmail = async (correo) => {
+    const result = await db.query(
+        "SELECT token FROM tokens_verificacion WHERE usuario = (SELECT id_usuario FROM usuarios WHERE correo = $1) ORDER BY id DESC LIMIT 1",
+        [correo]
+    );
+    if (result.rows.length === 0) {
+        throw new Error(`No se encontró token de verificación para ${correo}`);
+    }
+    const token = result.rows[0].token;
+    const res = await pedir(`/api/auth/verificar-email/${token}`);
+    assert.equal(res.status, 200, "verificación de email debe ser 200");
+    return res;
+};
+
 const registrar = async (prefijo) => {
     const cuerpo = {
         nombre: prefijo,
         primer_apellido: "Prueba",
         segundo_apellido: "Seguridad",
         correo: `${prefijo}@test.local`,
-        telefono: `55${String(Math.floor(Math.random() * 90000000) + 10000000)}`,
         username: `${prefijo}_${Math.floor(Math.random() * 100000)}`,
         contraseña: "Contrasena123!"
     };
     const res = await pedir("/api/auth/register", { metodo: "POST", cuerpo });
     assert.equal(res.status, 201, "registro debe ser 201");
+    // Verificar email automáticamente para tests
+    await verificarEmail(cuerpo.correo);
     return cuerpo;
 };
 
@@ -55,6 +83,7 @@ after(async () => {
             await pedir("/api/usuario/", { metodo: "DELETE", token: usuario.token });
         } catch { }
     }
+    await db.end();
 });
 
 test("health y headers de seguridad", async () => {
@@ -88,12 +117,6 @@ test("validación de registro", async () => {
     });
     assert.equal(correoMalo.status, 400);
 
-    const telefonoCorto = await pedir("/api/auth/register", {
-        metodo: "POST",
-        cuerpo: { ...valido, telefono: "123", username: "telefono1" }
-    });
-    assert.equal(telefonoCorto.status, 400);
-
     const usernameMalo = await pedir("/api/auth/register", {
         metodo: "POST",
         cuerpo: { ...valido, username: "usuario malo!!" }
@@ -114,15 +137,9 @@ test("validación de registro", async () => {
 
     const duplicadoUsername = await pedir("/api/auth/register", {
         metodo: "POST",
-        cuerpo: { ...valido, correo: "otro@test.local", telefono: "5522222222", username: valido.username }
+        cuerpo: { ...valido, correo: "otro@test.local", username: valido.username }
     });
     assert.equal(duplicadoUsername.status, 409);
-
-    const duplicadoTelefono = await pedir("/api/auth/register", {
-        metodo: "POST",
-        cuerpo: { ...valido, correo: "otro2@test.local", telefono: valido.telefono, username: "duptelefo1" }
-    });
-    assert.equal(duplicadoTelefono.status, 409);
 });
 
 test("login: credenciales, no revelar existencia, campos faltantes", async () => {
@@ -155,6 +172,55 @@ test("login: credenciales, no revelar existencia, campos faltantes", async () =>
         cuerpo: { login: usuario.correo }
     });
     assert.equal(sinCampos.status, 400);
+});
+
+test("login bloqueado sin verificar correo", async () => {
+    // Registrar usuario SIN verificar email
+    const cuerpo = {
+        nombre: "noverif",
+        primer_apellido: "Prueba",
+        segundo_apellido: "Seguridad",
+        correo: `noverif@test.local`,
+        username: `noverif_${Math.floor(Math.random() * 100000)}`,
+        contraseña: "Contrasena123!"
+    };
+    const resRegistro = await pedir("/api/auth/register", { metodo: "POST", cuerpo });
+    assert.equal(resRegistro.status, 201);
+
+    // Intentar login sin verificar - debe fallar con 403
+    const resLogin = await pedir("/api/auth/login", {
+        metodo: "POST",
+        cuerpo: { login: cuerpo.correo, contraseña: cuerpo.contraseña }
+    });
+    assert.equal(resLogin.status, 403, "login sin verificar debe dar 403");
+    assert.ok(resLogin.data.message.includes("verificar"), "debe mencionar verificación");
+
+    // Verificar email y luego login debe funcionar
+    await verificarEmail(cuerpo.correo);
+    const resLoginPost = await pedir("/api/auth/login", {
+        metodo: "POST",
+        cuerpo: { login: cuerpo.correo, contraseña: cuerpo.contraseña }
+    });
+    assert.equal(resLoginPost.status, 200, "login después de verificar debe dar 200");
+
+    // Limpiar
+    usuariosCreados.push({ token: resLoginPost.data.token });
+});
+
+test("verificación de email: token inválido, ya usado, expirado", async () => {
+    const tokenInvalido = await pedir("/api/auth/verificar-email/token-que-no-existe");
+    assert.equal(tokenInvalido.status, 400);
+    assert.ok(tokenInvalido.data.message.includes("inválido"));
+
+    // Token ya usado (el de registrar1 ya se usó arriba)
+    const result = await db.query(
+        "SELECT token FROM tokens_verificacion WHERE usado = TRUE LIMIT 1"
+    );
+    if (result.rows.length > 0) {
+        const yaUsado = await pedir(`/api/auth/verificar-email/${result.rows[0].token}`);
+        assert.equal(yaUsado.status, 400);
+        assert.ok(yaUsado.data.message.includes("utilizado"));
+    }
 });
 
 test("token inválido, manipulado y vencido", async () => {

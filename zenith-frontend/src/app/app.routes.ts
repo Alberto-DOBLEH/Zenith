@@ -7,6 +7,10 @@ export const routes: Routes = [
         loadComponent: () => import('./auth/autenticacion/autenticacion').then(m => m.Autenticacion)
     },
     {
+        path: 'verificar-correo/:token',
+        loadComponent: () => import('./auth/verificar-correo/verificar-correo').then(m => m.VerificarCorreo)
+    },
+    {
         path: '',
         canActivate: [authGuard],
         loadComponent: () => import('./principales/layout-principal/layout-principal').then(m => m.LayoutPrincipal),
