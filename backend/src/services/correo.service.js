@@ -1,29 +1,22 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT),
-    secure: process.env.SMTP_PORT === '465',
-    auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-    },
-    connectionTimeout: 15000,
-    greetingTimeout: 5000,
-    socketTimeout: 15000,
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export const enviarCorreo = async (opciones) => {
     const { para, asunto, html } = opciones;
 
-    const info = await transporter.sendMail({
-        from: process.env.SMTP_FROM || 'Zenith <noreply@zenith.com>',
+    const { data, error } = await resend.emails.send({
+        from: process.env.SMTP_FROM || 'Zenith <notificaciones@resend.dev>',
         to: para,
         subject: asunto,
         html,
     });
 
-    return info;
+    if (error) {
+        throw new Error(error.message);
+    }
+
+    return data;
 };
 
 export const enviarVerificacion = async (correo, token) => {
@@ -43,8 +36,7 @@ export const enviarVerificacion = async (correo, token) => {
             .content { padding: 30px; text-align: center; }
             .content h2 { color: #333; margin-bottom: 15px; }
             .content p { color: #666; line-height: 1.6; }
-            .boton-verificar { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 25px; font-weight: bold; margin: 20px 0; transition: transform 0.2s; }
-            .boton-verificar:hover { transform: scale(1.05); }
+            .boton-verificar { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 15px 40px; border-radius: 25px; font-weight: bold; margin: 20px 0; }
             .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 12px; }
             .token-box { background: #f8f9fa; border: 1px dashed #ddd; padding: 15px; margin: 15px 0; border-radius: 5px; word-break: break-all; }
         </style>
@@ -52,23 +44,23 @@ export const enviarVerificacion = async (correo, token) => {
     <body>
         <div class="container">
             <div class="header">
-                <h1>🎯 Zenith</h1>
+                <h1>Zenith</h1>
                 <p>Habit Tracker</p>
             </div>
             <div class="content">
-                <h2>Verifica tu correo electrónico</h2>
-                <p>Gracias por registrarte en Zenith. Para completar tu registro y comenzar a usar la aplicación, verifica tu correo electrónico haciendo clic en el botón de abajo.</p>
+                <h2>Verifica tu correo electronico</h2>
+                <p>Gracias por registrarte en Zenith. Para completar tu registro y comenzar a usar la aplicacion, verifica tu correo electronico haciendo clic en el boton de abajo.</p>
                 
                 <a href="${urlVerificacion}" class="boton-verificar">Verificar Correo</a>
                 
                 <p>O copia y pega este enlace en tu navegador:</p>
                 <div class="token-box">${urlVerificacion}</div>
                 
-                <p style="font-size: 14px; color: #999;">Este enlace expirará en 24 horas.</p>
+                <p style="font-size: 14px; color: #999;">Este enlace expirara en 24 horas.</p>
             </div>
             <div class="footer">
                 <p>Si no solicitaste esta cuenta, puedes ignorar este correo.</p>
-                <p>© 2026 Zenith - Habit Tracker</p>
+                <p>2026 Zenith - Habit Tracker</p>
             </div>
         </div>
     </body>
@@ -77,7 +69,7 @@ export const enviarVerificacion = async (correo, token) => {
 
     return enviarCorreo({
         para: correo,
-        asunto: 'Verifica tu correo electrónico - Zenith',
+        asunto: 'Verifica tu correo electronico - Zenith',
         html,
     });
 };
@@ -117,25 +109,25 @@ export const enviarAvisoEvento = async (correo, nombreUsuario, evento) => {
     <body>
         <div class="container">
             <div class="header">
-                <h1>⏰ Recordatorio de Evento</h1>
+                <h1>Recordatorio de Evento</h1>
                 <p>Zenith - Habit Tracker</p>
             </div>
             <div class="content">
                 <h2>Hola, ${nombreUsuario}</h2>
-                <p>Tu evento está próximo a comenzar:</p>
+                <p>Tu evento esta proximo a comenzar:</p>
                 
                 <div class="evento-card">
                     <h3>${titulo}</h3>
-                    ${descripcion ? `<p><span class="label">Descripción:</span> ${descripcion}</p>` : ''}
-                    <p><span class="label">📅 Fecha:</span> ${fechaFormateada}</p>
-                    ${duracion ? `<p><span class="label">⏱️ Duración:</span> ${duracion} minutos</p>` : ''}
+                    ${descripcion ? `<p><span class="label">Descripcion:</span> ${descripcion}</p>` : ''}
+                    <p><span class="label">Fecha:</span> ${fechaFormateada}</p>
+                    ${duracion ? `<p><span class="label">Duracion:</span> ${duracion} minutos</p>` : ''}
                 </div>
                 
                 <p style="text-align: center; margin-top: 20px;">No olvides asistir a tu evento.</p>
             </div>
             <div class="footer">
-                <p>Este es un recordatorio automático de Zenith.</p>
-                <p>© 2026 Zenith - Habit Tracker</p>
+                <p>Este es un recordatorio automatico de Zenith.</p>
+                <p>2026 Zenith - Habit Tracker</p>
             </div>
         </div>
     </body>
@@ -144,7 +136,7 @@ export const enviarAvisoEvento = async (correo, nombreUsuario, evento) => {
 
     return enviarCorreo({
         para: correo,
-        asunto: `⏰ ${titulo} - Recordatorio de evento`,
+        asunto: `${titulo} - Recordatorio de evento`,
         html,
     });
 };
