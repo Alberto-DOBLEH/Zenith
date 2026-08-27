@@ -5,8 +5,10 @@ import { enviarAvisoEvento } from '../services/correo.service.js';
 // Función para procesar recordatorios pendientes
 const procesarRecordatorios = async () => {
     try {
-        // Buscar recordatorios que están por vencer en los próximos 5 minutos
-        // y que no han sido enviados
+        // Buscar recordatorios que están por vencer en los próximos 10 minutos
+        // o que están atrasados (hasta 30 min) y no se enviaron
+        // Usamos una ventana más amplia porque las fechas se guardan como hora local
+        // del usuario pero NOW() es UTC
         const result = await db.query(`
             SELECT 
                 re.id_recordatorio,
@@ -24,10 +26,11 @@ const procesarRecordatorios = async () => {
             JOIN eventos e ON e.id_evento = re.evento
             JOIN usuarios u ON u.id_usuario = e.usuario
             WHERE 
-                re.fecha_recordatorio BETWEEN NOW() AND NOW() + INTERVAL '5 minutes'
-                AND (re.enviado IS NULL OR re.enviado = FALSE)
+                (re.enviado IS NULL OR re.enviado = FALSE)
                 AND u.email_verificado = TRUE
+                AND re.fecha_recordatorio <= NOW() + INTERVAL '10 minutes'
             ORDER BY re.fecha_recordatorio ASC
+            LIMIT 10
         `);
 
         if (result.rows.length === 0) {
@@ -79,7 +82,6 @@ const procesarRecordatorios = async () => {
 // Iniciar scheduler - cada 5 minutos
 export const iniciarScheduler = () => {
     // Verificar si hay campo enviado en recordatorios_evento
-    // Si no existe, lo agregamos (para compatibilidad con BD existente)
     db.query(`
         DO $$ 
         BEGIN 
@@ -101,7 +103,7 @@ export const iniciarScheduler = () => {
 
     // Programar ejecución cada 5 minutos
     cron.schedule('*/5 * * * *', () => {
-        console.log('[Scheduler] Ejutando procesamiento de recordatorios...');
+        console.log('[Scheduler] Ejecutando procesamiento de recordatorios...');
         procesarRecordatorios();
     });
 
