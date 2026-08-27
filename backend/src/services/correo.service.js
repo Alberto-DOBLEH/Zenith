@@ -1,20 +1,17 @@
-import brevo from '@getbrevo/brevo';
+import { BrevoClient } from '@getbrevo/brevo';
 
-const client = new brevo.ApiClient();
-client.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
-
-const apiInstance = new brevo.TransactionalEmailsApi(client);
+const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
 
 export const enviarCorreo = async (opciones) => {
     const { para, asunto, html } = opciones;
 
-    const sendSmtpEmail = new brevo.SendSmtpEmail();
-    sendSmtpEmail.sender = { name: 'Zenith', email: process.env.BREVO_FROM_EMAIL || 'notificaciones.zenith@gmail.com' };
-    sendSmtpEmail.to = [{ email: para }];
-    sendSmtpEmail.subject = asunto;
-    sendSmtpEmail.htmlContent = html;
+    const result = await client.transactionalEmails.sendTransacEmail({
+        sender: { name: 'Zenith', email: process.env.BREVO_FROM_EMAIL },
+        to: [{ email: para }],
+        subject: asunto,
+        htmlContent: html,
+    });
 
-    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
     return result;
 };
 
