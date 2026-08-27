@@ -1,22 +1,21 @@
-import { Resend } from 'resend';
+import brevo from '@getbrevo/brevo';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const client = new brevo.ApiClient();
+client.setApiKey(brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY);
+
+const apiInstance = new brevo.TransactionalEmailsApi(client);
 
 export const enviarCorreo = async (opciones) => {
     const { para, asunto, html } = opciones;
 
-    const { data, error } = await resend.emails.send({
-        from: process.env.SMTP_FROM || 'Zenith <notificaciones@resend.dev>',
-        to: para,
-        subject: asunto,
-        html,
-    });
+    const sendSmtpEmail = new brevo.SendSmtpEmail();
+    sendSmtpEmail.sender = { name: 'Zenith', email: process.env.BREVO_FROM_EMAIL || 'notificaciones.zenith@gmail.com' };
+    sendSmtpEmail.to = [{ email: para }];
+    sendSmtpEmail.subject = asunto;
+    sendSmtpEmail.htmlContent = html;
 
-    if (error) {
-        throw new Error(error.message);
-    }
-
-    return data;
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    return result;
 };
 
 export const enviarVerificacion = async (correo, token) => {
