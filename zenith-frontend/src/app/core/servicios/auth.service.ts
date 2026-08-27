@@ -64,6 +64,10 @@ export class AuthService {
         return this.api.post<RegistroResponse>('/auth/register', datos);
     }
 
+    verificarCorreo(token: string) {
+        return this.api.get<{ message: string }>(`/auth/verificar-email/${token}`);
+    }
+
     cargarPerfil() {
         return this.api.get<Usuario>('/usuario/perfil').pipe(
             tap((usuario) => this.usuario.set(usuario)),
@@ -94,7 +98,7 @@ export interface RegistroPayload {
     primer_apellido: string;
     segundo_apellido?: string;
     correo: string;
-    telefono: string;
+    telefono?: string;
     username: string;
     contraseña: string;
 }

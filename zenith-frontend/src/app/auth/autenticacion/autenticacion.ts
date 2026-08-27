@@ -92,14 +92,9 @@ export class Autenticacion {
       segundo_apellido: this.formRegistro.value.segundo_apellido || undefined,
       username: this.formRegistro.value.username!,
       correo: this.formRegistro.value.correo!,
+      telefono: this.formRegistro.value.telefono || undefined,
       contraseña: this.formRegistro.value.contraseña!
     };
-
-    // Agregar teléfono solo si se proporcionó
-    const telefono = this.formRegistro.value.telefono;
-    if (telefono) {
-      datos.telefono = telefono;
-    }
 
     this.authService.registrar(datos).subscribe({
       next: () => {

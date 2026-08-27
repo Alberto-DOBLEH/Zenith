@@ -31,7 +31,7 @@ export class VerificarCorreo implements OnInit {
         this.verificando.set(false);
         this.exito.set(true);
       },
-      error: (error) => {
+      error: (error: unknown) => {
         this.verificando.set(false);
         this.mensajeError.set(this.authService.manejarError(error));
       }
