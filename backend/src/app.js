@@ -24,8 +24,8 @@ const origenesExactos =
 
 const permitirOrigen = (origen, callback) => {
     if (!origen) return callback(null, false);
-    if (!originesExactos || originesExactos.length === 0) return callback(null, true);
-    if (originesExactos.includes(origen)) return callback(null, true);
+    if (!origenesExactos || origenesExactos.length === 0) return callback(null, true);
+    if (origenesExactos.includes(origen)) return callback(null, true);
     try {
         const host = new URL(origen).hostname;
         const permitido = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.vercel.app');
