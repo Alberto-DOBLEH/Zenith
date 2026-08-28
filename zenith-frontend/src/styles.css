@@ -45,6 +45,10 @@
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
+body {
+    background-color: var(--background);
+}
+
 .boton-principal {
     background-color: var(--primary);
     color: #fff;
