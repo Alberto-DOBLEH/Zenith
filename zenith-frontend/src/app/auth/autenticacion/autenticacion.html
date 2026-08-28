@@ -26,7 +26,7 @@
             }
 
             @if (pestanaActiva() === 'login') {
-            <form [formGroup]="formLogin" (ngSubmit)="iniciarSesion()" class="form-login">
+            <form [formGroup]="formLogin" (ngSubmit)="iniciarSesion()" class="form-login" novalidate>
                 <p>Correo/Usuario <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="text" formControlName="login" [class.invalido]="mostrarError('login', 'login')">
 
@@ -39,7 +39,7 @@
             </form>
             }
             @else {
-            <form [formGroup]="formRegistro" (ngSubmit)="registrar()" class="form-registro">
+            <form [formGroup]="formRegistro" (ngSubmit)="registrar()" class="form-registro" novalidate>
                 <p>Nombre <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="text" formControlName="nombre" [class.invalido]="mostrarError('nombre', 'registro')">
 
@@ -54,10 +54,10 @@
                 <span class="texto-ayuda">3-16 caracteres (letras, números, _)</span>
 
                 <p>Correo <span class="obligatorio">*</span></p>
-                <input class="inputs-texto" type="text" formControlName="correo" [class.invalido]="mostrarError('correo', 'registro')">
+                <input class="inputs-texto" type="email" formControlName="correo" [class.invalido]="mostrarError('correo', 'registro')">
 
                 <p>Teléfono</p>
-                <input class="inputs-texto" type="text" formControlName="telefono" [class.invalido]="mostrarError('telefono', 'registro')" inputmode="numeric" maxlength="10" (input)="soloDigitosTelefono($event)">
+                <input class="inputs-texto" type="tel" formControlName="telefono" [class.invalido]="mostrarError('telefono', 'registro')" inputmode="numeric" maxlength="10" (input)="soloDigitosTelefono($event)">
                 <span class="texto-ayuda">10 dígitos</span>
 
                 <p>Contraseña <span class="obligatorio">*</span></p>
