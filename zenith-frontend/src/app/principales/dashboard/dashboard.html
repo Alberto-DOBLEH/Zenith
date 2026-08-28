@@ -159,4 +159,27 @@
             (cerrar)="cerrarTimer()">
         </app-modal-timer>
     }
+
+    @if (recaidaModal()) {
+        <div class="overlay" (click)="recaidaModal.set(null)">
+            <div class="modal" (click)="$event.stopPropagation()">
+                <div class="modal-cabecera">
+                    <h2>Un paso atrás no es el final</h2>
+                    <button class="boton-icono" (click)="recaidaModal.set(null)" aria-label="Cerrar">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+                <div class="modal-cuerpo">
+                    <div class="mensaje-recaida">
+                        <i class="bi bi-arrow-repeat"></i>
+                        <p>Marcaste una recaída en <strong>{{ recaidaModal()!.nombre }}</strong>.</p>
+                        <p class="mensaje-recaida-sub">No te desanimes: cada día es una nueva oportunidad para retomar la racha. ¡Tú puedes!</p>
+                    </div>
+                </div>
+                <div class="modal-pie">
+                    <button class="boton-principal" (click)="recaidaModal.set(null)">Seguir adelante</button>
+                </div>
+            </div>
+        </div>
+    }
 </div>

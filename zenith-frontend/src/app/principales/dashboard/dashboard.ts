@@ -60,6 +60,7 @@ export class Dashboard implements OnInit, OnDestroy {
   cargandoEventos = signal(true);
   cargandoRegistro = signal(false);
   habitosDetalles = signal<DetallesHabito | null>(null);
+  recaidaModal = signal<{ nombre: string } | null>(null);
   timerAbierto = signal(false);
   timerHabitoId = signal(0);
   timerHabitoNombre = signal('');
@@ -294,13 +295,15 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   marcado(habito: HabitoVista): boolean {
-    return habito.estado === 'COMPLETADO' || habito.estado === 'EVITADO';
+    if (habito.tipo_habito === 4) {
+        return habito.estado === 'RECAIDA';
+    }
+    return habito.estado === 'COMPLETADO';
   }
 
   bloqueado(habito: HabitoVista): boolean {
-    if (habito.estado === 'COMPLETADO' && habito.tipo_habito !== 4) return true;
-    if (habito.estado === 'EVITADO' && habito.tipo_habito === 4) return true;
-    return false;
+    if (habito.tipo_habito === 4) return false;
+    return habito.estado === 'COMPLETADO';
   }
 
   alternarHabito(habito: HabitoVista) {
@@ -311,6 +314,8 @@ export class Dashboard implements OnInit, OnDestroy {
     if (habito.tipo_habito === 4) {
       if (habito.estado === 'RECAIDA') {
         datos.estado = 'EVITADO';
+      } else {
+        datos.estado = 'RECAIDA';
       }
     } else if (habito.estado === 'COMPLETADO') {
       datos.estado = 'NO_COMPLETADO';
@@ -320,6 +325,9 @@ export class Dashboard implements OnInit, OnDestroy {
       this.bitacoraService.registrar({ habito: habito.id_habito, ...datos }).subscribe({
         next: (respuesta) => {
           this.actualizarEstadoLocal(habito.id_habito, respuesta.estado, respuesta.valor_realizado);
+          if (respuesta.estado === 'RECAIDA') {
+            this.mostrarMotivacion(habito.nombre);
+          }
           this.cargandoRegistro.set(false);
         },
         error: (error) => {
@@ -328,6 +336,10 @@ export class Dashboard implements OnInit, OnDestroy {
         }
       })
     );
+  }
+
+  private mostrarMotivacion(nombre: string) {
+    this.recaidaModal.set({ nombre });
   }
 
   incrementarRepeticion(habito: HabitoVista) {

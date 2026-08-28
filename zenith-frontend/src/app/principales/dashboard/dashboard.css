@@ -333,3 +333,27 @@
         height: 14rem;
     }
 }
+
+.mensaje-recaida {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.7rem;
+    color: var(--foreground);
+    font-size: 0.95rem;
+}
+
+.mensaje-recaida i {
+    font-size: 2.4rem;
+    color: var(--destructive);
+}
+
+.mensaje-recaida p {
+    margin: 0;
+}
+
+.mensaje-recaida .mensaje-recaida-sub {
+    color: var(--muted-foreground);
+    font-size: 0.85rem;
+}
