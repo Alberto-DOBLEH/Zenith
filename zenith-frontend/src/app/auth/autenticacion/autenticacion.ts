@@ -41,6 +41,12 @@ export class Autenticacion {
     this.mensajeExito.set('');
   }
 
+  soloDigitosTelefono(event: Event) {
+    const input = event.target as HTMLInputElement;
+    const limpio = input.value.replace(/\D/g, '').slice(0, 10);
+    this.formRegistro.get('telefono')?.setValue(limpio);
+  }
+
   coincidenContraseñas(group: { get: (campo: string) => { value: string } | null }) {
     const contraseña = group.get('contraseña')?.value;
     const confirmar = group.get('confirmar_contraseña')?.value;

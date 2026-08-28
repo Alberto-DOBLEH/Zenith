@@ -58,7 +58,7 @@
                 <input class="inputs-texto" type="text" formControlName="correo" [class.invalido]="mostrarError('correo', 'registro')">
 
                 <p>Teléfono</p>
-                <input class="inputs-texto" type="text" formControlName="telefono" [class.invalido]="mostrarError('telefono', 'registro')">
+                <input class="inputs-texto" type="text" formControlName="telefono" [class.invalido]="mostrarError('telefono', 'registro')" inputmode="numeric" maxlength="10" (input)="soloDigitosTelefono($event)">
                 <span class="texto-ayuda">10 dígitos</span>
 
                 <p>Contraseña <span class="obligatorio">*</span></p>
