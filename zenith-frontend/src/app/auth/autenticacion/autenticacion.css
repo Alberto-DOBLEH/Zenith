@@ -191,6 +191,18 @@ Mensajes y errores
     margin-bottom: 0.3rem;
 }
 
+.texto-ayuda {
+    color: var(--muted-foreground);
+    font-size: 0.68rem;
+    align-self: flex-start;
+    margin: 0 0 0.5rem 0;
+}
+
+.obligatorio {
+    color: var(--destructive);
+    font-size: 0.85rem;
+}
+
 .boton-principal:disabled {
     opacity: 0.6;
     cursor: not-allowed;

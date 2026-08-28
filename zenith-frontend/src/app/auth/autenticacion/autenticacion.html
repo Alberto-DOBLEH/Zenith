@@ -27,16 +27,20 @@
 
             @if (pestanaActiva() === 'login') {
             <form [formGroup]="formLogin" (ngSubmit)="iniciarSesion()" class="form-login">
-                <p>Correo/Usuario</p>
-                <input class="inputs-texto" type="text" formControlName="login" placeholder="correo o usuario">
+                <p>Correo/Usuario <span class="obligatorio">*</span></p>
+                <input class="inputs-texto" type="text" formControlName="login">
                 @if (mostrarError('login', 'login')) {
                 <span class="texto-error">Este campo es obligatorio</span>
+                } @else {
+                <span class="texto-ayuda">correo o usuario</span>
                 }
 
-                <p>Contraseña</p>
+                <p>Contraseña <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="password" formControlName="contraseña">
                 @if (mostrarError('contraseña', 'login')) {
                 <span class="texto-error">Este campo es obligatorio</span>
+                } @else {
+                <span class="texto-ayuda">tu contraseña</span>
                 }
 
                 <a>¿Olvidaste tu contraseña?</a>
@@ -47,13 +51,13 @@
             }
             @else {
             <form [formGroup]="formRegistro" (ngSubmit)="registrar()" class="form-registro">
-                <p>Nombre</p>
+                <p>Nombre <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="text" formControlName="nombre">
                 @if (mostrarError('nombre', 'registro')) {
                 <span class="texto-error">Este campo es obligatorio</span>
                 }
 
-                <p>Primer Apellido</p>
+                <p>Primer Apellido <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="text" formControlName="primer_apellido">
                 @if (mostrarError('primer_apellido', 'registro')) {
                 <span class="texto-error">Este campo es obligatorio</span>
@@ -62,31 +66,37 @@
                 <p>Segundo Apellido</p>
                 <input class="inputs-texto" type="text" formControlName="segundo_apellido">
 
-                <p>Nombre de Usuario</p>
-                <input class="inputs-texto" type="text" formControlName="username" placeholder="3-16 caracteres (letras, números, _)">
+                <p>Nombre de Usuario <span class="obligatorio">*</span></p>
+                <input class="inputs-texto" type="text" formControlName="username">
                 @if (mostrarError('username', 'registro')) {
                 <span class="texto-error">Username inválido (3-16 caracteres: letras, números o _)</span>
+                } @else {
+                <span class="texto-ayuda">3-16 caracteres (letras, números, _)</span>
                 }
 
-                <p>Correo</p>
+                <p>Correo <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="text" formControlName="correo">
                 @if (mostrarError('correo', 'registro')) {
                 <span class="texto-error">Correo inválido</span>
                 }
 
-                <p>Teléfono (opcional)</p>
-                <input class="inputs-texto" type="text" formControlName="telefono" placeholder="10 dígitos">
+                <p>Teléfono</p>
+                <input class="inputs-texto" type="text" formControlName="telefono">
                 @if (mostrarError('telefono', 'registro')) {
                 <span class="texto-error">El teléfono debe tener 10 dígitos</span>
+                } @else {
+                <span class="texto-ayuda">10 dígitos</span>
                 }
 
-                <p>Contraseña</p>
-                <input class="inputs-texto" type="password" formControlName="contraseña" placeholder="Mín. 8, mayúscula, minúscula, número y símbolo">
+                <p>Contraseña <span class="obligatorio">*</span></p>
+                <input class="inputs-texto" type="password" formControlName="contraseña">
                 @if (mostrarError('contraseña', 'registro')) {
                 <span class="texto-error">Debe tener 8+ caracteres con mayúscula, minúscula, número y símbolo</span>
+                } @else {
+                <span class="texto-ayuda">Mín. 8: mayúscula, minúscula, número y símbolo</span>
                 }
 
-                <p>Confirmar contraseña</p>
+                <p>Confirmar contraseña <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="password" formControlName="confirmar_contraseña">
                 @if (formRegistro.errors?.['noCoinciden'] && formRegistro.get('confirmar_contraseña')?.touched) {
                 <span class="texto-error">Las contraseñas no coinciden</span>
