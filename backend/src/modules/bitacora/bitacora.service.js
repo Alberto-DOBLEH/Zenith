@@ -156,6 +156,7 @@ export const obtenerRegistrosPorPeriodo = async (id_usuario, periodo, timezone) 
             CROSS JOIN fechas f
             WHERE h.usuario = $1
                 AND h.estado = 'ACTIVO'
+                AND h.tipo_habito <> 4
                 AND (
                     h.frecuencia = 'DIARIO'
                     OR (h.frecuencia = 'SEMANAL' AND EXISTS (
