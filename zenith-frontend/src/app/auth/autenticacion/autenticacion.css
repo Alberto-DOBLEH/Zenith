@@ -196,6 +196,11 @@ Mensajes y errores
     font-size: 0.85rem;
 }
 
+.inputs-texto.invalido,
+.inputs-texto.invalido:focus {
+    border-color: var(--destructive);
+}
+
 .boton-principal:disabled {
     opacity: 0.6;
     cursor: not-allowed;
