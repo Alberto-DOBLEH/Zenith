@@ -19,13 +19,23 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(helmet());
 
-const origenesPermitidos =
+const origenesExactos =
     process.env.CORS_ORIGIN?.split(",").map(s => s.trim()).filter(Boolean);
-app.use(cors({
-    origin: origenesPermitidos && origenesPermitidos.length
-        ? origenesPermitidos
-        : true
-}));
+
+const permitirOrigen = (origen, callback) => {
+    if (!origen) return callback(null, false);
+    if (!originesExactos || originesExactos.length === 0) return callback(null, true);
+    if (originesExactos.includes(origen)) return callback(null, true);
+    try {
+        const host = new URL(origen).hostname;
+        const permitido = host === 'localhost' || host === '127.0.0.1' || host.endsWith('.vercel.app');
+        return callback(null, permitido);
+    } catch {
+        return callback(null, false);
+    }
+};
+
+app.use(cors({ origin: permitirOrigen }));
 app.use(express.json());
 
 const limiteLogin = rateLimit({

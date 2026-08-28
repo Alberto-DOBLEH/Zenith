@@ -31,16 +31,12 @@
                 <input class="inputs-texto" type="text" formControlName="login">
                 @if (mostrarError('login', 'login')) {
                 <span class="texto-error">Este campo es obligatorio</span>
-                } @else {
-                <span class="texto-ayuda">correo o usuario</span>
                 }
 
                 <p>Contraseña <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="password" formControlName="contraseña">
                 @if (mostrarError('contraseña', 'login')) {
                 <span class="texto-error">Este campo es obligatorio</span>
-                } @else {
-                <span class="texto-ayuda">tu contraseña</span>
                 }
 
                 <a>¿Olvidaste tu contraseña?</a>
