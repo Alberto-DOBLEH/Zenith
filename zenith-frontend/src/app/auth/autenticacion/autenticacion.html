@@ -33,7 +33,6 @@
                 <p>Contraseña <span class="obligatorio">*</span></p>
                 <input class="inputs-texto" type="password" formControlName="contraseña" [class.invalido]="mostrarError('contraseña', 'login')">
 
-                <a>¿Olvidaste tu contraseña?</a>
                 <button class="boton-principal" type="submit" [disabled]="cargando()">
                     {{ cargando() ? 'Iniciando...' : 'Iniciar Sesión' }}
                 </button>
