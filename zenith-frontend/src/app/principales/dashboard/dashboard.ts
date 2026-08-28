@@ -302,7 +302,9 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   bloqueado(habito: HabitoVista): boolean {
-    if (habito.tipo_habito === 4) return false;
+    if (habito.tipo_habito === 4) {
+        return habito.estado === 'RECAIDA';
+    }
     return habito.estado === 'COMPLETADO';
   }
 
