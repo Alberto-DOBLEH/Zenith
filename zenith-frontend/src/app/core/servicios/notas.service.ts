@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiService } from './api.service';
+import { CacheService, CLAVES_CACHE } from './cache.service';
 
 export interface Nota {
     id_nota: number;
@@ -16,20 +17,25 @@ export interface RespuestaNota {
 @Injectable({ providedIn: 'root' })
 export class NotasService {
     private readonly api = inject(ApiService);
+    private readonly cache = inject(CacheService);
 
     obtener(): Observable<Nota[]> {
-        return this.api.get<Nota[]>('/notas').pipe(
-            map(notas => notas.map(n => ({ ...n, fecha: fechaCorta(n.fecha) })))
+        return this.cache.swr(CLAVES_CACHE.notas, () =>
+            this.api.get<Nota[]>('/notas').pipe(
+                map(notas => notas.map(n => ({ ...n, fecha: fechaCorta(n.fecha) })))
+            )
         );
     }
 
     crear(contenido: string): Observable<RespuestaNota> {
+        this.cache.invalidar(CLAVES_CACHE.notas);
         return this.api.post<RespuestaNota>('/notas', { contenido }).pipe(
             map(r => ({ ...r, nota: { ...r.nota, fecha: fechaCorta(r.nota.fecha) } }))
         );
     }
 
     editar(id_nota: number, contenido: string): Observable<RespuestaNota> {
+        this.cache.invalidar(CLAVES_CACHE.notas);
         return this.api.put<RespuestaNota>(`/notas/${id_nota}`, { contenido }).pipe(
             map(r => ({ ...r, nota: { ...r.nota, fecha: fechaCorta(r.nota.fecha) } }))
         );

@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import { CacheService, CLAVES_CACHE } from './cache.service';
 
 export interface Avatar {
     id_avatar: number;
@@ -11,8 +12,14 @@ export interface Avatar {
 @Injectable({ providedIn: 'root' })
 export class AvataresService {
     private readonly api = inject(ApiService);
+    private readonly cache = inject(CacheService);
 
     obtener(): Observable<Avatar[]> {
-        return this.api.get<Avatar[]>('/avatares');
+        // Catálogo estático: se cachea para siempre.
+        return this.cache.swr(
+            CLAVES_CACHE.avatares,
+            () => this.api.get<Avatar[]>('/avatares'),
+            Number.POSITIVE_INFINITY
+        );
     }
 }

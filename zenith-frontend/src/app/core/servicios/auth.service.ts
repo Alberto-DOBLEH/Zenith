@@ -2,6 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, tap, throwError } from 'rxjs';
 import { ApiService } from './api.service';
+import { CacheService } from './cache.service';
 
 export interface Usuario {
     id_usuario: number;
@@ -37,6 +38,7 @@ export interface RegistroResponse {
 export class AuthService {
     private readonly api = inject(ApiService);
     private readonly router = inject(Router);
+    private readonly cache = inject(CacheService);
 
     usuario = signal<Usuario | null>(null);
     readonly token = signal<string | null>(localStorage.getItem('zenith_token'));
@@ -54,6 +56,7 @@ export class AuthService {
     login(login: string, contraseña: string) {
         return this.api.post<LoginResponse>('/auth/login', { login, contraseña }).pipe(
             tap((respuesta) => {
+                this.cache.limpiar();
                 localStorage.setItem('zenith_token', respuesta.token);
                 this.token.set(respuesta.token);
             })
@@ -81,6 +84,7 @@ export class AuthService {
     }
 
     cerrarSesion() {
+        this.cache.limpiar();
         localStorage.removeItem('zenith_token');
         this.token.set(null);
         this.usuario.set(null);

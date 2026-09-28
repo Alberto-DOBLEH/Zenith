@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
+import { CacheService, CLAVES_CACHE } from './cache.service';
 
 export interface TipoHabito {
     id_tipo_habito: number;
@@ -47,24 +48,41 @@ export interface RespuestaMensaje {
 @Injectable({ providedIn: 'root' })
 export class HabitosService {
     private readonly api = inject(ApiService);
+    private readonly cache = inject(CacheService);
 
     obtenerTipos(): Observable<TipoHabito[]> {
-        return this.api.get<TipoHabito[]>('/habito/tipos');
+        return this.cache.swr(
+            CLAVES_CACHE.habitosTipos,
+            () => this.api.get<TipoHabito[]>('/habito/tipos'),
+            Number.POSITIVE_INFINITY
+        );
     }
 
     obtener(): Observable<Habito[]> {
-        return this.api.get<Habito[]>('/habito');
+        return this.cache.swr(CLAVES_CACHE.habitos, () => this.api.get<Habito[]>('/habito'));
     }
 
     crear(datos: HabitoPayload): Observable<RespuestaId> {
+        this.invalidarRelacionados();
         return this.api.post<RespuestaId>('/habito', datos);
     }
 
     editar(id_habito: number, datos: Partial<HabitoPayload>): Observable<RespuestaMensaje> {
+        this.invalidarRelacionados();
         return this.api.put<RespuestaMensaje>(`/habito/${id_habito}`, datos);
     }
 
     eliminar(id_habito: number): Observable<RespuestaMensaje> {
+        this.invalidarRelacionados();
         return this.api.delete<RespuestaMensaje>(`/habito/${id_habito}`);
+    }
+
+    private invalidarRelacionados(): void {
+        this.cache.invalidar(
+            CLAVES_CACHE.habitos,
+            CLAVES_CACHE.dashboard,
+            CLAVES_CACHE.estadisticasGenerales,
+            CLAVES_CACHE.estadisticasMapa
+        );
     }
 }
