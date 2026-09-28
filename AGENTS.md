@@ -42,6 +42,15 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-09-28 (3) — Navegación instantánea (caché SWR) + Render siempre despierto
+- **`CacheService`** (`zenith-frontend/src/app/core/servicios/cache.service.ts`): caché en memoria con patrón **stale-while-revalidate** y claves compartidas (`CLAVES_CACHE`). Comportamiento: caché fresca (TTL 60 s) → emite sin ir al servidor; sin caché o vencida → emite primero la vieja (la pantalla se pinta al instante, `cargando` baja sincrónico) y refresca en segundo plano; si el refresco falla habiendo caché vencida, se conserva el valor viejo sin error. `invalidar(...claves)`, `invalidarPrefijo()` y `limpiar()`.
+- **Services conectados**: `habitos.obtener`/`obtenerTipos` (tipos = TTL ∞), `eventos.obtener`, `notas.obtener`, `dashboard.obtenerResumen`, `estadisticas.obtenerGenerales`/`obtenerMapa`, `bitacora.obtenerPorPeriodo` (`bitacora:<periodo>`), `avatares.obtener` (TTL ∞).
+- **Invalidaciones por mutación**: crear/editar/eliminar hábito → `habitos + dashboard + estadisticas:*`; CRUD eventos → `eventos`; crear/editar nota → `notas`; `bitacora.registrar` (dashboard, modal-timer) → `dashboard + estadisticas:* + bitacora:*`.
+- **Seguridad de sesión**: `auth.login` y `auth.cerrarSesion` llaman `cache.limpiar()` para que un cambio de usuario en el mismo navegador no vea datos del anterior (bug detectado en revisión; cubierto por test).
+- **Cero cambios en los componentes**: todos usan `.set()` en `next`, por lo que las dobles emisiones (caché + refresco) son idempotentes.
+- **Render siempre despierto (opción C)**: nuevo workflow `.github/workflows/keep-awake.yml` — cron de GitHub Actions cada 10 min que golpea `GET /health` en Render con reintentos (4 intentos, `--max-time 120` por cold start). Repo público → cron gratis. Evita el apagado tras 15 min de inactividad del plan gratuito (cold start de ~50 s). GitHub pausa cronés tras 60 días sin actividad en el repo.
+- Verificado: `ng build` OK, `ng test` **21/21** (7 tests nuevos de `CacheService`), YAML del workflow válido. Backend sin cambios.
+
 ### 2026-09-28 (2) — Limpieza de código no usado (frontend + backend)
 - **Endpoints GET sin consumidor eliminados** (los services `*PorId` siguen como helpers internos de editar/eliminar): `GET /api/habito/:id_habito`, `GET /api/eventos/:id_evento`, `GET /api/notas/:id_nota`, `GET /api/notas/por-fecha` (service/controller borrados del todo) y `GET /api/estadisticas/habito/:id_habito` (función de service y controller borradas). Ahora esas rutas responden 404.
 - **`GET /api/dashboard` simplificado**: ya no calcula ni devuelve `racha_actual`, `habitos_completados`, `habitos_pendientes`, `habitos_recaida` ni `porcentaje_cumplimiento` (se eliminó la query de racha, la más pesada). Responde solo `{ fecha, habitos }`; las métricas viven en `/api/estadisticas`.

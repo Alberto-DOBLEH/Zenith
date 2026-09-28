@@ -1,0 +1,26 @@
+name: Mantener Render despierto
+
+# Render (plan gratuito) apaga el servicio tras 15 min sin peticiones y el
+# primer request de un cold start tarda ~50 s. Un ping cada 10 min lo mantiene
+# activo. Como el repo es público, el cron de GitHub Actions es gratis.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Golpear /health (con reintentos por cold start)
+        run: |
+          for intento in 1 2 3 4; do
+            codigo=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 https://zenith-5sdh.onrender.com/health || true)
+            echo "intento ${intento} -> ${codigo:-sin respuesta}"
+            if [ "$codigo" = "200" ]; then
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Render no responde"
+          exit 1
