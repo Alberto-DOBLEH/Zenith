@@ -2,7 +2,6 @@ import { Router } from "express";
 import {
     crearHabito,
     obtenerHabitos,
-    obtenerHabitoPorId,
     editarHabito,
     eliminarHabito,
     obtenerTiposHabitos
@@ -15,7 +14,6 @@ const router = Router();
 router.get("/tipos", verifyToken, obtenerTiposHabitos);
 router.post("/", verifyToken, crearHabito);
 router.get("/", verifyToken, obtenerHabitos);
-router.get("/:id_habito", verifyToken, validarId, obtenerHabitoPorId);
 router.put("/:id_habito", verifyToken, validarId, editarHabito);
 router.delete("/:id_habito", verifyToken, validarId, eliminarHabito);
 

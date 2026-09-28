@@ -269,9 +269,9 @@ test("inyección SQL y errores sin fuga de detalles", async () => {
     });
     assert.equal(registroMalicioso.status, 400);
 
-    const porFecha = await pedir("/api/notas/por-fecha?fecha=' OR 1=1--", { token });
-    assert.equal(porFecha.status, 400, "fecha maliciosa debe ser rechazada con 400");
-    assert.ok(!/postgres|syntax error/i.test(porFecha.texto));
+    const idMalo = await pedir("/api/habito/' OR 1=1--", { metodo: "PUT", token, cuerpo: { nombre: "x" } });
+    assert.equal(idMalo.status, 400, "id malicioso debe ser rechazado con 400");
+    assert.ok(!/postgres|syntax error/i.test(idMalo.texto));
 
     const periodo = await pedir("/api/bitacora?periodo=' OR 1=1--", { token });
     assert.ok(![500].includes(periodo.status), "periodo malicioso no debe dar 500");
@@ -291,17 +291,29 @@ test("validación de ids en rutas con :id", async () => {
     usuariosCreados.push({ token });
 
     const casos = [
-        ["/api/habito/abc", 400],
-        ["/api/habito/-1", 400],
-        ["/api/habito/1.5", 400],
-        ["/api/notas/xyz", 400],
-        ["/api/eventos/2.5", 400],
-        ["/api/pomodoro/abc", 400],
-        ["/api/estadisticas/habito/abc", 400]
+        ["/api/habito/abc", "PUT", 400],
+        ["/api/habito/-1", "PUT", 400],
+        ["/api/habito/1.5", "PUT", 400],
+        ["/api/notas/xyz", "PUT", 400],
+        ["/api/eventos/2.5", "PUT", 400],
+        ["/api/pomodoro/abc", "GET", 400]
     ];
-    for (const [ruta, esperado] of casos) {
+    for (const [ruta, metodo, esperado] of casos) {
+        const res = await pedir(ruta, { metodo, token });
+        assert.equal(res.status, esperado, `${metodo} ${ruta} debe ser ${esperado}`);
+    }
+
+    // Las rutas GET por id eliminadas ya no existen (404 sin datos)
+    const eliminadas = [
+        `/api/habito/1`,
+        `/api/notas/1`,
+        `/api/eventos/1`,
+        `/api/notas/por-fecha?fecha=2026-01-01`,
+        `/api/estadisticas/habito/1`
+    ];
+    for (const ruta of eliminadas) {
         const res = await pedir(ruta, { token });
-        assert.equal(res.status, esperado, `${ruta} debe ser ${esperado}`);
+        assert.equal(res.status, 404, `${ruta} ya no debe existir`);
     }
 });
 
@@ -351,18 +363,14 @@ test("IDOR: usuario A no puede acceder a recursos del usuario B", async () => {
     const idSesion = sesion.data.sesion.id_sesion;
 
     const intentos = [
-        [`/api/habito/${idHabito}`, "GET", null],
         [`/api/habito/${idHabito}`, "PUT", { nombre: "Intruso" }],
         [`/api/habito/${idHabito}`, "DELETE", null],
-        [`/api/notas/${idNota}`, "GET", null],
         [`/api/notas/${idNota}`, "PUT", { contenido: "Intruso" }],
-        [`/api/eventos/${idEvento}`, "GET", null],
         [`/api/eventos/${idEvento}`, "PUT", { titulo: "Intruso" }],
         [`/api/eventos/${idEvento}`, "DELETE", null],
         [`/api/pomodoro/${idSesion}`, "GET", null],
         [`/api/pomodoro/${idSesion}`, "PUT", { minutos_realizados: 5 }],
-        [`/api/pomodoro/${idSesion}`, "DELETE", null],
-        [`/api/estadisticas/habito/${idHabito}`, "GET", null]
+        [`/api/pomodoro/${idSesion}`, "DELETE", null]
     ];
     for (const [ruta, metodo, cuerpo] of intentos) {
         const res = await pedir(ruta, { metodo, token: tokenA, cuerpo });
@@ -384,9 +392,11 @@ test("XSS almacenado: el backend guarda y devuelve el payload tal cual (el rende
     assert.equal(nota.status, 201);
     const idNota = nota.data.nota.id_nota;
 
-    const notaLeida = await pedir(`/api/notas/${idNota}`, { token });
-    assert.equal(notaLeida.status, 200);
-    assert.equal(notaLeida.data.contenido, payloadNota);
+    const notas = await pedir("/api/notas", { token });
+    assert.equal(notas.status, 200);
+    const notaLeida = (notas.data || []).find(n => n.id_nota === idNota);
+    assert.ok(notaLeida, "la nota creada debe aparecer en el listado");
+    assert.equal(notaLeida.contenido, payloadNota);
 
     const payloadEvento = "<img src=x onerror=alert(1)>";
     const evento = await pedir("/api/eventos", {
@@ -401,9 +411,11 @@ test("XSS almacenado: el backend guarda y devuelve el payload tal cual (el rende
     assert.equal(evento.status, 201);
     const idEvento = evento.data.id_evento;
 
-    const eventoLeido = await pedir(`/api/eventos/${idEvento}`, { token });
-    assert.equal(eventoLeido.status, 200);
-    assert.equal(eventoLeido.data.titulo, payloadEvento);
+    const eventos = await pedir("/api/eventos", { token });
+    assert.equal(eventos.status, 200);
+    const eventoLeido = (eventos.data || []).find(e => e.id_evento === idEvento);
+    assert.ok(eventoLeido, "el evento creado debe aparecer en el listado");
+    assert.equal(eventoLeido.titulo, payloadEvento);
 });
 
 test("rate limit: fuerza bruta en login debe bloquear con 429", { skip: process.env.SKIP_RATE_LIMIT === "1" }, async () => {

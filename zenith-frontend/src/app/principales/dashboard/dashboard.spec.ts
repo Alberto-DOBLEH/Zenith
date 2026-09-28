@@ -22,11 +22,6 @@ describe('Dashboard', () => {
           useValue: {
             obtenerResumen: () => of({
               fecha: '2026-08-14',
-              racha_actual: 3,
-              habitos_completados: 2,
-              habitos_pendientes: 1,
-              habitos_recaida: 0,
-              porcentaje_cumplimiento: 67,
               habitos: []
             } as ResumenDashboard)
           }

@@ -11,17 +11,6 @@ export const obtenerEventos = async (req, res) => {
     }
 };
 
-export const obtenerEventoPorId = async (req, res) => {
-    try {
-        const id_usuario = req.user.id_usuario;
-        const { id_evento } = req.params;
-        const result = await eventosService.obtenerEventoPorId(id_usuario, id_evento);
-        return res.status(200).json(result);
-    } catch (error) {
-        return enviarError(res, error);
-    }
-};
-
 export const crearEvento = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;

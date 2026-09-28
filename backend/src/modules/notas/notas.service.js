@@ -16,7 +16,7 @@ export const obtenerNotas = async (id_usuario) => {
     return result.rows;
 };
 
-export const obtenerNotaPorId = async (id_usuario, id_nota) => {
+const obtenerNotaPorId = async (id_usuario, id_nota) => {
     const result = await db.query(
         `SELECT
             id_nota,
@@ -35,26 +35,6 @@ export const obtenerNotaPorId = async (id_usuario, id_nota) => {
     }
 
     return result.rows[0];
-};
-
-export const obtenerNotaPorFecha = async (id_usuario, fecha) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-        throw {
-            status: 400,
-            message: "La fecha debe tener el formato YYYY-MM-DD"
-        };
-    }
-    const result = await db.query(
-        `SELECT
-            id_nota,
-            fecha,
-            contenido
-        FROM notas
-        WHERE usuario = $1 AND fecha = $2`,
-        [id_usuario, fecha]
-    );
-
-    return result.rows[0] || null;
 };
 
 export const crearNota = async (id_usuario, datos, timezone) => {

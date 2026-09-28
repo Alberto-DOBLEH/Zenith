@@ -34,10 +34,6 @@ export class EventosService {
         return this.api.get<Evento[]>('/eventos');
     }
 
-    obtenerPorId(id_evento: number): Observable<Evento> {
-        return this.api.get<Evento>(`/eventos/${id_evento}`);
-    }
-
     crear(datos: EventoPayload): Observable<RespuestaIdEvento> {
         return this.api.post<RespuestaIdEvento>('/eventos', datos);
     }

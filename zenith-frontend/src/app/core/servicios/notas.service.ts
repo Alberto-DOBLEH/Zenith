@@ -23,12 +23,6 @@ export class NotasService {
         );
     }
 
-    obtenerPorFecha(fecha: string): Observable<Nota | null> {
-        return this.api.get<Nota | null>('/notas/por-fecha', { fecha }).pipe(
-            map(n => (n ? { ...n, fecha: fechaCorta(n.fecha) } : null))
-        );
-    }
-
     crear(contenido: string): Observable<RespuestaNota> {
         return this.api.post<RespuestaNota>('/notas', { contenido }).pipe(
             map(r => ({ ...r, nota: { ...r.nota, fecha: fechaCorta(r.nota.fecha) } }))

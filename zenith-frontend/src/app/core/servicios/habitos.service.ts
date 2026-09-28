@@ -56,10 +56,6 @@ export class HabitosService {
         return this.api.get<Habito[]>('/habito');
     }
 
-    obtenerPorId(id_habito: number): Observable<Habito> {
-        return this.api.get<Habito>(`/habito/${id_habito}`);
-    }
-
     crear(datos: HabitoPayload): Observable<RespuestaId> {
         return this.api.post<RespuestaId>('/habito', datos);
     }

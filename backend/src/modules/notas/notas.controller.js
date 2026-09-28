@@ -11,31 +11,6 @@ export const obtenerNotas = async (req, res) => {
     }
 };
 
-export const obtenerNotaPorId = async (req, res) => {
-    try {
-        const id_usuario = req.user.id_usuario;
-        const { id_nota } = req.params;
-        const result = await notasService.obtenerNotaPorId(id_usuario, id_nota);
-        return res.status(200).json(result);
-    } catch (error) {
-        return enviarError(res, error);
-    }
-};
-
-export const obtenerNotaPorFecha = async (req, res) => {
-    try {
-        const id_usuario = req.user.id_usuario;
-        const { fecha } = req.query;
-        if (!fecha) {
-            return res.status(400).json({ message: "El parametro fecha es obligatorio" });
-        }
-        const result = await notasService.obtenerNotaPorFecha(id_usuario, fecha);
-        return res.status(200).json(result);
-    } catch (error) {
-        return enviarError(res, error);
-    }
-};
-
 export const crearNota = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;

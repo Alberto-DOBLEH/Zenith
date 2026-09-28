@@ -23,7 +23,7 @@ export const obtenerEventos = async (id_usuario) => {
     return result.rows;
 };
 
-export const obtenerEventoPorId = async (id_usuario, id_evento) => {
+const obtenerEventoPorId = async (id_usuario, id_evento) => {
     const result = await db.query(
         `SELECT
             e.id_evento,

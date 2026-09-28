@@ -70,6 +70,34 @@ Response:
 }
 ```
 
+## Endpoint: Verificación de correo
+Descripcion: Valida el token enviado por correo al registrarse y marca el correo como verificado. El login está bloqueado (403) hasta verificar.
+Ruta:
+- {GET} /api/auth/verificar-email/:token
+
+Header: No requiere autenticación.
+
+Response:
+```json
+{
+  "message": "Correo verificado correctamente"
+}
+```
+
+## Endpoint: Health check
+Descripcion: Verifica que el servidor esté vivo (usado por Render y por la suite de seguridad).
+Ruta:
+- {GET} /health
+
+Header: No requiere autenticación.
+
+Response:
+```json
+{
+  "status": "ok"
+}
+```
+
 ---
 
 # Módulo: Usuario
@@ -237,31 +265,6 @@ Response:
 ]
 ```
 
-## Endpoint: Obtener hábito por id
-Descripcion: Devuelve un hábito específico del usuario.
-Ruta:
-- {GET} /api/habito/:id_habito
-
-Header: `Authorization: Bearer <token>`
-
-Response:
-```json
-{
-  "id_habito": 1,
-  "tipo_habito": 1,
-  "tipo_nombre": "Normal",
-  "nombre": "Leer",
-  "descripcion": "Leer un libro",
-  "meta": null,
-  "unidad": null,
-  "frecuencia": "DIARIO",
-  "dia_del_mes": null,
-  "estado": "ACTIVO",
-  "fecha_creacion": "2026-08-13T10:00:00.000Z",
-  "dias": []
-}
-```
-
 ## Endpoint: Editar hábito
 Descripcion: Modifica un hábito. Si en el body se envía `dias`, se reemplazan los días del hábito (borra y reinserta).
 Ruta:
@@ -370,7 +373,7 @@ Response:
 # Módulo: Dashboard
 
 ## Endpoint: Resumen del día
-Descripcion: Devuelve el resumen del día actual: racha general, hábitos completados/pendientes, recaídas y porcentaje de cumplimiento (los evitados no cuentan en el porcentaje).
+Descripcion: Devuelve los hábitos programados para hoy con su estado (COMPLETADO / NO_COMPLETADO / PARCIAL / RECAIDA / EVITADO). Las métricas (rachas, cumplimiento) viven en el módulo de Estadísticas.
 Ruta:
 - {GET} /api/dashboard/
 
@@ -380,11 +383,6 @@ Response:
 ```json
 {
   "fecha": "2026-08-13",
-  "racha_actual": 0,
-  "habitos_completados": 2,
-  "habitos_pendientes": 1,
-  "habitos_recaida": 1,
-  "porcentaje_cumplimiento": 67,
   "habitos": [
     {
       "id_habito": 1,
@@ -419,22 +417,32 @@ Response:
 }
 ```
 
-## Endpoint: Estadísticas de un hábito
-Descripcion: Devuelve estadísticas de un hábito específico: cumplimiento, días registrados y rachas.
+## Endpoint: Mapa de estadísticas por hábito
+Descripcion: Devuelve, para cada hábito activo, su racha actual/máxima y el estado de cada día programado del período (mapa tipo GitHub). Solo se consideran días programados según la frecuencia, desde la creación del hábito. En los hábitos evitados (tipo 4) la lógica se invierte: un día sin registro o con estado `EVITADO` es bueno (nivel 2) y `RECAIDA` es mal día (nivel 0). `nivel`: `2` completo, `1` a medias (PARCIAL), `0` no hecho. Valores de `periodo`: `semana`, `mes`, `trimestre`, `semestre` (por defecto), `anual`.
 Ruta:
-- {GET} /api/estadisticas/habito/:id_habito
+- {GET} /api/estadisticas/mapa?periodo=semestre
 
 Header: `Authorization: Bearer <token>`
 
 Response:
 ```json
 {
-  "id_habito": 3,
-  "nombre": "Leer",
-  "cumplimiento": 80,
-  "dias_registrados": 10,
-  "racha_actual": 2,
-  "racha_maxima": 5
+  "periodo": "semestre",
+  "inicio": "2026-04-01",
+  "fin": "2026-09-28",
+  "habitos": [
+    {
+      "id_habito": 3,
+      "nombre": "Beber agua",
+      "tipo_habito": 1,
+      "racha_actual": 6,
+      "racha_maxima": 9,
+      "dias": [
+        { "fecha": "2026-09-28", "estado": "COMPLETADO", "nivel": 2 },
+        { "fecha": "2026-09-27", "estado": null, "nivel": 0 }
+      ]
+    }
+  ]
 }
 ```
 
@@ -489,26 +497,6 @@ Response:
     "avisos": ["2026-09-11T12:00:00", "2026-09-16T10:00:00"]
   }
 ]
-```
-
-## Endpoint: Obtener evento por id
-Descripcion: Devuelve un evento específico del usuario.
-Ruta:
-- {GET} /api/eventos/:id_evento
-
-Header: `Authorization: Bearer <token>`
-
-Response:
-```json
-{
-  "id_evento": 1,
-  "titulo": "Examen Lenguajes",
-  "descripcion": "Examen parcial",
-  "fecha_inicio": "2026-09-16T14:00:00",
-  "fecha_fin": "2026-09-16T17:00:00",
-  "color": "#ef4444",
-  "avisos": ["2026-09-11T12:00:00", "2026-09-16T10:00:00"]
-}
 ```
 
 ## Endpoint: Editar evento
@@ -576,38 +564,6 @@ Response:
     "contenido": "Empecé el hábito de ejercicio."
   }
 ]
-```
-
-## Endpoint: Obtener nota por fecha
-Descripcion: Devuelve la nota de una fecha específica (o `null` si no existe).
-Ruta:
-- {GET} /api/notas/por-fecha?fecha=2026-08-13
-
-Header: `Authorization: Bearer <token>`
-
-Response:
-```json
-{
-  "id_nota": 2,
-  "fecha": "2026-08-13",
-  "contenido": "Hoy leí el primer capítulo."
-}
-```
-
-## Endpoint: Obtener nota por id
-Descripcion: Devuelve una nota específica del usuario.
-Ruta:
-- {GET} /api/notas/:id_nota
-
-Header: `Authorization: Bearer <token>`
-
-Response:
-```json
-{
-  "id_nota": 2,
-  "fecha": "2026-08-13",
-  "contenido": "Hoy leí el primer capítulo."
-}
 ```
 
 ## Endpoint: Crear / guardar nota del día

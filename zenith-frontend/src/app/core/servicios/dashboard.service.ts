@@ -12,11 +12,6 @@ export interface HabitoResumen {
 
 export interface ResumenDashboard {
     fecha: string;
-    racha_actual: number;
-    habitos_completados: number;
-    habitos_pendientes: number;
-    habitos_recaida: number;
-    porcentaje_cumplimiento: number;
     habitos: HabitoResumen[];
 }
 

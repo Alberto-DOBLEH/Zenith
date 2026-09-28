@@ -135,7 +135,7 @@ export const obtenerHabitos = async (id_usuario) => {
     return result.rows.map(normalizarHabito);
 };
 
-export const obtenerHabitoPorId = async (id_usuario, id_habito) => {
+const obtenerHabitoPorId = async (id_usuario, id_habito) => {
     const result = await db.query(
         `${consultaSelectHabito}
         WHERE h.id_habito = $1 AND h.usuario = $2`,

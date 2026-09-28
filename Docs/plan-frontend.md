@@ -21,8 +21,9 @@ Plan completo del frontend (Angular 21 standalone) basado en `Docs/pantallas-pen
 - ✅ Layout principal (Header + Sidebar + rutas hijas lazy bajo el guard).
 - ✅ Dashboard con datos reales (stats, hábitos por tipo, eventos próximos, estado vacío).
 - ✅ Módulo Hábitos (CRUD + modales crear/editar/detalles/eliminar).
-- ✅ **Sección 2 completa**: Pomodoro (temporizador + ciclos + historial), Eventos (calendario semanal + lista + modales), Notas (nota del día + historial).
-- ✅ **Sección 3 completa**: Perfil (3 tarjetas + avatar + modales editar datos / cambiar contraseña / eliminar cuenta / cerrar sesión), Gráficas Chart.js en el dashboard (línea semanal desde `bitacora?periodo=semana` + doughnut mensual desde `estadisticas`), pulido general.
+- ✅ **Sección 2 completa**: Pomodoro (temporizador + ciclos; la página `/pomodoro` e historial se retiraron y ahora es el **modal-timer** `compartidos/modal-timer`), Eventos (calendario semanal + lista + modales), Notas (nota del día + historial).
+- ✅ **Sección 3 completa**: Perfil (3 tarjetas + avatar + modales editar datos / cambiar contraseña / eliminar cuenta / cerrar sesión), Gráficas Chart.js (línea semanal desde `bitacora?periodo=semana` + doughnut mensual desde `estadisticas`; hoy viven en la pantalla **Estadísticas**), pulido general.
+- ✅ **28-09-2026 — Primer cambio**: dashboard sin tarjetas de stats ni gráficas (solo hábitos + eventos), pantalla de hábitos con frecuencia/objetivo/pomodoro, modal-timer ampliado, y **Sección 4** (nueva pantalla Estadísticas).
 
 ## Sistema de diseño (derivado del login)
 
@@ -88,10 +89,10 @@ Render de tarjetas de hábito por tipo:
 # Sección 2 — Módulos de apoyo
 
 ## 2.1 Pomodoro ✅
-- `pomodoro.service`: crear sesión, avanzar, finalizar, listar (`POST/GET/PUT/DELETE /api/pomodoro`).
-- Temporizador real: input de minutos → `POST /api/pomodoro` (backend calcula `ciclos_objetivo`) → ciclos 25 trabajo / 5 descanso → `PUT` con `minutos_realizados`/`ciclos_completados` y `finalizar:true` al cumplir (el backend marca el hábito COMPLETADO).
-- Pantalla pomodoro externo: círculo de tiempo grande (borde `--primary`, número en `--foreground`), input minutos, botones inicio/pausa/avance, indicador ciclo N/total.
-- Modal **pomodoro de hábito**: sesión ligada al hábito de tiempo (select de hábitos tiempo + `?habito=` desde el dashboard).
+- Modal compartido `compartidos/modal-timer` (la página `/pomodoro` con historial fue retirada; `pomodoro.service` y el CRUD `/api/pomodoro` siguen en standby para un futuro reuso con eventos).
+- Temporizador real: ciclos 25 trabajo / 5 descanso, círculo de progreso con `conic-gradient`, fase TRABAJO/DESCANSO coloreada, indicador ciclo N/total.
+- Reporta el progreso a la bitácora (`POST /api/bitacora`); el hábito de tiempo se marca COMPLETADO al finalizar.
+- Sesión ligada a un hábito de tiempo opcional (select de hábitos tiempo + `?habito=` desde el dashboard).
 
 ## 2.2 Eventos ✅
 - `eventos.service`: CRUD con `avisos`.
@@ -102,7 +103,7 @@ Render de tarjetas de hábito por tipo:
   - **Detalles de evento** + confirmación de eliminación.
 
 ## 2.3 Notas ✅
-- `notas.service`: listar, por-fecha, upsert, PUT.
+- `notas.service`: listar, upsert, PUT.
 - Dos paneles: izquierda la nota del día (textarea `.inputs-texto`, botón "crear nota del día" → "guardar nota del día", editable solo hoy), derecha el historial (tarjetas `Nota — dd/mm/yyyy` + preview).
 - Clic en nota histórica: se muestra en el campo con botón X; cerrar vuelve a la nota del día.
 
@@ -110,7 +111,7 @@ Render de tarjetas de hábito por tipo:
 
 # Sección 3 — Extras y pulido
 
-## 3.1 Perfil
+## 3.1 Perfil ✅
 - `usuarios.service` + `avatares.service` (`GET /api/avatares`).
 - Pantalla: foto/avatar grande en círculo + 3 tarjetas:
   - **Información**: nombres, apellidos, username, fecha nacimiento, país + botón "Cambiar datos".
@@ -119,16 +120,35 @@ Render de tarjetas de hábito por tipo:
 - Botón "Cerrar sesión" al pie.
 - Modales: **editar datos** (con catálogo de avatares), **cambiar contraseña** (actual + nueva → `PUT /api/usuario/cambiar_password`), **confirmación eliminar cuenta**, **confirmación cerrar sesión**.
 
-## 3.2 Gráficas (Chart.js)
+## 3.2 Gráficas (Chart.js) ✅
 - Instalar `chart.js`.
 - Línea semanal: % de hábitos completados por día (agrupado en frontend desde `GET /api/bitacora?periodo=semana`).
 - Progreso mensual (doughnut/barras con `GET /api/estadisticas`).
+- Nota (28-09-2026): se movieron del dashboard a la pantalla **Estadísticas** (Sección 4).
 
-## 3.3 Pulido general
+## 3.3 Pulido general ✅
 - Estados de carga/error/vacío.
 - Responsive completo móvil/escritorio.
 - Validaciones de formularios.
 - Actualizar `AGENTS.md` al terminar.
+
+---
+
+# Sección 4 — Estadísticas y ajustes (28-09-2026)
+
+## 4.1 Dashboard más limpio ✅
+- Eliminadas las 4 tarjetas de stats (racha, completados, pendientes, cumplimiento) y la sección "Progreso" con las gráficas. Quedan saludo, hábitos de hoy y eventos próximos. Todo el código Chart.js se movió fuera de `dashboard.ts`.
+
+## 4.2 Pantalla de Hábitos con más detalle ✅
+- Cada fila muestra la frecuencia (Diario / Semanal con días / Mensual con día), el objetivo de tiempo (`25 min` / `1 h`) y de repetición (`10 repeticiones`), y badge "Pomodoro" si el hábito de tiempo lo tiene habilitado.
+- Modal de detalles: fila "Pomodoro" (Habilitado/No habilitado) y objetivo formateado.
+- Util compartida `core/utilidades/habito-formato.ts` (`textoFrecuencia`, `textoTiempo`, `textoObjetivo`).
+- Modal del pomodoro ampliado: números `clamp(3.5rem, 10vw, 4.75rem)`, círculo hasta 20rem, etiqueta de fase TRABAJO/DESCANSO grande y coloreada (verde en descanso), modal de 34rem.
+
+## 4.3 Pantalla Estadísticas (nueva) ✅
+- Ruta `/estadisticas` + enlace en el sidebar (`bi-graph-up`).
+- Backend: `GET /api/estadisticas/mapa?periodo=semestre` → racha actual/máxima por hábito (solo días programados, con inversión para evitados) + `dias[{fecha, estado, nivel}]`.
+- Contenido: tarjetas de racha general actual/máxima y cumplimiento del mes, gráficas migradas del dashboard (línea semanal + doughnut mensual), y mapa tipo GitHub por hábito (26 semanas, lunes→domingo, verde sólido = completado, verde opaco = parcial, gris = no hecho; no programado transparente; tooltip con fecha y estado).
 
 ---
 
@@ -138,4 +158,6 @@ Overlay `rgba(0,0,0,0.6)` + tarjeta `--card` centrada (radius 1rem, borde sutil,
 
 ## Endpoints a consumir
 
-Auth: `POST /api/auth/register`, `POST /api/auth/login`. Usuario: `GET /api/usuario/perfil`, `PUT /api/usuario/editar_perfil`, `PUT /api/usuario/cambiar_password`, `DELETE /api/usuario/`. Hábitos: `GET /api/habito/tipos`, CRUD `/api/habito`. Bitácora: `POST /api/bitacora`, `GET /api/bitacora?periodo=`. Dashboard: `GET /api/dashboard`. Estadísticas: `GET /api/estadisticas`, `GET /api/estadisticas/habito/:id`. Eventos: CRUD `/api/eventos` (con `avisos`). Notas: `GET /api/notas`, `GET /api/notas/por-fecha`, `POST /api/notas`, `PUT /api/notas/:id`. Pomodoro: CRUD `/api/pomodoro`. Avatares: `GET /api/avatares`.
+Auth: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/verificar-email/:token`. Usuario: `GET /api/usuario/perfil`, `PUT /api/usuario/editar_perfil`, `PUT /api/usuario/cambiar_password`, `DELETE /api/usuario/`. Hábitos: `GET /api/habito/tipos`, `GET /api/habito`, `POST /api/habito`, `PUT/DELETE /api/habito/:id`. Bitácora: `POST /api/bitacora`, `GET /api/bitacora?periodo=`. Dashboard: `GET /api/dashboard` (solo `fecha` + `habitos`). Estadísticas: `GET /api/estadisticas?periodo=`, `GET /api/estadisticas/mapa?periodo=`. Eventos: `GET/POST /api/eventos`, `PUT/DELETE /api/eventos/:id` (con `avisos`). Notas: `GET/POST /api/notas`, `PUT /api/notas/:id`. Pomodoro: CRUD `/api/pomodoro` (en standby). Avatares: `GET /api/avatares`. Salud: `GET /health`.
+
+Nota (28-09-2026): se retiraron los GET por id sin consumidor (`/api/habito/:id`, `/api/eventos/:id`, `/api/notas/:id`, `/api/notas/por-fecha`, `/api/estadisticas/habito/:id`).

@@ -30,17 +30,6 @@ export const obtenerHabitos = async (req, res) => {
     }
 };
 
-export const obtenerHabitoPorId = async (req, res) => {
-    try {
-        const id_usuario = req.user.id_usuario;
-        const { id_habito } = req.params;
-        const result = await habitosService.obtenerHabitoPorId(id_usuario, id_habito);
-        return res.status(200).json(result);
-    } catch (error) {
-        return enviarError(res, error);
-    }
-};
-
 export const editarHabito = async (req, res) => {
     try {
         const id_usuario = req.user.id_usuario;
