@@ -141,47 +141,132 @@ export const obtenerEstadisticasGenerales = async (id_usuario, periodo, timezone
     };
 };
 
-export const obtenerEstadisticasHabito = async (id_usuario, id_habito) => {
-    const habitoResult = await db.query(
-        "SELECT id_habito, nombre FROM habitos WHERE id_habito = $1 AND usuario = $2",
-        [id_habito, id_usuario]
+// Mapa tipo GitHub por hábito: rachas + estado de cada día programado.
+// Reglas:
+//   - Hábitos "buenos" (tipo 1/2/3): buen día = COMPLETADO; PARCIAL queda como nivel 1.
+//   - Hábitos evitados (tipo 4): la lógica se invierte; buen día = sin registro o EVITADO,
+//     RECAIDA es mal día (nivel 0).
+//   - Solo se consideran días programados según la frecuencia del hábito.
+export const obtenerMapa = async (id_usuario, periodo, timezone) => {
+    const per = periodo || "semestre";
+    const dias = diasPorPeriodo(per);
+    const fechaInicio = fechaInicioSQL(timezone, dias);
+    const hoy = fechaHoySQL(timezone);
+
+    const periodoResult = await db.query(
+        `SELECT (${fechaInicio})::text AS inicio, ${hoy}::text AS fin`
+    );
+    const { inicio: inicioPeriodo, fin } = periodoResult.rows[0];
+
+    const habitosResult = await db.query(
+        `SELECT id_habito, nombre, tipo_habito, frecuencia, dia_del_mes,
+                fecha_creacion::text AS fecha_creacion
+         FROM habitos
+         WHERE usuario = $1 AND estado = 'ACTIVO'
+         ORDER BY nombre`,
+        [id_usuario]
     );
 
-    if (habitoResult.rows.length === 0) {
-        throw {
-            status: 404,
-            message: "Habito no encontrado"
-        };
+    if (habitosResult.rows.length === 0) {
+        return { periodo: per, inicio: inicioPeriodo, fin, habitos: [] };
     }
 
-    const habito = habitoResult.rows[0];
+    const fechaCreacionMin = habitosResult.rows
+        .map(h => h.fecha_creacion.slice(0, 10))
+        .sort()[0];
+    const inicioCalculo = fechaCreacionMin < inicioPeriodo ? fechaCreacionMin : inicioPeriodo;
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(inicioCalculo)) {
+        throw { status: 500, message: "fecha de calculo invalida" };
+    }
+
+    // Días programados de cada hábito (desde su creación o desde el inicio del período)
+    // con LEFT JOIN de registros para que los no marcados lleguen con estado null.
     const registrosResult = await db.query(
-        `SELECT estado, fecha
-        FROM registro_habitos
-        WHERE habito = $1
-        ORDER BY fecha DESC`,
-        [id_habito]
+        `WITH fechas AS (
+            SELECT generate_series('${inicioCalculo}'::date, ${hoy}, '1 day'::interval)::date AS fecha
+        ),
+        habitos_programados AS (
+            SELECT h.id_habito, h.tipo_habito, f.fecha
+            FROM habitos h
+            CROSS JOIN fechas f
+            WHERE h.usuario = $1
+                AND h.estado = 'ACTIVO'
+                AND f.fecha >= h.fecha_creacion::date
+                AND ${filtroFrecuencia("h", "f.fecha")}
+        )
+        SELECT hp.id_habito, hp.fecha::text AS fecha, rh.estado
+        FROM habitos_programados hp
+        LEFT JOIN registro_habitos rh ON rh.habito = hp.id_habito AND rh.fecha = hp.fecha
+        ORDER BY hp.id_habito, hp.fecha`,
+        [id_usuario]
     );
 
-    const registros = registrosResult.rows;
-    const total = registros.length;
-    const completados = registros.filter(r => r.estado === "COMPLETADO").length;
-    const cumplimiento = total > 0 ? Math.round((completados / total) * 100) : 0;
+    const filasPorHabito = new Map();
+    for (const fila of registrosResult.rows) {
+        if (!filasPorHabito.has(fila.id_habito)) {
+            filasPorHabito.set(fila.id_habito, []);
+        }
+        filasPorHabito.get(fila.id_habito).push(fila);
+    }
 
-    const fechasCompletadas = registros
-        .filter(r => r.estado === "COMPLETADO")
-        .map(r => fechaLocal(new Date(r.fecha)));
-
-    const hoy = fechaLocal(new Date());
-    const { racha_actual, racha_maxima } = calcularRacha(fechasCompletadas, hoy);
-
-    return {
-        id_habito: habito.id_habito,
-        nombre: habito.nombre,
-        cumplimiento,
-        dias_registrados: total,
-        racha_actual,
-        racha_maxima
+    const esBueno = (tipo, estado) => {
+        if (tipo === 4) return estado !== "RECAIDA";
+        return estado === "COMPLETADO";
     };
+
+    const nivelDe = (tipo, estado) => {
+        if (tipo === 4) return estado === "RECAIDA" ? 0 : 2;
+        if (estado === "COMPLETADO") return 2;
+        if (estado === "PARCIAL") return 1;
+        return 0;
+    };
+
+    const habitos = habitosResult.rows.map(h => {
+        const filas = filasPorHabito.get(h.id_habito) ?? [];
+
+        // Racha actual: desde el último día programado hacia atrás
+        let racha_actual = 0;
+        if (filas.length > 0 && esBueno(h.tipo_habito, filas[filas.length - 1].estado)) {
+            racha_actual = 1;
+            for (let i = filas.length - 2; i >= 0; i--) {
+                if (esBueno(h.tipo_habito, filas[i].estado)) {
+                    racha_actual++;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        // Racha máxima: mayor racha histórica de días programados consecutivos
+        let racha_maxima = 0;
+        let rachaTemp = 0;
+        for (const fila of filas) {
+            if (esBueno(h.tipo_habito, fila.estado)) {
+                rachaTemp++;
+                if (rachaTemp > racha_maxima) racha_maxima = rachaTemp;
+            } else {
+                rachaTemp = 0;
+            }
+        }
+
+        const diasMapa = filas
+            .filter(f => f.fecha >= inicioPeriodo)
+            .map(f => ({
+                fecha: f.fecha,
+                estado: f.estado ?? null,
+                nivel: nivelDe(h.tipo_habito, f.estado)
+            }));
+
+        return {
+            id_habito: h.id_habito,
+            nombre: h.nombre,
+            tipo_habito: h.tipo_habito,
+            racha_actual,
+            racha_maxima,
+            dias: diasMapa
+        };
+    });
+
+    return { periodo: per, inicio: inicioPeriodo, fin, habitos };
 };

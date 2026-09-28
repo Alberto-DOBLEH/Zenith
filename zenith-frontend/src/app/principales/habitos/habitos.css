@@ -100,8 +100,9 @@
 .fila-principal {
     flex: 1;
     display: flex;
-    align-items: center;
-    gap: 0.75rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -110,12 +111,53 @@
     min-width: 0;
 }
 
+.fila-datos {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    max-width: 100%;
+}
+
 .habito-nombre {
     color: var(--foreground);
     font-size: 1rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.habito-info {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.9rem;
+    min-width: 0;
+}
+
+.info-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+}
+
+.info-item i {
+    font-size: 0.78rem;
+}
+
+.badge-pomodoro {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--primary);
+    background-color: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.12rem 0.5rem;
+    border-radius: 1rem;
 }
 
 .habito-tipo {

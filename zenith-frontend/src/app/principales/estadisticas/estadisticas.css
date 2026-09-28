@@ -1,0 +1,273 @@
+.estadisticas {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.encabezado h1 {
+    color: var(--foreground);
+    font-size: 1.6rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.subtitulo {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.carga {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+}
+
+.stats-generales {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+.stat-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 0.8rem;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.stat-icono.racha {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #F59E0B;
+}
+
+.stat-icono.maxima {
+    background-color: rgba(99, 102, 241, 0.15);
+    color: var(--primary);
+}
+
+.stat-icono.cumplimiento {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10B981;
+}
+
+.stat-valor {
+    color: var(--foreground);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stat-etiqueta {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.seccion-graficas,
+.seccion-mapas {
+    padding: 1.25rem;
+    overflow: hidden;
+}
+
+.seccion-titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.seccion-titulo h2 {
+    color: var(--foreground);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.grilla-graficas {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.grafica {
+    min-width: 0;
+}
+
+.grafica-titulo {
+    color: var(--muted-foreground);
+    font-size: 0.85rem;
+    margin: 0 0 0.75rem 0;
+}
+
+.contenedor-grafica {
+    position: relative;
+    height: 16rem;
+    overflow: hidden;
+}
+
+.vacio {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+    padding: 0.5rem 0;
+}
+
+.mapa-habito {
+    padding: 0.9rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.mapa-habito:last-of-type {
+    border-bottom: none;
+}
+
+.mapa-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.6rem;
+}
+
+.mapa-nombre {
+    color: var(--foreground);
+    font-size: 0.95rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mapa-rachas {
+    display: inline-flex;
+    gap: 0.9rem;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.racha-actual {
+    color: #F59E0B;
+}
+
+.racha-maxima {
+    color: var(--primary);
+}
+
+.mapa-scroll {
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+}
+
+.mapa-contenido {
+    display: flex;
+    gap: 0.4rem;
+    min-width: max-content;
+}
+
+.mapa-dias {
+    display: grid;
+    grid-template-rows: repeat(7, 12px);
+    gap: 3px;
+}
+
+.mapa-dias span {
+    color: var(--muted-foreground);
+    font-size: 0.6rem;
+    line-height: 12px;
+}
+
+.mapa-grid {
+    display: grid;
+    grid-template-rows: repeat(7, 12px);
+    grid-auto-flow: column;
+    gap: 3px;
+}
+
+.celda {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+}
+
+.celda.vacia {
+    background-color: transparent;
+}
+
+.celda.nivel-2 {
+    background-color: #10B981;
+}
+
+.celda.nivel-1 {
+    background-color: rgba(16, 185, 129, 0.4);
+}
+
+.celda.nivel-0 {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.leyenda-mapa {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.9rem;
+    margin-top: 0.75rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+}
+
+.leyenda-mapa span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.estado-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 2rem;
+    text-align: center;
+}
+
+.estado-vacio i {
+    font-size: 2.2rem;
+    color: var(--primary);
+}
+
+.estado-vacio p {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.estado-vacio .boton-principal {
+    padding: 0.6rem 1.2rem;
+    text-decoration: none;
+}
+
+@media (max-width: 600px) {
+    .grilla-graficas {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .contenedor-grafica {
+        height: 14rem;
+    }
+}

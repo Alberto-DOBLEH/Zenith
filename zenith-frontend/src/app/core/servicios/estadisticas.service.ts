@@ -10,13 +10,26 @@ export interface Estadisticas {
     racha_maxima: number;
 }
 
-export interface EstadisticasHabito {
+export interface DiaMapa {
+    fecha: string;
+    estado: string | null;
+    nivel: number;
+}
+
+export interface HabitoMapa {
     id_habito: number;
     nombre: string;
-    cumplimiento: number;
-    dias_registrados: number;
+    tipo_habito: number;
     racha_actual: number;
     racha_maxima: number;
+    dias: DiaMapa[];
+}
+
+export interface MapaEstadisticas {
+    periodo: string;
+    inicio: string;
+    fin: string;
+    habitos: HabitoMapa[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -27,7 +40,7 @@ export class EstadisticasService {
         return this.api.get<Estadisticas>('/estadisticas', { periodo });
     }
 
-    obtenerDeHabito(id_habito: number): Observable<EstadisticasHabito> {
-        return this.api.get<EstadisticasHabito>(`/estadisticas/habito/${id_habito}`);
+    obtenerMapa(periodo = 'semestre'): Observable<MapaEstadisticas> {
+        return this.api.get<MapaEstadisticas>('/estadisticas/mapa', { periodo });
     }
 }

@@ -3,6 +3,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/servicios/auth.service';
 import { HabitosService, Habito, HabitoPayload, TipoHabito } from '../../core/servicios/habitos.service';
+import { textoFrecuencia, textoObjetivo } from '../../core/utilidades/habito-formato';
 import { ModalDetallesHabito, DetallesHabito } from '../../compartidos/modal-detalles-habito/modal-detalles-habito';
 
 @Component({
@@ -263,13 +264,23 @@ export class Habitos implements OnInit, OnDestroy {
       id_habito: habito.id_habito,
       nombre: habito.nombre,
       descripcion: habito.descripcion,
+      tipo_habito: habito.tipo_habito,
       tipo_nombre: habito.tipo_nombre,
       meta: habito.meta,
       unidad: habito.unidad,
       esBueno: this.esBueno(habito),
       frecuencia: habito.frecuencia,
       dias: habito.dias,
-      dia_del_mes: habito.dia_del_mes
+      dia_del_mes: habito.dia_del_mes,
+      pomodoro_habilitado: habito.pomodoro_habilitado
     });
+  }
+
+  frecuenciaTexto(habito: Habito): string {
+    return textoFrecuencia(habito.frecuencia, habito.dias, habito.dia_del_mes);
+  }
+
+  objetivoTexto(habito: Habito): string {
+    return textoObjetivo(habito.meta, habito.unidad, habito.tipo_habito === 2);
   }
 }

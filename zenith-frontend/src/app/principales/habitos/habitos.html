@@ -27,8 +27,21 @@
             @for (habito of habitos(); track habito.id_habito) {
                 <div class="fila-habito tarjeta" [class.malo]="!esBueno(habito)">
                     <button class="fila-principal" (click)="verDetalles(habito)">
-                        <span class="habito-nombre">{{ habito.nombre }}</span>
-                        <span class="habito-tipo">{{ habito.tipo_nombre }}</span>
+                        <div class="fila-datos">
+                            <span class="habito-nombre">{{ habito.nombre }}</span>
+                            <span class="habito-tipo">{{ habito.tipo_nombre }}</span>
+                        </div>
+                        <div class="habito-info">
+                            <span class="info-item"><i class="bi bi-calendar3"></i> {{ frecuenciaTexto(habito) }}</span>
+                            @if (habito.tipo_habito === 2) {
+                                <span class="info-item"><i class="bi bi-clock"></i> {{ objetivoTexto(habito) }}</span>
+                                @if (habito.pomodoro_habilitado) {
+                                    <span class="badge-pomodoro"><i class="bi bi-hourglass-split"></i> Pomodoro</span>
+                                }
+                            } @else if (habito.tipo_habito === 3) {
+                                <span class="info-item"><i class="bi bi-arrow-repeat"></i> {{ objetivoTexto(habito) }}</span>
+                            }
+                        </div>
                     </button>
                     <div class="fila-acciones">
                         <button class="boton-icono" (click)="abrirEditar(habito)" aria-label="Editar">

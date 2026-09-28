@@ -1,5 +1,5 @@
 <div class="overlay" (click)="cerrarModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal modal-timer" (click)="$event.stopPropagation()">
         <div class="modal-cabecera">
             <h2>{{ nombreHabito }}</h2>
             @if (estado() !== 'iniciado') {
@@ -31,9 +31,9 @@
                     </div>
                 }
             } @else {
-                <div class="circulo-tiempo" [style.--progreso]="progreso + '%'">
+                <div class="circulo-tiempo" [style.--progreso]="progreso + '%'" [class.descanso]="pomodoro && fase() === 'descanso'">
                     @if (pomodoro) {
-                        <span class="fase">{{ etiquetaFase }}</span>
+                        <span class="fase" [class.descanso]="fase() === 'descanso'">{{ etiquetaFase }}</span>
                     }
                     <span class="tiempo">{{ tiempoFormateado }}</span>
                     @if (pomodoro) {

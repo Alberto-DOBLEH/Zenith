@@ -20,7 +20,16 @@
                 @if (habito()!.meta != null) {
                     <div class="fila-detalle">
                         <span class="etiqueta">Objetivo</span>
-                        <span>{{ habito()!.meta }} {{ habito()!.unidad || '' }}</span>
+                        <span>{{ objetivoTexto(habito()!.meta, habito()!.unidad, habito()!.tipo_habito === 2) }}</span>
+                    </div>
+                }
+
+                @if (habito()!.tipo_habito === 2) {
+                    <div class="fila-detalle">
+                        <span class="etiqueta">Pomodoro</span>
+                        <span [class.activo]="habito()!.pomodoro_habilitado">
+                            {{ habito()!.pomodoro_habilitado ? 'Habilitado' : 'No habilitado' }}
+                        </span>
                     </div>
                 }
 

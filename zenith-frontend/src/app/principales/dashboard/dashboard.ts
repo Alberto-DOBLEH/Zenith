@@ -1,22 +1,13 @@
-import { Component, ElementRef, OnDestroy, OnInit, effect, inject, signal, viewChild } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
-import { Chart, registerables } from 'chart.js';
 import { AuthService } from '../../core/servicios/auth.service';
 import { DashboardService, HabitoResumen, ResumenDashboard } from '../../core/servicios/dashboard.service';
 import { HabitosService, Habito } from '../../core/servicios/habitos.service';
-import { BitacoraService, DiaEstadistica } from '../../core/servicios/bitacora.service';
+import { BitacoraService } from '../../core/servicios/bitacora.service';
 import { EventosService, Evento } from '../../core/servicios/eventos.service';
-import { EstadisticasService, Estadisticas } from '../../core/servicios/estadisticas.service';
 import { ModalDetallesHabito, DetallesHabito } from '../../compartidos/modal-detalles-habito/modal-detalles-habito';
 import { ModalTimer } from '../../compartidos/modal-timer/modal-timer';
-
-Chart.register(...registerables);
-
-interface DatosSemana {
-  labels: string[];
-  valores: (number | null)[];
-}
 
 interface HabitoVista extends HabitoResumen {
     meta?: number | null;
@@ -41,15 +32,9 @@ export class Dashboard implements OnInit, OnDestroy {
   private readonly habitosService = inject(HabitosService);
   private readonly bitacoraService = inject(BitacoraService);
   private readonly eventosService = inject(EventosService);
-  private readonly estadisticasService = inject(EstadisticasService);
 
   private suscripciones: Subscription[] = [];
   private metaInfo = new Map<number, Habito>();
-  private graficaSemanal: Chart | null = null;
-  private graficaMensual: Chart | null = null;
-
-  private readonly canvasSemanal = viewChild<ElementRef<HTMLCanvasElement>>('canvasSemanal');
-  private readonly canvasMensual = viewChild<ElementRef<HTMLCanvasElement>>('canvasMensual');
 
   cargando = signal(true);
   error = signal('');
@@ -66,28 +51,8 @@ export class Dashboard implements OnInit, OnDestroy {
   timerHabitoNombre = signal('');
   timerMinutos = signal(25);
   timerPomodoro = signal(false);
-  datosSemana = signal<DatosSemana | null>(null);
-  estadisticas = signal<Estadisticas | null>(null);
 
   fechaHoy = '';
-
-  constructor() {
-    effect(() => {
-      const canvas = this.canvasSemanal();
-      const datos = this.datosSemana();
-      if (canvas && datos) {
-        this.dibujarSemanal(canvas.nativeElement, datos);
-      }
-    });
-
-    effect(() => {
-      const canvas = this.canvasMensual();
-      const datos = this.estadisticas();
-      if (canvas && datos) {
-        this.dibujarMensual(canvas.nativeElement, datos);
-      }
-    });
-  }
 
   get nombre(): string {
     return this.authService.usuario()?.nombre || '';
@@ -115,8 +80,6 @@ export class Dashboard implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.graficaSemanal?.destroy();
-    this.graficaMensual?.destroy();
     this.suscripciones.forEach(s => s.unsubscribe());
   }
 
@@ -163,112 +126,6 @@ export class Dashboard implements OnInit, OnDestroy {
         error: () => this.cargandoEventos.set(false)
       })
     );
-
-    this.suscripciones.push(
-      this.bitacoraService.obtenerPorPeriodo('semana').subscribe({
-        next: (registros) => this.datosSemana.set(this.calcularSemana(registros)),
-        error: () => this.datosSemana.set(null)
-      })
-    );
-
-    this.suscripciones.push(
-      this.estadisticasService.obtenerGenerales().subscribe({
-        next: (estadisticas) => this.estadisticas.set(estadisticas),
-        error: () => this.estadisticas.set(null)
-      })
-    );
-  }
-
-  private calcularSemana(dias: DiaEstadistica[]): DatosSemana {
-    const labels: string[] = [];
-    const valores: (number | null)[] = [];
-
-    const porFecha = new Map<string, DiaEstadistica>();
-    for (const d of dias) {
-      porFecha.set(String(d.fecha).slice(0, 10), d);
-    }
-
-    for (let i = 6; i >= 0; i--) {
-      const dia = new Date();
-      dia.setDate(dia.getDate() - i);
-      const etiqueta = dia.toLocaleDateString('es-MX', { weekday: 'short' });
-      labels.push(etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1, 4));
-
-      const fechaStr = `${dia.getFullYear()}-${String(dia.getMonth() + 1).padStart(2, '0')}-${String(dia.getDate()).padStart(2, '0')}`;
-      const delDia = porFecha.get(fechaStr);
-      if (!delDia || delDia.total_programados === 0) {
-        valores.push(null);
-        continue;
-      }
-      valores.push(Math.round((delDia.completados / delDia.total_programados) * 100));
-    }
-
-    return { labels, valores };
-  }
-
-  private dibujarSemanal(canvas: HTMLCanvasElement, datos: DatosSemana) {
-    this.graficaSemanal?.destroy();
-    this.graficaSemanal = new Chart(canvas, {
-      type: 'line',
-      data: {
-        labels: datos.labels,
-        datasets: [{
-          label: '% cumplimiento',
-          data: datos.valores,
-          borderColor: '#6366F1',
-          backgroundColor: 'rgba(99,102,241,0.15)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointBackgroundColor: '#6366F1'
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            min: 0,
-            max: 100,
-            ticks: { color: '#717182', callback: (valor) => valor + '%' },
-            grid: { color: 'rgba(255,255,255,0.06)' }
-          },
-          x: {
-            ticks: { color: '#717182' },
-            grid: { display: false }
-          }
-        },
-        plugins: {
-          legend: { display: false }
-        }
-      }
-    });
-  }
-
-  private dibujarMensual(canvas: HTMLCanvasElement, datos: Estadisticas) {
-    this.graficaMensual?.destroy();
-    this.graficaMensual = new Chart(canvas, {
-      type: 'doughnut',
-      data: {
-        labels: ['Completados', 'No completados'],
-        datasets: [{
-          data: [datos.completados, datos.no_completados],
-          backgroundColor: ['#10B981', '#EF4444'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { color: '#717182', boxWidth: 12 }
-          }
-        }
-      }
-    });
   }
 
   private enriquecer(habito: HabitoResumen): HabitoVista {
@@ -368,44 +225,6 @@ export class Dashboard implements OnInit, OnDestroy {
         ? { ...h, estado, valor_realizado: valorRealizado }
         : h)
     );
-    this.recalcularResumen();
-    this.recargarGraficas();
-  }
-
-  private recargarGraficas() {
-    this.suscripciones.push(
-      this.bitacoraService.obtenerPorPeriodo('semana').subscribe({
-        next: (registros) => this.datosSemana.set(this.calcularSemana(registros)),
-        error: () => {}
-      })
-    );
-
-    this.suscripciones.push(
-      this.estadisticasService.obtenerGenerales().subscribe({
-        next: (estadisticas) => this.estadisticas.set(estadisticas),
-        error: () => {}
-      })
-    );
-  }
-
-  private recalcularResumen() {
-    const actual = this.resumen();
-    if (!actual) return;
-
-    const habitos = this.habitos();
-    const positivos = habitos.filter(h => h.tipo_habito !== 4);
-    const completados = positivos.filter(h => h.estado === 'COMPLETADO').length;
-    const recaidas = habitos.filter(h => h.tipo_habito === 4 && h.estado === 'RECAIDA').length;
-
-    this.resumen.set({
-      ...actual,
-      habitos_completados: completados,
-      habitos_pendientes: positivos.length - completados,
-      habitos_recaida: recaidas,
-      porcentaje_cumplimiento: positivos.length > 0
-        ? Math.round((completados / positivos.length) * 100)
-        : 0
-    });
   }
 
   verDetalles(habito: HabitoVista) {
@@ -413,13 +232,15 @@ export class Dashboard implements OnInit, OnDestroy {
       id_habito: habito.id_habito,
       nombre: habito.nombre,
       descripcion: habito.descripcion || null,
+      tipo_habito: habito.tipo_habito,
       tipo_nombre: habito.tipo_nombre || '',
       meta: habito.meta ?? null,
       unidad: habito.unidad || null,
       esBueno: this.esBueno(habito),
       frecuencia: habito.frecuencia || 'DIARIO',
       dias: habito.dias ?? [],
-      dia_del_mes: habito.dia_del_mes ?? null
+      dia_del_mes: habito.dia_del_mes ?? null,
+      pomodoro_habilitado: habito.pomodoro_habilitado ?? false
     });
   }
 
