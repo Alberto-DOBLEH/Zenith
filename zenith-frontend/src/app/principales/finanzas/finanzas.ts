@@ -8,7 +8,8 @@ import {
   MetodoPago,
   Categoria,
   Movimiento,
-  MovimientoPayload
+  MovimientoPayload,
+  FiltrosMovimientos
 } from '../../core/servicios/finanzas.service';
 
 const ETIQUETAS_METODO: Record<MetodoPago['tipo'], string> = {
@@ -41,6 +42,7 @@ export class Finanzas implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
 
   private suscripciones: Subscription[] = [];
+  private suscripcionFiltro: Subscription | null = null;
 
   cargando = signal(true);
   error = signal('');
@@ -48,6 +50,8 @@ export class Finanzas implements OnInit, OnDestroy {
   metodosPago = signal<MetodoPago[]>([]);
   categorias = signal<Categoria[]>([]);
   movimientos = signal<Movimiento[]>([]);
+  movimientosVisibles = signal<Movimiento[]>([]);
+  filtrando = signal(false);
 
   modalMetodoAbierto = signal(false);
   modalCategoriaAbierto = signal(false);
@@ -79,12 +83,20 @@ export class Finanzas implements OnInit, OnDestroy {
     descripcion: ['']
   });
 
+  formFiltros = this.fb.group({
+    fecha: [''],
+    mes: [''],
+    tipo: [''],
+    metodo: ['']
+  });
+
   ngOnInit() {
     this.cargarDatos();
   }
 
   ngOnDestroy() {
     this.suscripciones.forEach(s => s.unsubscribe());
+    this.suscripcionFiltro?.unsubscribe();
   }
 
   private cargarDatos() {
@@ -109,6 +121,7 @@ export class Finanzas implements OnInit, OnDestroy {
       this.finanzasService.obtenerMovimientos().subscribe({
         next: (movimientos) => {
           this.movimientos.set(movimientos);
+          this.movimientosVisibles.set(movimientos);
           this.cargando.set(false);
         },
         error: (error) => {
@@ -140,10 +153,79 @@ export class Finanzas implements OnInit, OnDestroy {
   private recargarMovimientos() {
     this.suscripciones.push(
       this.finanzasService.obtenerMovimientos().subscribe({
-        next: (movimientos) => this.movimientos.set(movimientos),
+        next: (movimientos) => {
+          this.movimientos.set(movimientos);
+          this.aplicarFiltros();
+        },
         error: (error) => this.error.set(this.authService.manejarError(error))
       })
     );
+  }
+
+  get hayFiltros(): boolean {
+    const v = this.formFiltros.value;
+    return !!(v.fecha || v.mes || v.tipo || v.metodo);
+  }
+
+  aplicarFiltros() {
+    const v = this.formFiltros.value;
+    const filtros: FiltrosMovimientos = {};
+    if (v.fecha) filtros.fecha = v.fecha;
+    if (v.mes) filtros.mes = v.mes;
+    if (v.tipo) filtros.tipo = v.tipo as Movimiento['tipo_movimiento'];
+    if (v.metodo) filtros.metodo = Number(v.metodo);
+
+    this.suscripcionFiltro?.unsubscribe();
+    this.error.set('');
+
+    if (Object.keys(filtros).length === 0) {
+      this.filtrando.set(false);
+      this.movimientosVisibles.set(this.movimientos());
+      return;
+    }
+
+    this.filtrando.set(true);
+    this.suscripcionFiltro = this.finanzasService.obtenerMovimientos(filtros).subscribe({
+      next: (movimientos) => {
+        this.movimientosVisibles.set(movimientos);
+        this.filtrando.set(false);
+      },
+      error: (error) => {
+        this.error.set(this.authService.manejarError(error));
+        this.filtrando.set(false);
+      }
+    });
+  }
+
+  onCambioTipo(event: Event) {
+    this.formFiltros.patchValue({ tipo: (event.target as HTMLSelectElement).value });
+    this.aplicarFiltros();
+  }
+
+  onCambioMetodo(event: Event) {
+    this.formFiltros.patchValue({ metodo: (event.target as HTMLSelectElement).value });
+    this.aplicarFiltros();
+  }
+
+  onCambioFecha(event: Event) {
+    this.formFiltros.patchValue({
+      fecha: (event.target as HTMLInputElement).value,
+      mes: ''
+    });
+    this.aplicarFiltros();
+  }
+
+  onCambioMes(event: Event) {
+    this.formFiltros.patchValue({
+      mes: (event.target as HTMLInputElement).value,
+      fecha: ''
+    });
+    this.aplicarFiltros();
+  }
+
+  limpiarFiltros() {
+    this.formFiltros.reset({ fecha: '', mes: '', tipo: '', metodo: '' });
+    this.aplicarFiltros();
   }
 
   get tipoMovimientoForm(): Movimiento['tipo_movimiento'] {

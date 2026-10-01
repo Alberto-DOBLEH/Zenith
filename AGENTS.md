@@ -42,6 +42,14 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-10-01 (7) — Filtros de movimientos (tipo, método, fecha y mes)
+- **Barra de filtros dentro del contenedor de Movimientos** (chips tipo/método + inputs `date` y `month` + botón ✕ para limpiar): consumen `GET /api/movimientos?fecha|mes|tipo|metodo` (los 4 filtros planeados, combinables).
+- **`formFiltros` + `aplicarFiltros()`**: arma solo los parámetros con valor → `FinanzasService.obtenerMovimientos(filtros)` (sin filtros usa la caché SWR; con filtros pide directo para no contaminarla). Cancela la petición anterior al cambiar de filtro (last-wins) y limpia `error`.
+- **Fecha y mes son mutuamente excluyentes en la UI** (elegir una limpia la otra) para evitar combinaciones contradictorias.
+- **Dos listas**: `movimientos` (completa, alimenta las 3 stats) y `movimientosVisibles` (la que se muestra); limpiar filtros restaura la lista completa sin ir al servidor. `recargarMovimientos` (tras crear uno) recarga todo y re-aplica los filtros activos.
+- Estados nuevos en la sección: spinner "Aplicando filtros..." (`filtrando`), vacío "No hay movimientos con esos filtros." y contador = movimientos visibles.
+- Verificado: `ng build` OK (aviso de CSS 5.02 kB vs presupuesto 4 kB, tolerado igual que el de eventos), `ng test --watch=false` **34/34** (3 tests nuevos: llamada con filtros, fecha limpia mes, limpiar restaura la lista). Nota: el spec usa `vi.fn()` porque el proyecto corre con **vitest/globals**, no jasmine.
+
 ### 2026-10-01 (6) — Modal de movimientos (gasto / entrada / transferencia)
 - **Botón "Nuevo"** en el encabezado de la sección Movimientos (junto al contador) que abre el modal.
 - **`formMovimiento`** arranca con un select de tipo (GASTO por defecto) y los campos se despliegan según la selección:

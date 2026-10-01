@@ -52,6 +52,13 @@ export interface MovimientoPayload {
     descripcion?: string;
 }
 
+export type FiltrosMovimientos = {
+    fecha?: string;
+    mes?: string;
+    tipo?: Movimiento['tipo_movimiento'];
+    metodo?: number;
+};
+
 @Injectable({ providedIn: 'root' })
 export class FinanzasService {
     private readonly api = inject(ApiService);
@@ -82,7 +89,10 @@ export class FinanzasService {
         return this.api.put(`/categorias/${id_categoria}`, datos);
     }
 
-    obtenerMovimientos(): Observable<Movimiento[]> {
+    obtenerMovimientos(filtros?: FiltrosMovimientos): Observable<Movimiento[]> {
+        if (filtros && Object.values(filtros).some(v => v !== undefined && v !== '')) {
+            return this.api.get<Movimiento[]>('/movimientos', filtros);
+        }
         return this.cache.swr(CLAVES_CACHE.movimientos, () =>
             this.api.get<Movimiento[]>('/movimientos'));
     }

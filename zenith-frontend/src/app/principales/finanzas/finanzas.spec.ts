@@ -8,24 +8,32 @@ import { FinanzasService } from '../../core/servicios/finanzas.service';
 describe('Finanzas', () => {
   let component: Finanzas;
   let fixture: ComponentFixture<Finanzas>;
+  let servicio: {
+    obtenerMetodosPago: ReturnType<typeof vi.fn>;
+    obtenerCategorias: ReturnType<typeof vi.fn>;
+    obtenerMovimientos: ReturnType<typeof vi.fn>;
+    crearMetodoPago: ReturnType<typeof vi.fn>;
+    crearCategoria: ReturnType<typeof vi.fn>;
+    editarCategoria: ReturnType<typeof vi.fn>;
+    crearMovimiento: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(async () => {
+    servicio = {
+      obtenerMetodosPago: vi.fn(() => of([])),
+      obtenerCategorias: vi.fn(() => of([])),
+      obtenerMovimientos: vi.fn(() => of([])),
+      crearMetodoPago: vi.fn(() => of({ message: 'ok', metodo: {} })),
+      crearCategoria: vi.fn(() => of({ message: 'ok', categoria: {} })),
+      editarCategoria: vi.fn(() => of({ message: 'ok' })),
+      crearMovimiento: vi.fn(() => of({ message: 'ok', movimiento: {} }))
+    };
+
     await TestBed.configureTestingModule({
       imports: [Finanzas],
       providers: [
         provideRouter([]),
-        {
-          provide: FinanzasService,
-          useValue: {
-            obtenerMetodosPago: () => of([]),
-            obtenerCategorias: () => of([]),
-            obtenerMovimientos: () => of([]),
-            crearMetodoPago: () => of({ message: 'ok', metodo: {} }),
-            crearCategoria: () => of({ message: 'ok', categoria: {} }),
-            editarCategoria: () => of({ message: 'ok' }),
-            crearMovimiento: () => of({ message: 'ok', movimiento: {} })
-          }
-        }
+        { provide: FinanzasService, useValue: servicio }
       ]
     }).compileComponents();
 
@@ -132,5 +140,31 @@ describe('Finanzas', () => {
 
     component.formMovimiento.patchValue({ id_metodo_pago: 1 });
     expect(component.metodosDestino.map(m => m.id_metodo)).toEqual([2]);
+  });
+
+  it('consulta al backend con los filtros seleccionados', () => {
+    component.formFiltros.patchValue({ tipo: 'GASTO', metodo: '3' });
+    component.aplicarFiltros();
+
+    expect(servicio.obtenerMovimientos).toHaveBeenCalledWith({ tipo: 'GASTO', metodo: 3 });
+    expect(component.hayFiltros).toBe(true);
+  });
+
+  it('al elegir fecha limpia el mes para evitar filtros contradictorios', () => {
+    component.formFiltros.patchValue({ mes: '2026-10' });
+    component.onCambioFecha({ target: { value: '2026-10-01' } } as unknown as Event);
+
+    expect(component.formFiltros.value.mes).toBe('');
+    expect(servicio.obtenerMovimientos).toHaveBeenCalledWith({ fecha: '2026-10-01' });
+  });
+
+  it('limpiar filtros vuelve a mostrar todos los movimientos', () => {
+    const todos = [{ id_movimiento: 1, cantidad: '50.00' }] as any;
+    component.movimientos.set(todos);
+    component.formFiltros.patchValue({ tipo: 'GASTO' });
+    component.limpiarFiltros();
+
+    expect(component.hayFiltros).toBe(false);
+    expect(component.movimientosVisibles()).toEqual(todos);
   });
 });
