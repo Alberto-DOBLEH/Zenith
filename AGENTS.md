@@ -42,6 +42,20 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-10-01 (2) — Pantalla Finanzas (scaffold frontend para el módulo)
+- Nuevo componente `zenith-frontend/src/app/principales/finanzas/` (`finanzas.ts/html/css` + spec), ruta `/finanzas` en `app.routes.ts` (lazy bajo `authGuard`) y enlace "Finanzas" (`bi-wallet2`) en el sidebar después de Notas.
+- Estructura idéntica al patrón de las pantallas existentes (encabezado, `mensaje-error`/`mensaje-exito`, rama `cargando`, secciones `.tarjeta`, estados vacíos): 3 stats (saldo total, entradas del mes, gastos del mes), rejilla Métodos de pago + Categorías, y lista de Movimientos con cantidad con signo según tipo (verde entrada / rojo gasto / ámbar transferencia).
+- **Todavía no consume backend**: las interfaces `MetodoPago`, `Categoria` y `Movimiento` están exportadas desde el componente y calcan el esquema de la migración `20261001000000_finanzas.sql`; los signals arrancan vacíos para conectar el service cuando existan los endpoints.
+- Verificado: `ng build` OK, `ng test --watch=false` **24/24** (3 tests nuevos del spec).
+
+### 2026-10-01 — Módulo de finanzas: esquema en Supabase (tablas + "Efectivo" automático)
+- **Migración** `supabase/migrations/20261001000000_finanzas.sql` (aplicada a local y remoto con `npx supabase db push`):
+  - Enums: `tipo_metodo_pago` (DEBITO/EFECTIVO/CREDITO), `tipo_categoria` (GASTO/ENTRADA), `tipo_movimiento` (GASTO/ENTRADA/TRANSFERENCIA).
+  - `metodos_pago` (id_metodo, id_usuario FK CASCADE, nombre, tipo, saldo_actual numeric(12,2) DEFAULT 0; UNIQUE(id_usuario, nombre)), `categorias` (id_categoria, id_usuario FK CASCADE, nombre, tipo; UNIQUE(id_usuario, nombre, tipo)) y `movimientos` (id_movimiento, id_usuario FK CASCADE, id_metodo_pago NOT NULL FK RESTRICT, id_categoria nullable FK SET NULL, tipo_movimiento, cantidad `CHECK > 0`, fecha date DEFAULT hoy, descripcion, id_metodo_pago_destino nullable FK RESTRICT). Checks: destino solo en TRANSFERENCIA y distinto del origen. Índices en `(id_usuario, fecha DESC)` y `id_metodo_pago`. RLS habilitado sin policies (el backend entra como `postgres`, bypass RLS).
+  - **Backfill**: INSERT del método "Efectivo" (tipo EFECTIVO, saldo 0) para todos los usuarios existentes (4 en local).
+- **Backend**: `auth.service.registrarUsuario` ahora inserta el método "Efectivo" (`ON CONFLICT (id_usuario, nombre) DO NOTHING`) después de crear el usuario, cumpliendo "Efectivo se crea junto con el usuario".
+- Verificado: `node --check` OK, esquema local inspeccionado con `\d movimientos`, suite de seguridad **11/11** (el registro crea usuarios OK con el insert extra).
+
 ### 2026-09-28 (4) — Keep-alive fiable con pg_cron + pg_net (GitHub Actions resultó no confiable)
 - **Diagnóstico**: el workflow `keep-awake.yml` está activo y bien configurado, pero el cron de GitHub Actions **solo se disparó 2 veces en 8 h** (vs ~48 esperados). Es un bug conocido y activo de GitHub (discusiones ago-2026 "scheduled cron workflows stopped firing" + drift de horas); no hay nada configurable desde el repo. Por eso seguían habiendo cold starts. Vercel no sirve como respaldo: su plan Hobby solo permite crons de 1 vez al día.
 - **Solución**: migración `supabase/migrations/20260929000000_keep_awake_ping.sql` — `pg_cron` + `pg_net` en la BD de Supabase hacen `GET https://zenith-5sdh.onrender.com/health` **cada 7 min** (margen contra la ventana de 15 min de Render y posibles retrasos de pg_cron; `timeout := '120s'` para soportar el cold start). Idempotente: quita el job previo por `jobid` y re-programa `zenith-keep-awake`.
