@@ -1,33 +1,14 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { LowerCasePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-
-export interface MetodoPago {
-  id_metodo: number;
-  id_usuario: number;
-  nombre: string;
-  tipo: 'DEBITO' | 'EFECTIVO' | 'CREDITO';
-  saldo_actual: number | string;
-}
-
-export interface Categoria {
-  id_categoria: number;
-  id_usuario: number;
-  nombre: string;
-  tipo: 'GASTO' | 'ENTRADA';
-}
-
-export interface Movimiento {
-  id_movimiento: number;
-  id_usuario: number;
-  id_metodo_pago: number;
-  id_categoria: number | null;
-  tipo_movimiento: 'GASTO' | 'ENTRADA' | 'TRANSFERENCIA';
-  cantidad: number | string;
-  fecha: string;
-  descripcion: string | null;
-  id_metodo_pago_destino: number | null;
-}
+import { Subscription } from 'rxjs';
+import { AuthService } from '../../core/servicios/auth.service';
+import {
+  FinanzasService,
+  MetodoPago,
+  Categoria,
+  Movimiento
+} from '../../core/servicios/finanzas.service';
 
 const ETIQUETAS_METODO: Record<MetodoPago['tipo'], string> = {
   DEBITO: 'Débito',
@@ -53,10 +34,14 @@ const ETIQUETAS_MOVIMIENTO: Record<Movimiento['tipo_movimiento'], string> = {
   templateUrl: './finanzas.html',
   styleUrl: './finanzas.css',
 })
-export class Finanzas {
+export class Finanzas implements OnInit, OnDestroy {
+  private readonly authService = inject(AuthService);
+  private readonly finanzasService = inject(FinanzasService);
   private readonly fb = inject(FormBuilder);
 
-  cargando = signal(false);
+  private suscripciones: Subscription[] = [];
+
+  cargando = signal(true);
   error = signal('');
   mensajeExito = signal('');
   metodosPago = signal<MetodoPago[]>([]);
@@ -64,14 +49,12 @@ export class Finanzas {
   movimientos = signal<Movimiento[]>([]);
 
   modalMetodoAbierto = signal(false);
-  modoEdicionMetodo = signal(false);
-  metodoEditandoId = signal<number | null>(null);
-
   modalCategoriaAbierto = signal(false);
   modoEdicionCategoria = signal(false);
   categoriaEditandoId = signal<number | null>(null);
 
   mensajeForm = signal('');
+  guardando = signal(false);
 
   formMetodo = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(50)]],
@@ -83,6 +66,64 @@ export class Finanzas {
     nombre: ['', [Validators.required, Validators.maxLength(50)]],
     tipo: ['GASTO' as Categoria['tipo'], Validators.required]
   });
+
+  ngOnInit() {
+    this.cargarDatos();
+  }
+
+  ngOnDestroy() {
+    this.suscripciones.forEach(s => s.unsubscribe());
+  }
+
+  private cargarDatos() {
+    this.cargando.set(true);
+    this.error.set('');
+
+    this.suscripciones.push(
+      this.finanzasService.obtenerMetodosPago().subscribe({
+        next: (metodos) => this.metodosPago.set(metodos),
+        error: (error) => this.error.set(this.authService.manejarError(error))
+      })
+    );
+
+    this.suscripciones.push(
+      this.finanzasService.obtenerCategorias().subscribe({
+        next: (categorias) => this.categorias.set(categorias),
+        error: (error) => this.error.set(this.authService.manejarError(error))
+      })
+    );
+
+    this.suscripciones.push(
+      this.finanzasService.obtenerMovimientos().subscribe({
+        next: (movimientos) => {
+          this.movimientos.set(movimientos);
+          this.cargando.set(false);
+        },
+        error: (error) => {
+          this.error.set(this.authService.manejarError(error));
+          this.cargando.set(false);
+        }
+      })
+    );
+  }
+
+  private recargarMetodos() {
+    this.suscripciones.push(
+      this.finanzasService.obtenerMetodosPago().subscribe({
+        next: (metodos) => this.metodosPago.set(metodos),
+        error: (error) => this.error.set(this.authService.manejarError(error))
+      })
+    );
+  }
+
+  private recargarCategorias() {
+    this.suscripciones.push(
+      this.finanzasService.obtenerCategorias().subscribe({
+        next: (categorias) => this.categorias.set(categorias),
+        error: (error) => this.error.set(this.authService.manejarError(error))
+      })
+    );
+  }
 
   get saldoTotal(): number {
     return this.metodosPago().reduce((total, m) => total + Number(m.saldo_actual), 0);
@@ -107,10 +148,6 @@ export class Finanzas {
     const ahora = new Date();
     const offset = ahora.getTimezoneOffset();
     return new Date(ahora.getTime() - offset * 60000).toISOString().split('T')[0];
-  }
-
-  private siguienteId(numeros: number[]): number {
-    return numeros.length > 0 ? Math.max(...numeros) + 1 : 1;
   }
 
   formatearMoneda(valor: number | string): string {
@@ -156,25 +193,11 @@ export class Finanzas {
   }
 
   abrirCrearMetodo() {
-    this.modoEdicionMetodo.set(false);
-    this.metodoEditandoId.set(null);
     this.mensajeForm.set('');
     this.formMetodo.reset({
       nombre: '',
       tipo: 'EFECTIVO',
       saldo_actual: 0
-    });
-    this.modalMetodoAbierto.set(true);
-  }
-
-  abrirEditarMetodo(metodo: MetodoPago) {
-    this.modoEdicionMetodo.set(true);
-    this.metodoEditandoId.set(metodo.id_metodo);
-    this.mensajeForm.set('');
-    this.formMetodo.reset({
-      nombre: metodo.nombre,
-      tipo: metodo.tipo,
-      saldo_actual: Number(metodo.saldo_actual)
     });
     this.modalMetodoAbierto.set(true);
   }
@@ -192,26 +215,27 @@ export class Finanzas {
 
     const valores = this.formMetodo.value;
 
-    if (this.modoEdicionMetodo()) {
-      this.metodosPago.set(this.metodosPago().map(m =>
-        m.id_metodo === this.metodoEditandoId()
-          ? { ...m, nombre: valores.nombre!, tipo: valores.tipo! }
-          : m
-      ));
-      this.mensajeExito.set('Método de pago actualizado.');
-    } else {
-      const nuevo: MetodoPago = {
-        id_metodo: this.siguienteId(this.metodosPago().map(m => m.id_metodo)),
-        id_usuario: 0,
-        nombre: valores.nombre!,
-        tipo: valores.tipo!,
-        saldo_actual: Number(valores.saldo_actual ?? 0)
-      };
-      this.metodosPago.set([...this.metodosPago(), nuevo]);
-      this.mensajeExito.set('Método de pago creado.');
-    }
+    this.guardando.set(true);
+    this.mensajeForm.set('');
 
-    this.modalMetodoAbierto.set(false);
+    this.suscripciones.push(
+      this.finanzasService.crearMetodoPago({
+        nombre: valores.nombre!.trim(),
+        tipo: valores.tipo!,
+        saldo_inicial: Number(valores.saldo_actual ?? 0)
+      }).subscribe({
+        next: (respuesta) => {
+          this.guardando.set(false);
+          this.modalMetodoAbierto.set(false);
+          this.mensajeExito.set(respuesta.message);
+          this.recargarMetodos();
+        },
+        error: (error) => {
+          this.guardando.set(false);
+          this.mensajeForm.set(this.authService.manejarError(error));
+        }
+      })
+    );
   }
 
   abrirCrearCategoria() {
@@ -249,24 +273,32 @@ export class Finanzas {
 
     const valores = this.formCategoria.value;
 
-    if (this.modoEdicionCategoria()) {
-      this.categorias.set(this.categorias().map(c =>
-        c.id_categoria === this.categoriaEditandoId()
-          ? { ...c, nombre: valores.nombre!, tipo: valores.tipo! }
-          : c
-      ));
-      this.mensajeExito.set('Categoría actualizada.');
-    } else {
-      const nueva: Categoria = {
-        id_categoria: this.siguienteId(this.categorias().map(c => c.id_categoria)),
-        id_usuario: 0,
-        nombre: valores.nombre!,
-        tipo: valores.tipo!
-      };
-      this.categorias.set([...this.categorias(), nueva]);
-      this.mensajeExito.set('Categoría creada.');
-    }
+    this.guardando.set(true);
+    this.mensajeForm.set('');
 
-    this.modalCategoriaAbierto.set(false);
+    const operacion = this.modoEdicionCategoria()
+      ? this.finanzasService.editarCategoria(this.categoriaEditandoId()!, {
+          nombre: valores.nombre!.trim(),
+          tipo: valores.tipo!
+        })
+      : this.finanzasService.crearCategoria({
+          nombre: valores.nombre!.trim(),
+          tipo: valores.tipo!
+        });
+
+    this.suscripciones.push(
+      operacion.subscribe({
+        next: (respuesta) => {
+          this.guardando.set(false);
+          this.modalCategoriaAbierto.set(false);
+          this.mensajeExito.set(respuesta.message);
+          this.recargarCategorias();
+        },
+        error: (error) => {
+          this.guardando.set(false);
+          this.mensajeForm.set(this.authService.manejarError(error));
+        }
+      })
+    );
   }
 }

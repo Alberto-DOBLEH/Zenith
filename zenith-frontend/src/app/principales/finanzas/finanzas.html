@@ -65,9 +65,6 @@
                                     <span class="elemento-subtitulo">{{ etiquetaMetodo(metodo.tipo) }}</span>
                                 </div>
                                 <span class="elemento-valor">{{ formatearMoneda(metodo.saldo_actual) }}</span>
-                                <button class="boton-icono" (click)="abrirEditarMetodo(metodo)" aria-label="Editar método de pago">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
                             </li>
                         }
                     </ul>
@@ -151,7 +148,7 @@
     <div class="overlay" (click)="cerrarMetodo()">
         <div class="modal" (click)="$event.stopPropagation()">
             <div class="modal-cabecera">
-                <h2>{{ modoEdicionMetodo() ? 'Editar método de pago' : 'Nuevo método de pago' }}</h2>
+                <h2>Nuevo método de pago</h2>
                 <button class="boton-icono" (click)="cerrarMetodo()" aria-label="Cerrar">
                     <i class="bi bi-x-lg"></i>
                 </button>
@@ -173,12 +170,10 @@
                         </select>
                     </label>
 
-                    @if (!modoEdicionMetodo()) {
-                        <label class="campo">
-                            <span>Saldo inicial</span>
-                            <input class="inputs-texto" type="number" step="0.01" formControlName="saldo_actual" placeholder="0.00">
-                        </label>
-                    }
+                    <label class="campo">
+                        <span>Saldo inicial</span>
+                        <input class="inputs-texto" type="number" step="0.01" formControlName="saldo_actual" placeholder="0.00">
+                    </label>
 
                     @if (mensajeForm()) {
                         <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
@@ -187,8 +182,8 @@
 
                 <div class="modal-pie">
                     <button type="button" class="boton-secundario" (click)="cerrarMetodo()">Cancelar</button>
-                    <button type="submit" class="boton-principal">
-                        {{ modoEdicionMetodo() ? 'Guardar cambios' : 'Crear método' }}
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">
+                        {{ guardando() ? 'Guardando...' : 'Crear método' }}
                     </button>
                 </div>
             </form>
@@ -228,8 +223,8 @@
 
                 <div class="modal-pie">
                     <button type="button" class="boton-secundario" (click)="cerrarCategoria()">Cancelar</button>
-                    <button type="submit" class="boton-principal">
-                        {{ modoEdicionCategoria() ? 'Guardar cambios' : 'Crear categoría' }}
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">
+                        {{ guardando() ? 'Guardando...' : (modoEdicionCategoria() ? 'Guardar cambios' : 'Crear categoría') }}
                     </button>
                 </div>
             </form>

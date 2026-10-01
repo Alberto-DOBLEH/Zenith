@@ -11,7 +11,10 @@ export const CLAVES_CACHE = {
     estadisticasGenerales: 'estadisticas:generales',
     estadisticasMapa: 'estadisticas:mapa',
     bitacora: 'bitacora:',
-    avatares: 'avatares'
+    avatares: 'avatares',
+    metodosPago: 'metodosPago',
+    categorias: 'categorias',
+    movimientos: 'movimientos'
 } as const;
 
 /** Tiempo de vida por defecto de una entrada (ms) antes de refrescar en segundo plano. */

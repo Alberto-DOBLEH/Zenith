@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 
 import { Finanzas } from './finanzas';
+import { FinanzasService } from '../../core/servicios/finanzas.service';
 
 describe('Finanzas', () => {
   let component: Finanzas;
@@ -10,7 +12,20 @@ describe('Finanzas', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Finanzas],
-      providers: [provideRouter([])]
+      providers: [
+        provideRouter([]),
+        {
+          provide: FinanzasService,
+          useValue: {
+            obtenerMetodosPago: () => of([]),
+            obtenerCategorias: () => of([]),
+            obtenerMovimientos: () => of([]),
+            crearMetodoPago: () => of({ message: 'ok', metodo: {} }),
+            crearCategoria: () => of({ message: 'ok', categoria: {} }),
+            editarCategoria: () => of({ message: 'ok' })
+          }
+        }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(Finanzas);
@@ -33,6 +48,8 @@ describe('Finanzas', () => {
     expect(texto).toContain('Métodos de pago');
     expect(texto).toContain('Categorías');
     expect(texto).toContain('Movimientos');
+    expect(component.cargando()).toBe(false);
+    expect(component.metodosPago().length).toBe(0);
   });
 
   it('abre el modal de nuevo método de pago', () => {
@@ -45,22 +62,6 @@ describe('Finanzas', () => {
     expect(texto).toContain('Saldo inicial');
   });
 
-  it('abre el modal de editar método de pago sin saldo inicial', () => {
-    component.abrirEditarMetodo({
-      id_metodo: 1,
-      id_usuario: 1,
-      nombre: 'Efectivo',
-      tipo: 'EFECTIVO',
-      saldo_actual: 0
-    });
-    fixture.detectChanges();
-
-    const texto: string = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(component.modoEdicionMetodo()).toBe(true);
-    expect(texto).toContain('Editar método de pago');
-    expect(texto).not.toContain('Saldo inicial');
-  });
-
   it('abre el modal de nueva categoría', () => {
     component.abrirCrearCategoria();
     fixture.detectChanges();
@@ -69,5 +70,17 @@ describe('Finanzas', () => {
     expect(component.modalCategoriaAbierto()).toBe(true);
     expect(texto).toContain('Nueva categoría');
     expect(component.formCategoria.value.tipo).toBe('GASTO');
+  });
+
+  it('abre el modal de editar categoría con los datos existentes', () => {
+    component.abrirEditarCategoria({ id_categoria: 7, nombre: 'Comida', tipo: 'GASTO' });
+    fixture.detectChanges();
+
+    const texto: string = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(component.modalCategoriaAbierto()).toBe(true);
+    expect(component.modoEdicionCategoria()).toBe(true);
+    expect(component.categoriaEditandoId()).toBe(7);
+    expect(texto).toContain('Editar categoría');
+    expect(component.formCategoria.value.nombre).toBe('Comida');
   });
 });
