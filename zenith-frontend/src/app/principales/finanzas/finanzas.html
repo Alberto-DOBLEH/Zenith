@@ -1,0 +1,140 @@
+<div class="finanzas">
+    <header class="encabezado">
+        <div>
+            <h1>Finanzas</h1>
+            <p class="subtitulo">Tus métodos de pago, categorías y movimientos.</p>
+        </div>
+    </header>
+
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    @if (mensajeExito()) {
+        <div class="mensaje-exito"><i class="bi bi-check-circle"></i>{{ mensajeExito() }}</div>
+    }
+
+    @if (cargando()) {
+        <div class="lista-cargando tarjeta"><i class="bi bi-arrow-repeat girando"></i> Cargando finanzas...</div>
+    } @else {
+        <section class="stats-generales">
+            <div class="tarjeta stat">
+                <div class="stat-icono saldo"><i class="bi bi-wallet2"></i></div>
+                <div>
+                    <p class="stat-valor">{{ formatearMoneda(saldoTotal) }}</p>
+                    <p class="stat-etiqueta">Saldo total</p>
+                </div>
+            </div>
+            <div class="tarjeta stat">
+                <div class="stat-icono ingresos"><i class="bi bi-arrow-down-right"></i></div>
+                <div>
+                    <p class="stat-valor">{{ formatearMoneda(ingresosMes) }}</p>
+                    <p class="stat-etiqueta">Entradas del mes</p>
+                </div>
+            </div>
+            <div class="tarjeta stat">
+                <div class="stat-icono gastos"><i class="bi bi-arrow-up-right"></i></div>
+                <div>
+                    <p class="stat-valor">{{ formatearMoneda(gastosMes) }}</p>
+                    <p class="stat-etiqueta">Gastos del mes</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="rejilla">
+            <section class="tarjeta seccion">
+                <div class="seccion-titulo">
+                    <h2>Métodos de pago</h2>
+                    <span class="contador">{{ metodosPago().length }}</span>
+                </div>
+
+                @if (metodosPago().length === 0) {
+                    <div class="estado-vacio">
+                        <i class="bi bi-wallet2"></i>
+                        <p>No tienes métodos de pago registrados.</p>
+                    </div>
+                } @else {
+                    <ul class="elementos">
+                        @for (metodo of metodosPago(); track metodo.id_metodo) {
+                            <li class="elemento">
+                                <span class="elemento-icono"><i class="bi {{ iconoMetodo(metodo.tipo) }}"></i></span>
+                                <div class="elemento-datos">
+                                    <span class="elemento-nombre">{{ metodo.nombre }}</span>
+                                    <span class="elemento-subtitulo">{{ etiquetaMetodo(metodo.tipo) }}</span>
+                                </div>
+                                <span class="elemento-valor">{{ formatearMoneda(metodo.saldo_actual) }}</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            <section class="tarjeta seccion">
+                <div class="seccion-titulo">
+                    <h2>Categorías</h2>
+                    <span class="contador">{{ categorias().length }}</span>
+                </div>
+
+                @if (categorias().length === 0) {
+                    <div class="estado-vacio">
+                        <i class="bi bi-tags"></i>
+                        <p>No tienes categorías creadas.</p>
+                    </div>
+                } @else {
+                    <div class="chips">
+                        @for (categoria of categorias(); track categoria.id_categoria) {
+                            <span class="chip" [class.entrada]="categoria.tipo === 'ENTRADA'">
+                                {{ categoria.nombre }}
+                                <small>{{ categoria.tipo === 'ENTRADA' ? 'Entrada' : 'Gasto' }}</small>
+                            </span>
+                        }
+                    </div>
+                }
+            </section>
+        </div>
+
+        <section class="tarjeta seccion">
+            <div class="seccion-titulo">
+                <h2>Movimientos</h2>
+                <span class="contador">{{ movimientos().length }}</span>
+            </div>
+
+            @if (movimientos().length === 0) {
+                <div class="estado-vacio">
+                    <i class="bi bi-arrow-left-right"></i>
+                    <p>Aún no tienes movimientos registrados.</p>
+                </div>
+            } @else {
+                <ul class="elementos">
+                    @for (movimiento of movimientos(); track movimiento.id_movimiento) {
+                        <li class="elemento">
+                            <span class="elemento-icono {{ movimiento.tipo_movimiento | lowercase }}">
+                                <i class="bi bi-arrow-left-right"></i>
+                            </span>
+                            <div class="elemento-datos">
+                                <span class="elemento-nombre">
+                                    {{ movimiento.descripcion || etiquetaMovimiento(movimiento.tipo_movimiento) }}
+                                </span>
+                                <span class="elemento-subtitulo">
+                                    {{ formatearFecha(movimiento.fecha) }}
+                                    @if (nombreCategoria(movimiento.id_categoria)) {
+                                        · {{ nombreCategoria(movimiento.id_categoria) }}
+                                    }
+                                    @if (nombreMetodo(movimiento.id_metodo_pago)) {
+                                        · {{ nombreMetodo(movimiento.id_metodo_pago) }}
+                                    }
+                                    @if (movimiento.id_metodo_pago_destino !== null) {
+                                        → {{ nombreMetodo(movimiento.id_metodo_pago_destino) }}
+                                    }
+                                </span>
+                            </div>
+                            <span class="elemento-valor {{ movimiento.tipo_movimiento | lowercase }}">
+                                {{ textoCantidad(movimiento) }}
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+</div>

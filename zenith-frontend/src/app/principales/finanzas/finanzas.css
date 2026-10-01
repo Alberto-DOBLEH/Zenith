@@ -1,0 +1,265 @@
+.finanzas {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.encabezado h1 {
+    color: var(--foreground);
+    font-size: 1.6rem;
+    margin: 0 0 0.25rem 0;
+}
+
+.subtitulo {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.lista-cargando {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 2rem;
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+}
+
+.stats-generales {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+}
+
+.stat-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 0.8rem;
+    font-size: 1.3rem;
+    flex-shrink: 0;
+}
+
+.stat-icono.saldo {
+    background-color: rgba(99, 102, 241, 0.15);
+    color: var(--primary);
+}
+
+.stat-icono.ingresos {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10B981;
+}
+
+.stat-icono.gastos {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #EF4444;
+}
+
+.stat-valor {
+    color: var(--foreground);
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.stat-etiqueta {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.rejilla {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    align-items: start;
+}
+
+.seccion {
+    padding: 1.25rem;
+}
+
+.seccion-titulo {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.seccion-titulo h2 {
+    color: var(--foreground);
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+.contador {
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.15rem 0.6rem;
+}
+
+.estado-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1.5rem 0.5rem;
+    text-align: center;
+}
+
+.estado-vacio i {
+    color: var(--muted-foreground);
+    font-size: 1.8rem;
+    opacity: 0.6;
+}
+
+.estado-vacio p {
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.elementos {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.elemento {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 0.6rem;
+    padding: 0.7rem 0.85rem;
+}
+
+.elemento-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.3rem;
+    height: 2.3rem;
+    border-radius: 0.6rem;
+    background-color: rgba(99, 102, 241, 0.15);
+    color: var(--primary);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.elemento-icono.entrada {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10B981;
+}
+
+.elemento-icono.gasto {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #EF4444;
+}
+
+.elemento-icono.transferencia {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #F59E0B;
+}
+
+.elemento-datos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.elemento-nombre {
+    color: var(--foreground);
+    font-size: 0.9rem;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.elemento-subtitulo {
+    color: var(--muted-foreground);
+    font-size: 0.78rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.elemento-valor {
+    color: var(--foreground);
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.elemento-valor.entrada {
+    color: #10B981;
+}
+
+.elemento-valor.gasto {
+    color: #EF4444;
+}
+
+.elemento-valor.transferencia {
+    color: var(--foreground);
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background-color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    color: var(--foreground);
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.4rem 0.8rem;
+}
+
+.chip small {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-radius: 999px;
+    color: #EF4444;
+    font-size: 0.68rem;
+    font-weight: 700;
+    padding: 0.1rem 0.5rem;
+    text-transform: uppercase;
+}
+
+.chip.entrada small {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10B981;
+}
+
+@media (max-width: 900px) {
+    .rejilla {
+        grid-template-columns: 1fr;
+    }
+}
