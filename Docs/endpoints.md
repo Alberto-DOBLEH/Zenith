@@ -782,3 +782,300 @@ Response:
   }
 ]
 ```
+---
+
+# Módulo: Métodos de pago
+
+## Endpoint: Obtener métodos de pago
+Descripcion: Devuelve los métodos de pago del usuario autenticado (incluye el "Efectivo" creado al registrarse).
+Ruta:
+- {GET} /api/metodos-pago/
+
+Header: `Authorization: Bearer <token>`
+
+Response:
+```json
+[
+  {
+    "id_metodo": 1,
+    "nombre": "Efectivo",
+    "tipo": "EFECTIVO",
+    "saldo_actual": "0.00"
+  },
+  {
+    "id_metodo": 2,
+    "nombre": "Banamex",
+    "tipo": "DEBITO",
+    "saldo_actual": "200.00"
+  }
+]
+```
+
+Notas:
+- `tipo` es un enum: `DEBITO`, `EFECTIVO`, `CREDITO`.
+- `saldo_actual` solo lo modifican los movimientos (no existe endpoint para editarlo a mano); `saldo_inicial` se establece al crear.
+- Se permite repetir el mismo nombre con distinto tipo (ej. dos "Banamex", uno débito y otro crédito); la unicidad es (usuario, nombre, tipo).
+
+## Endpoint: Crear método de pago
+Descripcion: Registra un nuevo método de pago para el usuario.
+Ruta:
+- {POST} /api/metodos-pago/
+
+Header: `Authorization: Bearer <token>`
+
+Body:
+```json
+{
+  "nombre": "Banamex",
+  "tipo": "DEBITO",
+  "saldo_inicial": 500
+}
+```
+
+Response:
+```json
+{
+  "message": "Método de pago creado con exito",
+  "metodo": {
+    "id_metodo": 2,
+    "nombre": "Banamex",
+    "tipo": "DEBITO",
+    "saldo_actual": "500.00"
+  }
+}
+```
+
+Errores:
+- `400` nombre vacío, nombre > 50 caracteres o `tipo` fuera del enum.
+- `409` ya existe un método con ese mismo nombre **y** tipo.
+
+## Endpoint: Eliminar método de pago
+Descripcion: Elimina un método de pago del usuario.
+Ruta:
+- {DELETE} /api/metodos-pago/:id_metodo
+
+Header: `Authorization: Bearer <token>`
+
+Response:
+```json
+{
+  "message": "Método de pago eliminado con exito"
+}
+```
+
+Errores:
+- `404` el método no existe o no pertenece al usuario.
+- `409` el método tiene movimientos asociados (no se borra historial).
+
+---
+
+# Módulo: Categorías
+
+## Endpoint: Obtener categorías
+Descripcion: Devuelve las categorías del usuario autenticado.
+Ruta:
+- {GET} /api/categorias/
+
+Header: `Authorization: Bearer <token>`
+
+Response:
+```json
+[
+  {
+    "id_categoria": 1,
+    "nombre": "Comida",
+    "tipo": "GASTO"
+  },
+  {
+    "id_categoria": 2,
+    "nombre": "Sueldo",
+    "tipo": "ENTRADA"
+  }
+]
+```
+
+Notas: `tipo` es un enum: `GASTO`, `ENTRADA`.
+
+## Endpoint: Crear categoría
+Descripcion: Crea una categoría para el usuario.
+Ruta:
+- {POST} /api/categorias/
+
+Header: `Authorization: Bearer <token>`
+
+Body:
+```json
+{
+  "nombre": "Comida",
+  "tipo": "GASTO"
+}
+```
+
+Response:
+```json
+{
+  "message": "Categoría creada con exito",
+  "categoria": {
+    "id_categoria": 1,
+    "nombre": "Comida",
+    "tipo": "GASTO"
+  }
+}
+```
+
+Errores:
+- `400` nombre vacío, nombre > 50 caracteres o `tipo` fuera del enum.
+- `409` ya existe una categoría con ese mismo nombre y tipo.
+
+## Endpoint: Editar categoría
+Descripcion: Actualiza nombre y/o tipo de una categoría.
+Ruta:
+- {PUT} /api/categorias/:id_categoria
+
+Header: `Authorization: Bearer <token>`
+
+Body (al menos un campo):
+```json
+{
+  "nombre": "Comida fuera",
+  "tipo": "GASTO"
+}
+```
+
+Response:
+```json
+{
+  "message": "Categoría modificada con exito"
+}
+```
+
+Errores: `400` sin campos o inválidos, `404` no existe/no pertenece al usuario, `409` duplicada.
+
+## Endpoint: Eliminar categoría
+Descripcion: Elimina una categoría. Los movimientos que la usaban quedan sin categoría (`ON DELETE SET NULL`).
+Ruta:
+- {DELETE} /api/categorias/:id_categoria
+
+Header: `Authorization: Bearer <token>`
+
+Response:
+```json
+{
+  "message": "Categoría eliminada con exito"
+}
+```
+
+Errores: `404` no existe o no pertenece al usuario.
+
+---
+
+# Módulo: Movimientos
+
+## Endpoint: Obtener movimientos (con filtros)
+Descripcion: Lista los movimientos del usuario, más recientes primero. Filtros opcionales y combinables.
+Ruta:
+- {GET} /api/movimientos/
+- {GET} /api/movimientos/?fecha=2026-10-01
+- {GET} /api/movimientos/?mes=2026-10
+- {GET} /api/movimientos/?tipo=GASTO
+- {GET} /api/movimientos/?metodo=2
+
+Header: `Authorization: Bearer <token>`
+
+Parámetros query:
+- `fecha`: día exacto, formato `YYYY-MM-DD`.
+- `mes`: mes completo, formato `YYYY-MM`.
+- `tipo`: `GASTO`, `ENTRADA` o `TRANSFERENCIA`.
+- `metodo`: id de método de pago (incluye el método destino en transferencias).
+
+Response:
+```json
+[
+  {
+    "id_movimiento": 3,
+    "tipo_movimiento": "TRANSFERENCIA",
+    "cantidad": "200.00",
+    "fecha": "2026-10-01T07:00:00.000Z",
+    "descripcion": null,
+    "id_metodo_pago": 2,
+    "metodo_nombre": "Banamex",
+    "id_metodo_pago_destino": 3,
+    "metodo_destino_nombre": "Banamex",
+    "id_categoria": null,
+    "categoria_nombre": null,
+    "categoria_tipo": null
+  }
+]
+```
+
+Errores: `400` si `fecha`, `mes`, `tipo` o `metodo` tienen formato inválido.
+
+Notas: `fecha` se devuelve como timestamp ISO de pg; para mostrarla usar solo la parte `YYYY-MM-DD`.
+
+## Endpoint: Detalle de un movimiento
+Descripcion: Devuelve toda la información de un movimiento con los nombres de método y categoría resueltos.
+Ruta:
+- {GET} /api/movimientos/:id_movimiento
+
+Header: `Authorization: Bearer <token>`
+
+Response: mismo objeto del listado (un solo objeto, no arreglo).
+
+Errores: `404` no existe o pertenece a otro usuario. `400` id no numérico.
+
+## Endpoint: Crear movimiento
+Descripcion: Registra un gasto, entrada o transferencia. Se ejecuta en transacción: inserta el movimiento y actualiza los saldos de los métodos de pago afectados.
+Ruta:
+- {POST} /api/movimientos/
+
+Header: `Authorization: Bearer <token>`
+
+Body (gasto):
+```json
+{
+  "tipo_movimiento": "GASTO",
+  "cantidad": 100,
+  "fecha": "2026-10-01",
+  "descripcion": "Comida",
+  "id_metodo_pago": 2,
+  "id_categoria": 1
+}
+```
+
+Body (transferencia):
+```json
+{
+  "tipo_movimiento": "TRANSFERENCIA",
+  "cantidad": 200,
+  "id_metodo_pago": 2,
+  "id_metodo_pago_destino": 3
+}
+```
+
+Response:
+```json
+{
+  "message": "Movimiento creado con exito",
+  "movimiento": {
+    "id_movimiento": 4,
+    "id_usuario": 1,
+    "id_metodo_pago": 2,
+    "id_categoria": 1,
+    "tipo_movimiento": "GASTO",
+    "cantidad": "100.00",
+    "fecha": "2026-10-01T07:00:00.000Z",
+    "descripcion": "Comida",
+    "id_metodo_pago_destino": null
+  }
+}
+```
+
+Efecto en saldos (siempre positiva la cantidad, el backend aplica el signo):
+- `GASTO`: resta `cantidad` al método origen.
+- `ENTRADA`: suma `cantidad` al método origen.
+- `TRANSFERENCIA`: resta al origen y suma al destino (ambos deben pertenecer al usuario y ser distintos).
+- El saldo puede quedar negativo (permitido a decisión del usuario).
+
+Errores:
+- `400` tipo fuera del enum, cantidad ≤ 0 o no numérica, fecha mal formada, descripción > 255, `id_metodo_pago_destino` ausente en transferencia o presente en gasto/entrada, destino = origen.
+- `404` método origen/destino o categoría no existen o no pertenecen al usuario.

@@ -296,7 +296,10 @@ test("validación de ids en rutas con :id", async () => {
         ["/api/habito/1.5", "PUT", 400],
         ["/api/notas/xyz", "PUT", 400],
         ["/api/eventos/2.5", "PUT", 400],
-        ["/api/pomodoro/abc", "GET", 400]
+        ["/api/pomodoro/abc", "GET", 400],
+        ["/api/metodos-pago/abc", "DELETE", 400],
+        ["/api/categorias/1.5", "PUT", 400],
+        ["/api/movimientos/xyz", "GET", 400]
     ];
     for (const [ruta, metodo, esperado] of casos) {
         const res = await pedir(ruta, { metodo, token });
@@ -362,6 +365,30 @@ test("IDOR: usuario A no puede acceder a recursos del usuario B", async () => {
     assert.equal(sesion.status, 201);
     const idSesion = sesion.data.sesion.id_sesion;
 
+    const metodoB = await pedir("/api/metodos-pago", {
+        metodo: "POST",
+        token: tokenB,
+        cuerpo: { nombre: "MetodoB", tipo: "DEBITO" }
+    });
+    assert.equal(metodoB.status, 201);
+    const idMetodoB = metodoB.data.metodo.id_metodo;
+
+    const categoriaB = await pedir("/api/categorias", {
+        metodo: "POST",
+        token: tokenB,
+        cuerpo: { nombre: "CatB", tipo: "GASTO" }
+    });
+    assert.equal(categoriaB.status, 201);
+    const idCategoriaB = categoriaB.data.categoria.id_categoria;
+
+    const movimientoB = await pedir("/api/movimientos", {
+        metodo: "POST",
+        token: tokenB,
+        cuerpo: { tipo_movimiento: "GASTO", cantidad: 10, id_metodo_pago: idMetodoB, id_categoria: idCategoriaB }
+    });
+    assert.equal(movimientoB.status, 201);
+    const idMovimientoB = movimientoB.data.movimiento.id_movimiento;
+
     const intentos = [
         [`/api/habito/${idHabito}`, "PUT", { nombre: "Intruso" }],
         [`/api/habito/${idHabito}`, "DELETE", null],
@@ -370,12 +397,167 @@ test("IDOR: usuario A no puede acceder a recursos del usuario B", async () => {
         [`/api/eventos/${idEvento}`, "DELETE", null],
         [`/api/pomodoro/${idSesion}`, "GET", null],
         [`/api/pomodoro/${idSesion}`, "PUT", { minutos_realizados: 5 }],
-        [`/api/pomodoro/${idSesion}`, "DELETE", null]
+        [`/api/pomodoro/${idSesion}`, "DELETE", null],
+        [`/api/metodos-pago/${idMetodoB}`, "DELETE", null],
+        [`/api/categorias/${idCategoriaB}`, "PUT", { nombre: "Intruso" }],
+        [`/api/categorias/${idCategoriaB}`, "DELETE", null],
+        [`/api/movimientos/${idMovimientoB}`, "GET", null]
     ];
     for (const [ruta, metodo, cuerpo] of intentos) {
         const res = await pedir(ruta, { metodo, token: tokenA, cuerpo });
         assert.equal(res.status, 404, `A no debe acceder a ${ruta} (${metodo})`);
     }
+
+    const metodosA = await pedir("/api/metodos-pago", { token: tokenA });
+    assert.equal(metodosA.status, 200);
+    assert.ok(
+        !(metodosA.data || []).some(m => m.id_metodo === idMetodoB),
+        "A no debe ver el método de pago de B"
+    );
+
+    const movimientosA = await pedir("/api/movimientos", { token: tokenA });
+    assert.equal(movimientosA.status, 200);
+    assert.ok(
+        !(movimientosA.data || []).some(m => m.id_movimiento === idMovimientoB),
+        "A no debe ver los movimientos de B"
+    );
+});
+
+test("finanzas: validación de payloads, reglas de negocio y filtros", async () => {
+    const usuario = await registrar("fin1");
+    const token = await iniciarSesion(usuario);
+    usuariosCreados.push({ token });
+
+    const metodoTipoMalo = await pedir("/api/metodos-pago", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Prueba", tipo: "PREPAGO" }
+    });
+    assert.equal(metodoTipoMalo.status, 400);
+
+    const metodoSinNombre = await pedir("/api/metodos-pago", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "   ", tipo: "DEBITO" }
+    });
+    assert.equal(metodoSinNombre.status, 400);
+
+    const metodo = await pedir("/api/metodos-pago", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Tarjeta", tipo: "DEBITO", saldo_inicial: 100 }
+    });
+    assert.equal(metodo.status, 201);
+    const idMetodo = metodo.data.metodo.id_metodo;
+
+    const duplicado = await pedir("/api/metodos-pago", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Tarjeta", tipo: "DEBITO" }
+    });
+    assert.equal(duplicado.status, 409, "mismo nombre y tipo debe dar 409");
+
+    const mismoNombreOtroTipo = await pedir("/api/metodos-pago", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Tarjeta", tipo: "CREDITO" }
+    });
+    assert.equal(mismoNombreOtroTipo.status, 201, "mismo nombre con distinto tipo debe permitirse");
+    const idDestino = mismoNombreOtroTipo.data.metodo.id_metodo;
+
+    const categoria = await pedir("/api/categorias", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Comida", tipo: "GASTO" }
+    });
+    assert.equal(categoria.status, 201);
+    const idCategoria = categoria.data.categoria.id_categoria;
+
+    const categoriaDuplicada = await pedir("/api/categorias", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Comida", tipo: "GASTO" }
+    });
+    assert.equal(categoriaDuplicada.status, 409);
+
+    const categoriaTipoMalo = await pedir("/api/categorias", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Ahorro", tipo: "INVERSION" }
+    });
+    assert.equal(categoriaTipoMalo.status, 400);
+
+    const casosMovimiento = [
+        [{ tipo_movimiento: "PAGO", cantidad: 10, id_metodo_pago: idMetodo }, 400],
+        [{ tipo_movimiento: "GASTO", cantidad: 0, id_metodo_pago: idMetodo }, 400],
+        [{ tipo_movimiento: "GASTO", cantidad: -5, id_metodo_pago: idMetodo }, 400],
+        [{ tipo_movimiento: "GASTO", cantidad: "abc", id_metodo_pago: idMetodo }, 400],
+        [{ tipo_movimiento: "TRANSFERENCIA", cantidad: 10, id_metodo_pago: idMetodo }, 400],
+        [{ tipo_movimiento: "GASTO", cantidad: 10, id_metodo_pago: idMetodo, id_metodo_pago_destino: idDestino }, 400],
+        [{ tipo_movimiento: "TRANSFERENCIA", cantidad: 10, id_metodo_pago: idMetodo, id_metodo_pago_destino: idMetodo }, 400],
+        [{ tipo_movimiento: "GASTO", cantidad: 10, id_metodo_pago: 999999 }, 404],
+        [{ tipo_movimiento: "GASTO", cantidad: 10, id_metodo_pago: idMetodo, id_categoria: 999999 }, 404],
+        [{ tipo_movimiento: "GASTO", cantidad: 10, id_metodo_pago: idMetodo, fecha: "ayer" }, 400],
+        [{ tipo_movimiento: "GASTO", cantidad: 10, id_metodo_pago: idMetodo, descripcion: "x".repeat(256) }, 400]
+    ];
+    for (const [cuerpo, esperado] of casosMovimiento) {
+        const res = await pedir("/api/movimientos", { metodo: "POST", token, cuerpo });
+        assert.equal(res.status, esperado, `POST /api/movimientos ${JSON.stringify(cuerpo)} debe ser ${esperado}`);
+        assert.ok(!/postgres|syntax error/i.test(res.texto), "sin fuga de error BD");
+    }
+
+    const filtros = ["fecha=ayer", "mes=10-2026", "tipo=OTRO", "metodo=abc"];
+    for (const query of filtros) {
+        const res = await pedir(`/api/movimientos?${query}`, { token });
+        assert.equal(res.status, 400, `filtro ${query} debe ser 400`);
+    }
+
+    const gasto = await pedir("/api/movimientos", {
+        metodo: "POST",
+        token,
+        cuerpo: { tipo_movimiento: "GASTO", cantidad: 30, id_metodo_pago: idMetodo, id_categoria: idCategoria }
+    });
+    assert.equal(gasto.status, 201);
+    const idMovimiento = gasto.data.movimiento.id_movimiento;
+
+    const metodos = await pedir("/api/metodos-pago", { token });
+    assert.equal(metodos.status, 200);
+    const leido = (metodos.data || []).find(m => m.id_metodo === idMetodo);
+    assert.ok(leido, "el método debe existir en el listado");
+    assert.equal(Number(leido.saldo_actual), 70, "el gasto debe restar 30 del saldo inicial de 100");
+
+    const detalle = await pedir(`/api/movimientos/${idMovimiento}`, { token });
+    assert.equal(detalle.status, 200);
+    assert.equal(detalle.data.categoria_nombre, "Comida");
+    assert.equal(detalle.data.metodo_nombre, "Tarjeta");
+
+    const transferencia = await pedir("/api/movimientos", {
+        metodo: "POST",
+        token,
+        cuerpo: { tipo_movimiento: "TRANSFERENCIA", cantidad: 50, id_metodo_pago: idMetodo, id_metodo_pago_destino: idDestino }
+    });
+    assert.equal(transferencia.status, 201);
+
+    const metodosTras = await pedir("/api/metodos-pago", { token });
+    const origen = (metodosTras.data || []).find(m => m.id_metodo === idMetodo);
+    const destino = (metodosTras.data || []).find(m => m.id_metodo === idDestino);
+    assert.equal(Number(origen.saldo_actual), 20, "la transferencia debe restar del origen");
+    assert.equal(Number(destino.saldo_actual), 50, "la transferencia debe sumar al destino");
+
+    const categoriaEliminada = await pedir(`/api/categorias/${idCategoria}`, { metodo: "DELETE", token });
+    assert.equal(categoriaEliminada.status, 200, "eliminar categoría con movimientos debe funcionar (SET NULL)");
+
+    const metodoConMovimientos = await pedir(`/api/metodos-pago/${idMetodo}`, { metodo: "DELETE", token });
+    assert.equal(metodoConMovimientos.status, 409, "no se puede eliminar un método con movimientos");
+
+    const metodoLimpio = await pedir("/api/metodos-pago", {
+        metodo: "POST",
+        token,
+        cuerpo: { nombre: "Limpio", tipo: "DEBITO" }
+    });
+    assert.equal(metodoLimpio.status, 201);
+    const borrado = await pedir(`/api/metodos-pago/${metodoLimpio.data.metodo.id_metodo}`, { metodo: "DELETE", token });
+    assert.equal(borrado.status, 200, "un método sin movimientos se puede eliminar");
 });
 
 test("XSS almacenado: el backend guarda y devuelve el payload tal cual (el render lo escapa Angular)", async () => {

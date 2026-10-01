@@ -100,7 +100,7 @@ export const registrarUsuario = async (userData) => {
         `
         INSERT INTO metodos_pago (id_usuario, nombre, tipo, saldo_actual)
         VALUES ($1, 'Efectivo', 'EFECTIVO', 0)
-        ON CONFLICT (id_usuario, nombre) DO NOTHING
+        ON CONFLICT (id_usuario, nombre, tipo) DO NOTHING
         `,
         [usuario.id_usuario]
     );

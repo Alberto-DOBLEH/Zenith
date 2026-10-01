@@ -13,6 +13,9 @@ import eventosRoutes from "./modules/eventos/eventos.routes.js";
 import notasRoutes from "./modules/notas/notas.routes.js";
 import pomodoroRoutes from "./modules/pomodoro/pomodoro.routes.js";
 import avataresRoutes from "./modules/avatares/avatares.routes.js";
+import metodosPagoRoutes from "./modules/metodos_pago/metodosPago.routes.js";
+import categoriasRoutes from "./modules/categorias/categorias.routes.js";
+import movimientosRoutes from "./modules/movimientos/movimientos.routes.js";
 
 const app = express();
 
@@ -69,6 +72,9 @@ app.use("/api/eventos", eventosRoutes);
 app.use("/api/notas", notasRoutes);
 app.use("/api/pomodoro", pomodoroRoutes);
 app.use("/api/avatares", avataresRoutes);
+app.use("/api/metodos-pago", metodosPagoRoutes);
+app.use("/api/categorias", categoriasRoutes);
+app.use("/api/movimientos", movimientosRoutes);
 
 app.use(errorHandler);
 
