@@ -42,6 +42,23 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-10-01 (5) — Finanzas: modales conectados al backend
+- **Nuevo `core/servicios/finanzas.service.ts`**: `obtenerMetodosPago`, `crearMetodoPago`, `obtenerCategorias`, `crearCategoria`, `editarCategoria`, `obtenerMovimientos` — patrón `ApiService` + `CacheService.swr`; claves nuevas en `CLAVES_CACHE` (`metodosPago`, `categorias`, `movimientos`) invalidadas en cada mutación. Las interfaces (`MetodoPago`, `Categoria`, `Movimiento`) ahora viven en el service (calcan las respuestas del backend, sin `id_usuario` en los listados).
+- **Componente `finanzas`**: `ngOnInit` → `cargarDatos()` con las 3 cargas en paralelo (patrón `Subscription[]` + `OnDestroy`), `guardarMetodo`/`guardarCategoria` llaman al service, cierran el modal, muestran el `message` del backend en `mensajeExito` y recargan la lista; errores → `manejarError` en `mensajeForm` del modal, con `guardando` en los botones.
+- **Modal de método de pago ahora es solo de creación**: se quitó la edición (el backend no tiene `PUT /api/metodos-pago`) — lápiz en filas, `modoEdicionMetodo` y `abrirEditarMetodo` eliminados. El de categorías conserva crear/editar (PUT conectado).
+- Verificado: `ng build` OK, `ng test --watch=false` **27/27** (spec con `FinanzasService` mockeado; test de editar método reemplazado por editar categoría).
+
+### 2026-10-01 (4) — Backend del módulo de finanzas (métodos de pago, categorías, movimientos)
+- **3 módulos nuevos** montados en `app.js` (routes → controller → service, `verifyToken`, `validarId`, ownership con `WHERE ... AND id_usuario`):
+  - `modules/metodos_pago` → `/api/metodos-pago`: `GET /`, `POST /`, `DELETE /:id_metodo`. **No tiene PUT** (decisión: el saldo no se edita a mano, lo manejan los movimientos; y la edición de nombre/tipo tampoco se pidió).
+  - `modules/categorias` → `/api/categorias`: `GET /`, `POST /`, `PUT /:id_categoria`, `DELETE /:id_categoria` (borrar deja los movimientos sin categoría por `ON DELETE SET NULL`).
+  - `modules/movimientos` → `/api/movimientos`: `GET /` con filtros combinables (`fecha=YYYY-MM-DD`, `mes=YYYY-MM`, `tipo=`, `metodo=`), `GET /:id_movimiento`, `POST /`.
+- **`POST /api/movimientos` en transacción**: valida enum/cantidad > 0/formatos, pertenencia de método origen, destino y categoría (anti-IDOR), destino ≠ origen y solo en TRANSFERENCIA; inserta y actualiza saldos (gasto `−`, entrada `+`, transferencia `−` origen / `+` destino). **Saldo negativo permitido** (decisión del usuario). Fecha default = `CURRENT_DATE`.
+- **Migración** `20261001010000_metodos_pago_unico_nombre_tipo.sql` (local + remoto): la restricción pasó de `UNIQUE(id_usuario, nombre)` a `UNIQUE(id_usuario, nombre, tipo)` para permitir dos "Banamex" (débito y crédito). `auth.service.registrarUsuario` ajustado a `ON CONFLICT (id_usuario, nombre, tipo)`.
+- **Reglas**: `DELETE /api/metodos-pago/:id` con movimientos → **409** (FK RESTRICT, no se borra historial); duplicados (nombre, tipo) en métodos y categorías → 409; sin PUT de métodos de pago.
+- **Suite de seguridad**: **12/12** — nuevo test "finanzas: validación de payloads, reglas de negocio y filtros" (11 payloads inválidos, 4 filtros malos, saldos verificados: gasto resta, transferencia mueve, 409/200 de DELETE), IDOR ampliado (A no accede ni ve métodos/categorías/movimientos de B) y validación de ids con los 3 endpoints `:id`.
+- **Docs**: `Docs/endpoints.md` con las secciones de los 3 módulos (11 endpoints). Verificado además con smoke manual completo (registro→login→CRUD→saldos 200/10200→IDOR) contra Supabase local.
+
 ### 2026-10-01 (3) — Modales de creación/edición en Finanzas (métodos de pago y categorías)
 - Dos modales con el patrón de Hábitos (`.overlay` + `.modal` con cabecera/cuerpo/pie, `ReactiveFormsModule`): **Nuevo/Editar método de pago** (nombre, tipo Débito/Efectivo/Crédito, y "Saldo inicial" solo al crear) y **Nueva/Editar categoría** (nombre, tipo Gasto/Entrada).
 - Gatillos: botones "Nuevo"/"Nueva" en el título de cada sección; lápiz en cada fila de método de pago; los chips de categoría ahora son botones (hover + lápiz) que abren la edición.
