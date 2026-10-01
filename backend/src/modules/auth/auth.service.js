@@ -95,6 +95,16 @@ export const registrarUsuario = async (userData) => {
 
     const usuario = result.rows[0];
 
+    // Crear el método de pago "Efectivo" junto con el usuario
+    await db.query(
+        `
+        INSERT INTO metodos_pago (id_usuario, nombre, tipo, saldo_actual)
+        VALUES ($1, 'Efectivo', 'EFECTIVO', 0)
+        ON CONFLICT (id_usuario, nombre) DO NOTHING
+        `,
+        [usuario.id_usuario]
+    );
+
     // Generar token de verificación
     const token = crypto.randomBytes(32).toString('hex');
     const expiracion = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
