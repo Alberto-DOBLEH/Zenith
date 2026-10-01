@@ -1,5 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { LowerCasePipe } from '@angular/common';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
 export interface MetodoPago {
   id_metodo: number;
@@ -48,17 +49,40 @@ const ETIQUETAS_MOVIMIENTO: Record<Movimiento['tipo_movimiento'], string> = {
 
 @Component({
   selector: 'app-finanzas',
-  imports: [LowerCasePipe],
+  imports: [ReactiveFormsModule, LowerCasePipe],
   templateUrl: './finanzas.html',
   styleUrl: './finanzas.css',
 })
 export class Finanzas {
+  private readonly fb = inject(FormBuilder);
+
   cargando = signal(false);
   error = signal('');
   mensajeExito = signal('');
   metodosPago = signal<MetodoPago[]>([]);
   categorias = signal<Categoria[]>([]);
   movimientos = signal<Movimiento[]>([]);
+
+  modalMetodoAbierto = signal(false);
+  modoEdicionMetodo = signal(false);
+  metodoEditandoId = signal<number | null>(null);
+
+  modalCategoriaAbierto = signal(false);
+  modoEdicionCategoria = signal(false);
+  categoriaEditandoId = signal<number | null>(null);
+
+  mensajeForm = signal('');
+
+  formMetodo = this.fb.group({
+    nombre: ['', [Validators.required, Validators.maxLength(50)]],
+    tipo: ['EFECTIVO' as MetodoPago['tipo'], Validators.required],
+    saldo_actual: [0, Validators.required]
+  });
+
+  formCategoria = this.fb.group({
+    nombre: ['', [Validators.required, Validators.maxLength(50)]],
+    tipo: ['GASTO' as Categoria['tipo'], Validators.required]
+  });
 
   get saldoTotal(): number {
     return this.metodosPago().reduce((total, m) => total + Number(m.saldo_actual), 0);
@@ -83,6 +107,10 @@ export class Finanzas {
     const ahora = new Date();
     const offset = ahora.getTimezoneOffset();
     return new Date(ahora.getTime() - offset * 60000).toISOString().split('T')[0];
+  }
+
+  private siguienteId(numeros: number[]): number {
+    return numeros.length > 0 ? Math.max(...numeros) + 1 : 1;
   }
 
   formatearMoneda(valor: number | string): string {
@@ -125,5 +153,120 @@ export class Finanzas {
     if (movimiento.tipo_movimiento === 'ENTRADA') return `+${cantidad}`;
     if (movimiento.tipo_movimiento === 'GASTO') return `-${cantidad}`;
     return cantidad;
+  }
+
+  abrirCrearMetodo() {
+    this.modoEdicionMetodo.set(false);
+    this.metodoEditandoId.set(null);
+    this.mensajeForm.set('');
+    this.formMetodo.reset({
+      nombre: '',
+      tipo: 'EFECTIVO',
+      saldo_actual: 0
+    });
+    this.modalMetodoAbierto.set(true);
+  }
+
+  abrirEditarMetodo(metodo: MetodoPago) {
+    this.modoEdicionMetodo.set(true);
+    this.metodoEditandoId.set(metodo.id_metodo);
+    this.mensajeForm.set('');
+    this.formMetodo.reset({
+      nombre: metodo.nombre,
+      tipo: metodo.tipo,
+      saldo_actual: Number(metodo.saldo_actual)
+    });
+    this.modalMetodoAbierto.set(true);
+  }
+
+  cerrarMetodo() {
+    this.modalMetodoAbierto.set(false);
+  }
+
+  guardarMetodo() {
+    if (this.formMetodo.invalid) {
+      this.formMetodo.markAllAsTouched();
+      this.mensajeForm.set('Completa los campos requeridos.');
+      return;
+    }
+
+    const valores = this.formMetodo.value;
+
+    if (this.modoEdicionMetodo()) {
+      this.metodosPago.set(this.metodosPago().map(m =>
+        m.id_metodo === this.metodoEditandoId()
+          ? { ...m, nombre: valores.nombre!, tipo: valores.tipo! }
+          : m
+      ));
+      this.mensajeExito.set('Método de pago actualizado.');
+    } else {
+      const nuevo: MetodoPago = {
+        id_metodo: this.siguienteId(this.metodosPago().map(m => m.id_metodo)),
+        id_usuario: 0,
+        nombre: valores.nombre!,
+        tipo: valores.tipo!,
+        saldo_actual: Number(valores.saldo_actual ?? 0)
+      };
+      this.metodosPago.set([...this.metodosPago(), nuevo]);
+      this.mensajeExito.set('Método de pago creado.');
+    }
+
+    this.modalMetodoAbierto.set(false);
+  }
+
+  abrirCrearCategoria() {
+    this.modoEdicionCategoria.set(false);
+    this.categoriaEditandoId.set(null);
+    this.mensajeForm.set('');
+    this.formCategoria.reset({
+      nombre: '',
+      tipo: 'GASTO'
+    });
+    this.modalCategoriaAbierto.set(true);
+  }
+
+  abrirEditarCategoria(categoria: Categoria) {
+    this.modoEdicionCategoria.set(true);
+    this.categoriaEditandoId.set(categoria.id_categoria);
+    this.mensajeForm.set('');
+    this.formCategoria.reset({
+      nombre: categoria.nombre,
+      tipo: categoria.tipo
+    });
+    this.modalCategoriaAbierto.set(true);
+  }
+
+  cerrarCategoria() {
+    this.modalCategoriaAbierto.set(false);
+  }
+
+  guardarCategoria() {
+    if (this.formCategoria.invalid) {
+      this.formCategoria.markAllAsTouched();
+      this.mensajeForm.set('Completa los campos requeridos.');
+      return;
+    }
+
+    const valores = this.formCategoria.value;
+
+    if (this.modoEdicionCategoria()) {
+      this.categorias.set(this.categorias().map(c =>
+        c.id_categoria === this.categoriaEditandoId()
+          ? { ...c, nombre: valores.nombre!, tipo: valores.tipo! }
+          : c
+      ));
+      this.mensajeExito.set('Categoría actualizada.');
+    } else {
+      const nueva: Categoria = {
+        id_categoria: this.siguienteId(this.categorias().map(c => c.id_categoria)),
+        id_usuario: 0,
+        nombre: valores.nombre!,
+        tipo: valores.tipo!
+      };
+      this.categorias.set([...this.categorias(), nueva]);
+      this.mensajeExito.set('Categoría creada.');
+    }
+
+    this.modalCategoriaAbierto.set(false);
   }
 }

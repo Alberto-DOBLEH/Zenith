@@ -42,6 +42,13 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-10-01 (3) — Modales de creación/edición en Finanzas (métodos de pago y categorías)
+- Dos modales con el patrón de Hábitos (`.overlay` + `.modal` con cabecera/cuerpo/pie, `ReactiveFormsModule`): **Nuevo/Editar método de pago** (nombre, tipo Débito/Efectivo/Crédito, y "Saldo inicial" solo al crear) y **Nueva/Editar categoría** (nombre, tipo Gasto/Entrada).
+- Gatillos: botones "Nuevo"/"Nueva" en el título de cada sección; lápiz en cada fila de método de pago; los chips de categoría ahora son botones (hover + lápiz) que abren la edición.
+- **Sin backend**: `guardarMetodo`/`guardarCategoria` solo actualizan los signals locales (ids locales con `id_usuario: 0`) y muestran `mensajeExito`, para poder probar la UI antes de conectar el service. Validación con `Validators.required` + `maxLength(50)` (calza con los `varchar(50)` de la BD).
+- Pendiente: modal de movimientos (gastos/entradas/transferencias) cuando el usuario defina su funcionamiento.
+- Verificado: `ng build` OK, `ng test --watch=false` **27/27** (3 tests nuevos de apertura de modales).
+
 ### 2026-10-01 (2) — Pantalla Finanzas (scaffold frontend para el módulo)
 - Nuevo componente `zenith-frontend/src/app/principales/finanzas/` (`finanzas.ts/html/css` + spec), ruta `/finanzas` en `app.routes.ts` (lazy bajo `authGuard`) y enlace "Finanzas" (`bi-wallet2`) en el sidebar después de Notas.
 - Estructura idéntica al patrón de las pantallas existentes (encabezado, `mensaje-error`/`mensaje-exito`, rama `cargando`, secciones `.tarjeta`, estados vacíos): 3 stats (saldo total, entradas del mes, gastos del mes), rejilla Métodos de pago + Categorías, y lista de Movimientos con cantidad con signo según tipo (verde entrada / rojo gasto / ámbar transferencia).

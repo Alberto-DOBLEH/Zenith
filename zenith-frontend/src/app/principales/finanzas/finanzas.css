@@ -102,6 +102,15 @@
     margin: 0;
 }
 
+.boton-agregar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    font-size: 0.85rem;
+    text-decoration: none;
+}
+
 .contador {
     background-color: var(--muted);
     border: 1px solid var(--border);
@@ -224,6 +233,11 @@
     color: var(--foreground);
 }
 
+.elemento .boton-icono {
+    flex-shrink: 0;
+    padding: 0.35rem;
+}
+
 .chips {
     display: flex;
     flex-wrap: wrap;
@@ -238,9 +252,25 @@
     border: 1px solid var(--border);
     border-radius: 999px;
     color: var(--foreground);
+    font-family: inherit;
     font-size: 0.85rem;
     font-weight: 500;
     padding: 0.4rem 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.2s ease;
+}
+
+.chip:hover {
+    border-color: var(--primary);
+}
+
+.chip i {
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+}
+
+.chip:hover i {
+    color: var(--primary);
 }
 
 .chip small {
@@ -256,6 +286,24 @@
 .chip.entrada small {
     background-color: rgba(16, 185, 129, 0.15);
     color: #10B981;
+}
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+}
+
+.campo span {
+    color: var(--muted-foreground);
+    font-size: 0.8rem;
+}
+
+.campo .inputs-texto {
+    padding: 0.6rem 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 @media (max-width: 900px) {

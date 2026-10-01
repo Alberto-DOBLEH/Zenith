@@ -34,4 +34,40 @@ describe('Finanzas', () => {
     expect(texto).toContain('Categorías');
     expect(texto).toContain('Movimientos');
   });
+
+  it('abre el modal de nuevo método de pago', () => {
+    component.abrirCrearMetodo();
+    fixture.detectChanges();
+
+    const texto: string = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(component.modalMetodoAbierto()).toBe(true);
+    expect(texto).toContain('Nuevo método de pago');
+    expect(texto).toContain('Saldo inicial');
+  });
+
+  it('abre el modal de editar método de pago sin saldo inicial', () => {
+    component.abrirEditarMetodo({
+      id_metodo: 1,
+      id_usuario: 1,
+      nombre: 'Efectivo',
+      tipo: 'EFECTIVO',
+      saldo_actual: 0
+    });
+    fixture.detectChanges();
+
+    const texto: string = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(component.modoEdicionMetodo()).toBe(true);
+    expect(texto).toContain('Editar método de pago');
+    expect(texto).not.toContain('Saldo inicial');
+  });
+
+  it('abre el modal de nueva categoría', () => {
+    component.abrirCrearCategoria();
+    fixture.detectChanges();
+
+    const texto: string = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(component.modalCategoriaAbierto()).toBe(true);
+    expect(texto).toContain('Nueva categoría');
+    expect(component.formCategoria.value.tipo).toBe('GASTO');
+  });
 });

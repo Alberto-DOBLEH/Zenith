@@ -45,7 +45,9 @@
             <section class="tarjeta seccion">
                 <div class="seccion-titulo">
                     <h2>Métodos de pago</h2>
-                    <span class="contador">{{ metodosPago().length }}</span>
+                    <button class="boton-secundario boton-agregar" (click)="abrirCrearMetodo()">
+                        <i class="bi bi-plus-lg"></i> Nuevo
+                    </button>
                 </div>
 
                 @if (metodosPago().length === 0) {
@@ -63,6 +65,9 @@
                                     <span class="elemento-subtitulo">{{ etiquetaMetodo(metodo.tipo) }}</span>
                                 </div>
                                 <span class="elemento-valor">{{ formatearMoneda(metodo.saldo_actual) }}</span>
+                                <button class="boton-icono" (click)="abrirEditarMetodo(metodo)" aria-label="Editar método de pago">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
                             </li>
                         }
                     </ul>
@@ -72,7 +77,9 @@
             <section class="tarjeta seccion">
                 <div class="seccion-titulo">
                     <h2>Categorías</h2>
-                    <span class="contador">{{ categorias().length }}</span>
+                    <button class="boton-secundario boton-agregar" (click)="abrirCrearCategoria()">
+                        <i class="bi bi-plus-lg"></i> Nueva
+                    </button>
                 </div>
 
                 @if (categorias().length === 0) {
@@ -83,10 +90,11 @@
                 } @else {
                     <div class="chips">
                         @for (categoria of categorias(); track categoria.id_categoria) {
-                            <span class="chip" [class.entrada]="categoria.tipo === 'ENTRADA'">
+                            <button class="chip" [class.entrada]="categoria.tipo === 'ENTRADA'" (click)="abrirEditarCategoria(categoria)">
                                 {{ categoria.nombre }}
                                 <small>{{ categoria.tipo === 'ENTRADA' ? 'Entrada' : 'Gasto' }}</small>
-                            </span>
+                                <i class="bi bi-pencil"></i>
+                            </button>
                         }
                     </div>
                 }
@@ -138,3 +146,93 @@
         </section>
     }
 </div>
+
+@if (modalMetodoAbierto()) {
+    <div class="overlay" (click)="cerrarMetodo()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicionMetodo() ? 'Editar método de pago' : 'Nuevo método de pago' }}</h2>
+                <button class="boton-icono" (click)="cerrarMetodo()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form [formGroup]="formMetodo" (ngSubmit)="guardarMetodo()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Nombre</span>
+                        <input class="inputs-texto" formControlName="nombre" placeholder="Ej. Efectivo, BBVA Débito">
+                    </label>
+
+                    <label class="campo">
+                        <span>Tipo</span>
+                        <select class="inputs-texto" formControlName="tipo">
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="DEBITO">Débito</option>
+                            <option value="CREDITO">Crédito</option>
+                        </select>
+                    </label>
+
+                    @if (!modoEdicionMetodo()) {
+                        <label class="campo">
+                            <span>Saldo inicial</span>
+                            <input class="inputs-texto" type="number" step="0.01" formControlName="saldo_actual" placeholder="0.00">
+                        </label>
+                    }
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarMetodo()">Cancelar</button>
+                    <button type="submit" class="boton-principal">
+                        {{ modoEdicionMetodo() ? 'Guardar cambios' : 'Crear método' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalCategoriaAbierto()) {
+    <div class="overlay" (click)="cerrarCategoria()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicionCategoria() ? 'Editar categoría' : 'Nueva categoría' }}</h2>
+                <button class="boton-icono" (click)="cerrarCategoria()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form [formGroup]="formCategoria" (ngSubmit)="guardarCategoria()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Nombre</span>
+                        <input class="inputs-texto" formControlName="nombre" placeholder="Ej. Comida, Sueldo">
+                    </label>
+
+                    <label class="campo">
+                        <span>Tipo</span>
+                        <select class="inputs-texto" formControlName="tipo">
+                            <option value="GASTO">Gasto</option>
+                            <option value="ENTRADA">Entrada</option>
+                        </select>
+                    </label>
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarCategoria()">Cancelar</button>
+                    <button type="submit" class="boton-principal">
+                        {{ modoEdicionCategoria() ? 'Guardar cambios' : 'Crear categoría' }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
