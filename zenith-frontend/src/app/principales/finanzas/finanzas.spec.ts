@@ -167,4 +167,16 @@ describe('Finanzas', () => {
     expect(component.hayFiltros).toBe(false);
     expect(component.movimientosVisibles()).toEqual(todos);
   });
+
+  it('el select de meses muestra nombres pero manda YYYY-MM al backend', () => {
+    const meses = component.mesesDisponibles;
+
+    expect(meses.length).toBe(12);
+    expect(meses[0].nombre).toBe('Enero');
+    expect(meses[9].nombre).toBe('Octubre');
+    expect(meses.every(m => /^\d{4}-(0[1-9]|1[0-2])$/.test(m.valor))).toBe(true);
+
+    component.onCambioMes({ target: { value: '2026-10' } } as unknown as Event);
+    expect(servicio.obtenerMovimientos).toHaveBeenCalledWith({ mes: '2026-10' });
+  });
 });

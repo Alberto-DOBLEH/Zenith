@@ -137,7 +137,12 @@
 
                 <label class="filtro">
                     <span>Mes</span>
-                    <input type="month" formControlName="mes" (change)="onCambioMes($event)">
+                    <select formControlName="mes" (change)="onCambioMes($event)">
+                        <option value="">Todos</option>
+                        @for (mes of mesesDisponibles; track mes.valor) {
+                            <option [value]="mes.valor">{{ mes.nombre }}</option>
+                        }
+                    </select>
                 </label>
 
                 @if (hayFiltros) {

@@ -14,6 +14,10 @@ Aplicación web de seguimiento de hábitos para la materia Desarrollo Web 2.
 - Frontend: `cd zenith-frontend && npm start` (Angular dev server).
 - Supabase: `supabase db push` para aplicar migraciones al remoto.
 
+## Git
+
+- **Estándar: todo cambio terminado se commitea y se manda a `main` sin preguntar** (verificar con `git status`/`git diff` antes, mensaje acorde al estilo del repo). Solo se omite el push si el usuario dice explícitamente que no.
+
 ## Convenciones backend
 
 - Cada módulo vive en `backend/src/modules/<nombre>/` con `*.routes.js`, `*.controller.js`, `*.service.js`.
@@ -43,12 +47,12 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
 ### 2026-10-01 (7) — Filtros de movimientos (tipo, método, fecha y mes)
-- **Barra de filtros dentro del contenedor de Movimientos** (chips tipo/método + inputs `date` y `month` + botón ✕ para limpiar): consumen `GET /api/movimientos?fecha|mes|tipo|metodo` (los 4 filtros planeados, combinables).
+- **Barra de filtros dentro del contenedor de Movimientos** (selects tipo/método/**mes con nombres de mes** y input `date` + botón ✕ para limpiar): consumen `GET /api/movimientos?fecha|mes|tipo|metodo` (los 4 filtros planeados, combinables). El select de mes muestra "Enero…Diciembre" pero su `value` es `YYYY-MM` del año actual (lo que espera el backend).
 - **`formFiltros` + `aplicarFiltros()`**: arma solo los parámetros con valor → `FinanzasService.obtenerMovimientos(filtros)` (sin filtros usa la caché SWR; con filtros pide directo para no contaminarla). Cancela la petición anterior al cambiar de filtro (last-wins) y limpia `error`.
 - **Fecha y mes son mutuamente excluyentes en la UI** (elegir una limpia la otra) para evitar combinaciones contradictorias.
 - **Dos listas**: `movimientos` (completa, alimenta las 3 stats) y `movimientosVisibles` (la que se muestra); limpiar filtros restaura la lista completa sin ir al servidor. `recargarMovimientos` (tras crear uno) recarga todo y re-aplica los filtros activos.
 - Estados nuevos en la sección: spinner "Aplicando filtros..." (`filtrando`), vacío "No hay movimientos con esos filtros." y contador = movimientos visibles.
-- Verificado: `ng build` OK (aviso de CSS 5.02 kB vs presupuesto 4 kB, tolerado igual que el de eventos), `ng test --watch=false` **34/34** (3 tests nuevos: llamada con filtros, fecha limpia mes, limpiar restaura la lista). Nota: el spec usa `vi.fn()` porque el proyecto corre con **vitest/globals**, no jasmine.
+- Verificado: `ng build` OK (aviso de CSS 5.02 kB vs presupuesto 4 kB, tolerado igual que el de eventos), `ng test --watch=false` **35/35** (4 tests nuevos: llamada con filtros, fecha limpia mes, limpiar restaura la lista, meses con nombre pero valor `YYYY-MM`). Nota: el spec usa `vi.fn()` porque el proyecto corre con **vitest/globals**, no jasmine.
 
 ### 2026-10-01 (6) — Modal de movimientos (gasto / entrada / transferencia)
 - **Botón "Nuevo"** en el encabezado de la sección Movimientos (junto al contador) que abre el modal.

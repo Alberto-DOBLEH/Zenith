@@ -30,6 +30,11 @@ const ETIQUETAS_MOVIMIENTO: Record<Movimiento['tipo_movimiento'], string> = {
   TRANSFERENCIA: 'Transferencia'
 };
 
+const MESES = [
+  'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+];
+
 @Component({
   selector: 'app-finanzas',
   imports: [ReactiveFormsModule, FormsModule, LowerCasePipe],
@@ -165,6 +170,14 @@ export class Finanzas implements OnInit, OnDestroy {
   get hayFiltros(): boolean {
     const v = this.formFiltros.value;
     return !!(v.fecha || v.mes || v.tipo || v.metodo);
+  }
+
+  get mesesDisponibles(): { valor: string; nombre: string }[] {
+    const anio = this.fechaHoy().slice(0, 4);
+    return MESES.map((nombre, i) => ({
+      valor: `${anio}-${String(i + 1).padStart(2, '0')}`,
+      nombre
+    }));
   }
 
   aplicarFiltros() {
