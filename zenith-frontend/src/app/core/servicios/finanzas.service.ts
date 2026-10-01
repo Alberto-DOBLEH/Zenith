@@ -42,6 +42,16 @@ export interface Movimiento {
     categoria_tipo?: Categoria['tipo'] | null;
 }
 
+export interface MovimientoPayload {
+    tipo_movimiento: Movimiento['tipo_movimiento'];
+    cantidad: number;
+    id_metodo_pago: number;
+    id_categoria?: number;
+    id_metodo_pago_destino?: number;
+    fecha?: string;
+    descripcion?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FinanzasService {
     private readonly api = inject(ApiService);
@@ -75,5 +85,10 @@ export class FinanzasService {
     obtenerMovimientos(): Observable<Movimiento[]> {
         return this.cache.swr(CLAVES_CACHE.movimientos, () =>
             this.api.get<Movimiento[]>('/movimientos'));
+    }
+
+    crearMovimiento(datos: MovimientoPayload): Observable<{ message: string; movimiento: Movimiento }> {
+        this.cache.invalidar(CLAVES_CACHE.movimientos, CLAVES_CACHE.metodosPago);
+        return this.api.post('/movimientos', datos);
     }
 }

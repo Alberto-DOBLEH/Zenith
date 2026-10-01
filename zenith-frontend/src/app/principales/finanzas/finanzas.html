@@ -101,7 +101,12 @@
         <section class="tarjeta seccion">
             <div class="seccion-titulo">
                 <h2>Movimientos</h2>
-                <span class="contador">{{ movimientos().length }}</span>
+                <div class="seccion-acciones">
+                    <span class="contador">{{ movimientos().length }}</span>
+                    <button class="boton-secundario boton-agregar" (click)="abrirCrearMovimiento()">
+                        <i class="bi bi-plus-lg"></i> Nuevo
+                    </button>
+                </div>
             </div>
 
             @if (movimientos().length === 0) {
@@ -225,6 +230,108 @@
                     <button type="button" class="boton-secundario" (click)="cerrarCategoria()">Cancelar</button>
                     <button type="submit" class="boton-principal" [disabled]="guardando()">
                         {{ guardando() ? 'Guardando...' : (modoEdicionCategoria() ? 'Guardar cambios' : 'Crear categoría') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalMovimientoAbierto()) {
+    <div class="overlay" (click)="cerrarMovimiento()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Nuevo movimiento</h2>
+                <button class="boton-icono" (click)="cerrarMovimiento()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form [formGroup]="formMovimiento" (ngSubmit)="guardarMovimiento()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Tipo de movimiento</span>
+                        <select class="inputs-texto" formControlName="tipo_movimiento">
+                            <option value="GASTO">Gasto</option>
+                            <option value="ENTRADA">Entrada</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                        </select>
+                    </label>
+
+                    <label class="campo">
+                        <span>Cantidad</span>
+                        <input class="inputs-texto" type="number" min="0.01" step="0.01" formControlName="cantidad" placeholder="0.00">
+                    </label>
+
+                    @if (tipoMovimientoForm === 'TRANSFERENCIA') {
+                        <label class="campo">
+                            <span>Método de origen</span>
+                            <select class="inputs-texto" formControlName="id_metodo_pago">
+                                <option [ngValue]="null" disabled>Selecciona un método</option>
+                                @for (metodo of metodosPago(); track metodo.id_metodo) {
+                                    <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} ({{ etiquetaMetodo(metodo.tipo) }})</option>
+                                }
+                            </select>
+                        </label>
+
+                        <label class="campo">
+                            <span>Método destino</span>
+                            <select class="inputs-texto" formControlName="id_metodo_pago_destino">
+                                <option [ngValue]="null" disabled>Selecciona un método</option>
+                                @for (metodo of metodosDestino; track metodo.id_metodo) {
+                                    <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} ({{ etiquetaMetodo(metodo.tipo) }})</option>
+                                }
+                            </select>
+                        </label>
+
+                        @if (metodosPago().length < 2) {
+                            <p class="aviso"><i class="bi bi-info-circle"></i> Necesitas al menos dos métodos de pago para hacer una transferencia.</p>
+                        }
+                    } @else {
+                        <label class="campo">
+                            <span>Método de pago</span>
+                            <select class="inputs-texto" formControlName="id_metodo_pago">
+                                <option [ngValue]="null" disabled>Selecciona un método</option>
+                                @for (metodo of metodosPago(); track metodo.id_metodo) {
+                                    <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} ({{ etiquetaMetodo(metodo.tipo) }})</option>
+                                }
+                            </select>
+                        </label>
+
+                        <label class="campo">
+                            <span>Categoría</span>
+                            <select class="inputs-texto" formControlName="id_categoria">
+                                <option [ngValue]="null" disabled>Selecciona una categoría</option>
+                                @for (categoria of categoriasFiltradas; track categoria.id_categoria) {
+                                    <option [ngValue]="categoria.id_categoria">{{ categoria.nombre }}</option>
+                                }
+                            </select>
+                        </label>
+
+                        @if (categoriasFiltradas.length === 0) {
+                            <p class="aviso"><i class="bi bi-info-circle"></i> No tienes categorías de {{ tipoMovimientoForm === 'ENTRADA' ? 'entrada' : 'gasto' }}; créalas en la sección de Categorías.</p>
+                        }
+
+                        <label class="campo">
+                            <span>Fecha</span>
+                            <input class="inputs-texto" type="date" formControlName="fecha">
+                        </label>
+
+                        <label class="campo">
+                            <span>Descripción <small>(opcional)</small></span>
+                            <input class="inputs-texto" formControlName="descripcion" placeholder="Ej. Comida del día, Quincena">
+                        </label>
+                    }
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarMovimiento()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">
+                        {{ guardando() ? 'Guardando...' : 'Crear movimiento' }}
                     </button>
                 </div>
             </form>

@@ -1,13 +1,14 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { LowerCasePipe } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormsModule, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/servicios/auth.service';
 import {
   FinanzasService,
   MetodoPago,
   Categoria,
-  Movimiento
+  Movimiento,
+  MovimientoPayload
 } from '../../core/servicios/finanzas.service';
 
 const ETIQUETAS_METODO: Record<MetodoPago['tipo'], string> = {
@@ -30,7 +31,7 @@ const ETIQUETAS_MOVIMIENTO: Record<Movimiento['tipo_movimiento'], string> = {
 
 @Component({
   selector: 'app-finanzas',
-  imports: [ReactiveFormsModule, LowerCasePipe],
+  imports: [ReactiveFormsModule, FormsModule, LowerCasePipe],
   templateUrl: './finanzas.html',
   styleUrl: './finanzas.css',
 })
@@ -50,6 +51,7 @@ export class Finanzas implements OnInit, OnDestroy {
 
   modalMetodoAbierto = signal(false);
   modalCategoriaAbierto = signal(false);
+  modalMovimientoAbierto = signal(false);
   modoEdicionCategoria = signal(false);
   categoriaEditandoId = signal<number | null>(null);
 
@@ -65,6 +67,16 @@ export class Finanzas implements OnInit, OnDestroy {
   formCategoria = this.fb.group({
     nombre: ['', [Validators.required, Validators.maxLength(50)]],
     tipo: ['GASTO' as Categoria['tipo'], Validators.required]
+  });
+
+  formMovimiento = this.fb.group({
+    tipo_movimiento: ['GASTO' as Movimiento['tipo_movimiento'], Validators.required],
+    cantidad: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    id_metodo_pago: [null as number | null, Validators.required],
+    id_metodo_pago_destino: [null as number | null],
+    id_categoria: [null as number | null],
+    fecha: [''],
+    descripcion: ['']
   });
 
   ngOnInit() {
@@ -123,6 +135,29 @@ export class Finanzas implements OnInit, OnDestroy {
         error: (error) => this.error.set(this.authService.manejarError(error))
       })
     );
+  }
+
+  private recargarMovimientos() {
+    this.suscripciones.push(
+      this.finanzasService.obtenerMovimientos().subscribe({
+        next: (movimientos) => this.movimientos.set(movimientos),
+        error: (error) => this.error.set(this.authService.manejarError(error))
+      })
+    );
+  }
+
+  get tipoMovimientoForm(): Movimiento['tipo_movimiento'] {
+    return this.formMovimiento.value.tipo_movimiento ?? 'GASTO';
+  }
+
+  get categoriasFiltradas(): Categoria[] {
+    const tipo: Categoria['tipo'] = this.tipoMovimientoForm === 'ENTRADA' ? 'ENTRADA' : 'GASTO';
+    return this.categorias().filter(c => c.tipo === tipo);
+  }
+
+  get metodosDestino(): MetodoPago[] {
+    const origen = this.formMovimiento.value.id_metodo_pago;
+    return this.metodosPago().filter(m => m.id_metodo !== origen);
   }
 
   get saldoTotal(): number {
@@ -293,6 +328,82 @@ export class Finanzas implements OnInit, OnDestroy {
           this.modalCategoriaAbierto.set(false);
           this.mensajeExito.set(respuesta.message);
           this.recargarCategorias();
+        },
+        error: (error) => {
+          this.guardando.set(false);
+          this.mensajeForm.set(this.authService.manejarError(error));
+        }
+      })
+    );
+  }
+
+  abrirCrearMovimiento() {
+    this.mensajeForm.set('');
+    this.formMovimiento.reset({
+      tipo_movimiento: 'GASTO',
+      cantidad: null,
+      id_metodo_pago: null,
+      id_metodo_pago_destino: null,
+      id_categoria: null,
+      fecha: this.fechaHoy(),
+      descripcion: ''
+    });
+    this.modalMovimientoAbierto.set(true);
+  }
+
+  cerrarMovimiento() {
+    this.modalMovimientoAbierto.set(false);
+  }
+
+  guardarMovimiento() {
+    const valores = this.formMovimiento.value;
+    const tipo = valores.tipo_movimiento!;
+
+    if (this.formMovimiento.invalid) {
+      this.formMovimiento.markAllAsTouched();
+      this.mensajeForm.set('Completa los campos requeridos.');
+      return;
+    }
+
+    if (tipo === 'TRANSFERENCIA') {
+      if (!valores.id_metodo_pago_destino) {
+        this.mensajeForm.set('Selecciona el método destino.');
+        return;
+      }
+      if (valores.id_metodo_pago === valores.id_metodo_pago_destino) {
+        this.mensajeForm.set('El método destino debe ser distinto al de origen.');
+        return;
+      }
+    } else if (!valores.id_categoria) {
+      this.mensajeForm.set('Selecciona una categoría.');
+      return;
+    }
+
+    const payload: MovimientoPayload = {
+      tipo_movimiento: tipo,
+      cantidad: Number(valores.cantidad),
+      id_metodo_pago: Number(valores.id_metodo_pago)
+    };
+
+    if (tipo === 'TRANSFERENCIA') {
+      payload.id_metodo_pago_destino = Number(valores.id_metodo_pago_destino);
+    } else {
+      payload.id_categoria = Number(valores.id_categoria);
+      if (valores.fecha) payload.fecha = valores.fecha;
+      if (valores.descripcion?.trim()) payload.descripcion = valores.descripcion.trim();
+    }
+
+    this.guardando.set(true);
+    this.mensajeForm.set('');
+
+    this.suscripciones.push(
+      this.finanzasService.crearMovimiento(payload).subscribe({
+        next: (respuesta) => {
+          this.guardando.set(false);
+          this.modalMovimientoAbierto.set(false);
+          this.mensajeExito.set(respuesta.message);
+          this.recargarMovimientos();
+          this.recargarMetodos();
         },
         error: (error) => {
           this.guardando.set(false);

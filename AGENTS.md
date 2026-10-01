@@ -42,6 +42,15 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-10-01 (6) — Modal de movimientos (gasto / entrada / transferencia)
+- **Botón "Nuevo"** en el encabezado de la sección Movimientos (junto al contador) que abre el modal.
+- **`formMovimiento`** arranca con un select de tipo (GASTO por defecto) y los campos se despliegan según la selección:
+  - **Gasto / Entrada**: cantidad, método de pago (select de todos los métodos), categoría (**filtrada por tipo**: solo `GASTO` en gasto, solo `ENTRADA` en entrada; aviso si no hay categorías de ese tipo), fecha (default hoy) y descripción opcional.
+  - **Transferencia**: solo cantidad + método origen + método destino (el select de destino **excluye el origen**; aviso si hay menos de 2 métodos).
+- Validación en `guardarMovimiento`: cantidad > 0 y método requeridos (validators), categoría requerida en gasto/entrada y destino ≠ origen validados en código; payload solo con los campos del tipo elegido → `POST /api/movimientos`.
+- `FinanzasService.crearMovimiento` invalida `movimientos` y `metodosPago` (los saldos cambian); al guardar se recargan ambas listas, se cierra el modal y se muestra el `message` del backend.
+- Verificado: `ng build` OK (aviso de presupuesto de CSS en finanzas, igual que el existente de eventos), `ng test --watch=false` **31/31** (4 tests nuevos: apertura con GASTO por defecto, transferencia oculta categoría/fecha/descripción, filtro de categorías por tipo, exclusión del origen en destinos).
+
 ### 2026-10-01 (5) — Finanzas: modales conectados al backend
 - **Nuevo `core/servicios/finanzas.service.ts`**: `obtenerMetodosPago`, `crearMetodoPago`, `obtenerCategorias`, `crearCategoria`, `editarCategoria`, `obtenerMovimientos` — patrón `ApiService` + `CacheService.swr`; claves nuevas en `CLAVES_CACHE` (`metodosPago`, `categorias`, `movimientos`) invalidadas en cada mutación. Las interfaces (`MetodoPago`, `Categoria`, `Movimiento`) ahora viven en el service (calcan las respuestas del backend, sin `id_usuario` en los listados).
 - **Componente `finanzas`**: `ngOnInit` → `cargarDatos()` con las 3 cargas en paralelo (patrón `Subscription[]` + `OnDestroy`), `guardarMetodo`/`guardarCategoria` llaman al service, cierran el modal, muestran el `message` del backend en `mensajeExito` y recargan la lista; errores → `manejarError` en `mensajeForm` del modal, con `guardando` en los botones.
