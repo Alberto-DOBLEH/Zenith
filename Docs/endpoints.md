@@ -1079,3 +1079,445 @@ Efecto en saldos (siempre positiva la cantidad, el backend aplica el signo):
 Errores:
 - `400` tipo fuera del enum, cantidad ≤ 0 o no numérica, fecha mal formada, descripción > 255, `id_metodo_pago_destino` ausente en transferencia o presente en gasto/entrada, destino = origen.
 - `404` método origen/destino o categoría no existen o no pertenecen al usuario.
+
+---
+
+# Módulo: Ejercicios (catálogo del gimnasio)
+
+Catálogo **universal** (sin `id_usuario`): todos los usuarios comparten los mismos ejercicios para unificar historiales y PRs. Se siembra con 43 ejercicios comunes.
+
+## Endpoint: Obtener ejercicios
+Descripcion: Lista el catálogo de ejercicios, ordenado por grupo muscular. Filtros opcionales.
+Ruta:
+- {GET} /api/ejercicios/
+- {GET} /api/ejercicios/?grupo=Pecho
+- {GET} /api/ejercicios/?q=press
+
+Header: `Authorization: Bearer <token>`
+
+Parámetros query:
+- `grupo`: coincidencia exacta sin importar mayúsculas.
+- `q`: búsqueda por nombre (`ILIKE`).
+
+Response:
+```json
+[
+  { "id_ejercicio": 1, "nombre": "Press Banca", "grupo_muscular": "Pecho" }
+]
+```
+
+Errores: `400` si `grupo` supera 50 caracteres o `q` 100.
+
+## Endpoint: Crear ejercicio
+Descripcion: Agrega un ejercicio al catálogo compartido.
+Ruta:
+- {POST} /api/ejercicios/
+
+Body:
+```json
+{ "nombre": "Press de pecho en máquina", "grupo_muscular": "Pecho" }
+```
+
+Response:
+```json
+{
+  "message": "Ejercicio creado con exito",
+  "ejercicio": { "id_ejercicio": 44, "nombre": "Press de pecho en máquina", "grupo_muscular": "Pecho" }
+}
+```
+
+Errores: `400` nombre/grupo vacíos o fuera de límite (100/50). `409` ya existe un ejercicio con ese nombre (sin importar mayúsculas).
+
+## Endpoint: Editar ejercicio
+Descripcion: Cambia el nombre y/o el grupo muscular de un ejercicio (afecta a todos los usuarios).
+Ruta:
+- {PUT} /api/ejercicios/:id_ejercicio
+
+Body (al menos un campo):
+```json
+{ "grupo_muscular": "Empuje" }
+```
+
+Response: `{ "message": "Ejercicio modificado con exito" }`
+
+Errores: `400` sin campos. `404` no existe. `409` nombre duplicado.
+
+## Endpoint: Eliminar ejercicio
+Descripcion: Borra un ejercicio del catálogo solo si no está en uso.
+Ruta:
+- {DELETE} /api/ejercicios/:id_ejercicio
+
+Response: `{ "message": "Ejercicio eliminado con exito" }`
+
+Errores: `404` no existe. `409` el ejercicio está en una receta de sesión o tiene series registradas (no se rompe historial).
+
+---
+
+# Módulo: Splits
+
+## Endpoint: Obtener splits
+Descripcion: Devuelve los splits del usuario (el activo primero) con el número de sesiones.
+Ruta:
+- {GET} /api/splits/
+
+Response:
+```json
+[
+  { "id_split": 1, "nombre": "PPLxUL", "es_activo": true, "sesiones": 6 },
+  { "id_split": 2, "nombre": "Arnold Split", "es_activo": false, "sesiones": 4 }
+]
+```
+
+## Endpoint: Detalle de un split
+Descripcion: Devuelve el split con sus sesiones y la receta de ejercicios de cada una (ordenada).
+Ruta:
+- {GET} /api/splits/:id_split
+
+Response:
+```json
+{
+  "id_split": 1,
+  "nombre": "PPLxUL",
+  "es_activo": true,
+  "sesiones": [
+    {
+      "id_sesion_plan": 1,
+      "nombre_sesion": "Push",
+      "dia_asignado": 1,
+      "ejercicios": [
+        { "id_ejercicio": 1, "nombre": "Press Banca", "grupo_muscular": "Pecho", "orden": 1 }
+      ]
+    }
+  ]
+}
+```
+
+Errores: `404` no existe o pertenece a otro usuario.
+
+## Endpoint: Crear split
+Descripcion: Crea un split opcionalmente con sus sesiones y recetas, todo en una transacción.
+Ruta:
+- {POST} /api/splits/
+
+Body:
+```json
+{
+  "nombre": "PPLxUL",
+  "es_activo": true,
+  "sesiones": [
+    {
+      "nombre_sesion": "Push",
+      "dia_asignado": 1,
+      "ejercicios": [ { "id_ejercicio": 1 }, { "id_ejercicio": 2, "orden": 2 } ]
+    },
+    { "nombre_sesion": "Pull", "dia_asignado": 2 }
+  ]
+}
+```
+
+Response:
+```json
+{
+  "message": "Split creado con exito",
+  "id_split": 1,
+  "sesiones": [
+    { "id_sesion_plan": 1, "nombre_sesion": "Push", "dia_asignado": 1 },
+    { "id_sesion_plan": 2, "nombre_sesion": "Pull", "dia_asignado": 2 }
+  ]
+}
+```
+
+Notas:
+- `dia_asignado`: **1 = lunes … 7 = domingo**; un día sin sesión es descanso.
+- `orden` es opcional (auto = posición, 1-based); no puede repetirse dentro de la sesión.
+- `es_activo: true` desactiva los demás splits del usuario.
+
+Errores: `400` nombre vacío/ > 50, `es_activo` no booleano, `sesiones` no arreglo/ > 7, día fuera de 1-7, día repetido, ejercicio repetido u orden repetido. `404` ejercicio inexistente. `409` sesión en día ocupado (carrera).
+
+## Endpoint: Editar split
+Descripcion: Renombra un split.
+Ruta:
+- {PUT} /api/splits/:id_split
+
+Body: `{ "nombre": "PPLxUL v2" }`
+
+Errores: `400` sin nombre. `404` no existe/no pertenece.
+
+## Endpoint: Activar split
+Descripcion: Marca un split como el actual y desactiva los demás (transacción; la BD garantiza un único activo).
+Ruta:
+- {PUT} /api/splits/:id_split/activar
+
+Response: `{ "message": "Split activado con exito" }`
+
+Errores: `404` no existe/no pertenece.
+
+## Endpoint: Eliminar split
+Descripcion: Borra el split con sus sesiones y recetas (no el historial de entrenamientos).
+Ruta:
+- {DELETE} /api/splits/:id_split
+
+Errores: `404` no existe/no pertenece. `409` el split tiene entrenamientos registrados.
+
+## Endpoint: Crear sesión en un split
+Descripcion: Agrega un día al molde del split.
+Ruta:
+- {POST} /api/splits/:id_split/sesiones
+
+Body:
+```json
+{ "nombre_sesion": "Legs", "dia_asignado": 3 }
+```
+
+Response:
+```json
+{
+  "message": "Sesión creada con exito",
+  "sesion": { "id_sesion_plan": 3, "nombre_sesion": "Legs", "dia_asignado": 3 }
+}
+```
+
+Errores: `400` nombre o día inválidos. `404` split inexistente/ajeno. `409` el día ya está ocupado en ese split.
+
+---
+
+# Módulo: Sesiones (días del molde)
+
+## Endpoint: Editar sesión
+Descripcion: Cambia el nombre y/o el día asignado de una sesión.
+Ruta:
+- {PUT} /api/sesiones/:id_sesion_plan
+
+Body (al menos un campo):
+```json
+{ "nombre_sesion": "Upper", "dia_asignado": 5 }
+```
+
+Errores: `400` sin campos o día fuera de 1-7. `404` no existe/no pertenece. `409` el día destino ya tiene otra sesión.
+
+## Endpoint: Reemplazar los ejercicios de una sesión
+Descripcion: Reescribe por completo la receta del día (borra y reinserta, igual que `dias` de los hábitos). `[]` vacía la sesión.
+Ruta:
+- {PUT} /api/sesiones/:id_sesion_plan/ejercicios
+
+Body:
+```json
+{
+  "ejercicios": [
+    { "id_ejercicio": 1, "orden": 1 },
+    { "id_ejercicio": 7 }
+  ]
+}
+```
+
+Response: `{ "message": "Ejercicios de la sesión actualizados con exito", "ejercicios": 2 }`
+
+Errores: `400` sin campo `ejercicios`, no arreglo, ejercicio repetido u orden repetido. `404` ejercicio inexistente / sesión ajena.
+
+## Endpoint: Eliminar sesión
+Descripcion: Borra un día del molde (y su receta).
+Ruta:
+- {DELETE} /api/sesiones/:id_sesion_plan
+
+Errores: `404` no existe/no pertenece. `409` la sesión tiene entrenamientos registrados.
+
+---
+
+# Módulo: Entrenamientos
+
+Flujo: `GET /hoy` → `POST /` (iniciar) → `POST /:id/series` (una por una) → `PUT /:id/finalizar`.
+
+## Endpoint: Plan del día
+Descripcion: Todo lo necesario para la pantalla de gimnasio: el split activo, la sesión asignada a hoy (`null` si es descanso o no hay split), el entrenamiento en curso (si lo hay) y, por cada ejercicio de la receta, su **PR** y la **última vez** que se entrenó (fecha + series). El PR compara normalizando a kg (`lbs × 0.45359237`) y se devuelve con la unidad en que se logró. El header `X-Timezone` (o `UTC` por defecto) define "hoy".
+Ruta:
+- {GET} /api/entrenamientos/hoy
+
+Response:
+```json
+{
+  "fecha": "2026-10-02",
+  "dia_semana": 5,
+  "split": { "id_split": 1, "nombre": "PPLxUL" },
+  "sesion": { "id_sesion_plan": 5, "nombre_sesion": "Upper", "dia_asignado": 5 },
+  "entrenamiento_activo": null,
+  "ejercicios": [
+    {
+      "id_ejercicio": 1,
+      "nombre": "Press Banca",
+      "grupo_muscular": "Pecho",
+      "orden": 1,
+      "pr": { "peso": 225, "unidad_peso": "lbs", "repeticiones": 3, "fecha": "2026-09-30" },
+      "ultima_vez": {
+        "fecha": "2026-09-30",
+        "series": [
+          { "numero_serie": 1, "repeticiones": 12, "peso": 70, "unidad_peso": "kg" },
+          { "numero_serie": 2, "repeticiones": 10, "peso": 75, "unidad_peso": "kg" }
+        ]
+      }
+    }
+  ]
+}
+```
+
+Notas: `fecha` siempre es texto `YYYY-MM-DD`. `dia_semana`: 1 = lunes … 7 = domingo. `pr`/`ultima_vez` son `null` sin historial; `ultima_vez` excluye el entrenamiento en curso. Si no hay split activo, `split`, `sesion` y `ejercicios` vienen en `null`/`[]`.
+
+## Endpoint: Iniciar entrenamiento
+Descripcion: Crea la sesión física real (`fecha_inicio = now()`).
+Ruta:
+- {POST} /api/entrenamientos/
+
+Body (la sesión de hoy del split activo):
+```json
+{}
+```
+
+Body (sesión explícita, p.ej. para entrenar un día no asignado):
+```json
+{ "id_sesion_plan": 5 }
+```
+
+Response:
+```json
+{
+  "message": "Entrenamiento iniciado",
+  "entrenamiento": {
+    "id_entrenamiento": 10,
+    "id_sesion_plan": 5,
+    "nombre_sesion": "Upper",
+    "fecha_inicio": "2026-10-02T14:00:00.000Z",
+    "fecha_fin": null
+  }
+}
+```
+
+Errores: `400` sin split activo / hoy es descanso (cuando no se envía `id_sesion_plan`). `404` sesión inexistente o ajena. `409` ya hay un entrenamiento en curso (también lo garantiza un índice único en BD).
+
+## Endpoint: Historial de entrenamientos
+Descripcion: Lista las idas al gimnasio, más recientes primero.
+Ruta:
+- {GET} /api/entrenamientos/
+- {GET} /api/entrenamientos/?mes=2026-10
+- {GET} /api/entrenamientos/?fecha=2026-10-02
+
+Response:
+```json
+[
+  {
+    "id_entrenamiento": 10,
+    "id_sesion_plan": 5,
+    "nombre_sesion": "Upper",
+    "id_split": 1,
+    "nombre_split": "PPLxUL",
+    "fecha_inicio": "2026-10-02T14:00:00.000Z",
+    "fecha_fin": "2026-10-02T15:05:00.000Z",
+    "ejercicios": 7,
+    "series": 21,
+    "duracion_minutos": 65
+  }
+]
+```
+
+Errores: `400` `fecha`/`mes` con formato inválido.
+
+## Endpoint: Detalle de un entrenamiento
+Descripcion: El entrenamiento con sus series agrupadas por ejercicio (primero los de la receta en su orden).
+Ruta:
+- {GET} /api/entrenamientos/:id_entrenamiento
+
+Response:
+```json
+{
+  "id_entrenamiento": 10,
+  "id_sesion_plan": 5,
+  "nombre_sesion": "Upper",
+  "id_split": 1,
+  "nombre_split": "PPLxUL",
+  "fecha_inicio": "2026-10-02T14:00:00.000Z",
+  "fecha_fin": "2026-10-02T15:05:00.000Z",
+  "duracion_minutos": 65,
+  "ejercicios": [
+    {
+      "id_ejercicio": 1,
+      "nombre": "Press Banca",
+      "grupo_muscular": "Pecho",
+      "orden": 1,
+      "series": [
+        { "id_serie": 1, "numero_serie": 1, "repeticiones": 12, "peso": 70, "unidad_peso": "kg" }
+      ]
+    }
+  ]
+}
+```
+
+Errores: `404` no existe/no pertenece.
+
+## Endpoint: Finalizar entrenamiento
+Descripcion: Pone `fecha_fin = now()` y calcula la duración.
+Ruta:
+- {PUT} /api/entrenamientos/:id_entrenamiento/finalizar
+
+Response:
+```json
+{
+  "message": "Entrenamiento finalizado",
+  "entrenamiento": { "id_entrenamiento": 10, "fecha_inicio": "...", "fecha_fin": "...", "duracion_minutos": 65 }
+}
+```
+
+Errores: `404` no existe/no pertenece. `409` ya fue finalizado.
+
+## Endpoint: Registrar serie (anidada)
+Descripcion: Registra una serie conforme se termina en el gimnasio (una por una). El ejercicio puede ser cualquiera del catálogo (también sirve para agregar uno no planeado).
+Ruta:
+- {POST} /api/entrenamientos/:id_entrenamiento/series
+
+Body:
+```json
+{
+  "id_ejercicio": 1,
+  "numero_serie": 3,
+  "repeticiones": 9,
+  "peso": 75,
+  "unidad_peso": "kg"
+}
+```
+
+Response:
+```json
+{
+  "message": "Serie registrada con exito",
+  "serie": { "id_serie": 1, "id_ejercicio": 1, "numero_serie": 3, "repeticiones": 9, "peso": 75, "unidad_peso": "kg" }
+}
+```
+
+Errores: `400` `numero_serie`/`repeticiones` enteros ≥ 1, `peso` > 0 y ≤ 99999.99, `unidad_peso` ∈ `kg`/`lbs`. `404` entrenamiento o ejercicio inexistente. `409` esa serie del ejercicio ya existe en este entrenamiento.
+
+## Endpoint: Eliminar entrenamiento
+Descripcion: Borra un registro erróneo (sus series caen por `CASCADE`).
+Ruta:
+- {DELETE} /api/entrenamientos/:id_entrenamiento
+
+Errores: `404` no existe/no pertenece.
+
+---
+
+# Módulo: Series (corrección)
+
+## Endpoint: Editar serie
+Descripcion: Corrige repeticiones y/o peso de una serie ya registrada. `peso` y `unidad_peso` deben enviarse juntos.
+Ruta:
+- {PUT} /api/series/:id_serie
+
+Body:
+```json
+{ "repeticiones": 8, "peso": 77.5, "unidad_peso": "kg" }
+```
+
+Errores: `400` sin campos, `peso` sin `unidad_peso` (o viceversa), repeticiones ≤ 0 o unidad inválida. `404` no existe/no pertenece.
+
+## Endpoint: Eliminar serie
+Descripcion: Quita una serie equivocada.
+Ruta:
+- {DELETE} /api/series/:id_serie
+
+Errores: `404` no existe/no pertenece.

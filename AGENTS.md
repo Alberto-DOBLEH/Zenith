@@ -46,7 +46,20 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
-### 2026-10-02 — Módulo de gimnasio: esquema en Supabase (6 tablas)
+### 2026-10-02 (2) — Backend del módulo de gimnasio (5 módulos, 18 endpoints)
+- **5 módulos nuevos** montados en `app.js` (routes → controller → service, `verifyToken`, `validarId`, ownership `WHERE ... AND id_usuario`):
+  - `/api/ejercicios`: catálogo **universal sin `id_usuario`** — `GET /` con filtros `grupo` (exacto ci) y `q` (`ILIKE`), `POST` (409 nombre dup ci), `PUT /:id`, `DELETE /:id` → **409 si está en receta o tiene series**.
+  - `/api/splits`: `GET /` (con `es_activo` y # de sesiones), `GET /:id` (detalle con receta anidada por `orden`), `POST` **transaccional** con `sesiones`+`ejercicios` opcionales, `PUT /:id` (nombre), `PUT /:id/activar` (transacción; la BD garantiza un único activo), `DELETE /:id` → 409 con historial, `POST /:id/sesiones` → 409 día ocupado. Validaciones en `splits/validaciones.js`: `dia_asignado` 1-7 (1 = lunes), día/orden/ejercicio repetidos, longitudes.
+  - `/api/sesiones`: `PUT /:id` (nombre/día, 409 día ocupado), `PUT /:id/ejercicios` **reemplaza** la receta completa (patrón `dias` de hábitos; `[]` la vacía), `DELETE /:id` → 409 con historial.
+  - `/api/entrenamientos`: **`GET /hoy` registrado antes de `/:id`** (fecha como texto vía `to_char`, `dia_semana` 1-7, split activo, sesión de hoy, `entrenamiento_activo`, ejercicios con **PR normalizado a kg** — `lbs × 0.45359237` — y `ultima_vez`), `POST` iniciar (`{}` = sesión de hoy, o `{id_sesion_plan}` explícito; 400 sin split activo/descanso, 409 activo — índice único en BD), historial `GET /` con `?fecha=`/`?mes=`, `GET /:id` (series agrupadas por ejercicio), `PUT /:id/finalizar` (409 doble), `DELETE /:id`, `POST /:id/series` (crear serie desde entrenamientos).
+  - `/api/series`: `PUT /:id` (o solo `repeticiones`, o `peso`+`unidad_peso` juntos → 400 si faltan), `DELETE /:id`.
+- **`config/fecha.js`**: nuevos `zonaSQL`, `fechaEnZonaSQL`, `mesEnZonaSQL` (header `X-Timezone`, default UTC, patrón ya usado por `verifyToken`).
+- **Series**: UNIQUE `(id_entrenamiento, id_ejercicio, numero_serie)` → 409 en duplicado; PR se devuelve con la unidad en que se logró.
+- **Pruebas de seguridad**: de **12/12 → 14/14** — IDs inválidos ampliados con los 5 endpoints `:id`, IDOR con recursos de B (split/sesión/entrenamiento/serie → 404 y `GET /splits` de A sin los de B), y 2 tests nuevos: *"gimnasio: catálogo, splits y sesiones"* (seed ≥40, filtros, 15 casos de split 400/404, split activo único, receta, 409s) y *"gimnasio: flujo de entrenamiento, series y PR"* (split de 7 días para `/hoy` siempre resoluble, 7 casos de serie, 75 kg vs 225 lbs → PR 225 lbs, edición de serie, finalizar/historial/detalle, borrados, sin split → 400). `after()` limpia `ejercicios` con `nombre LIKE 'PRUEBA_GIM_%'`.
+- **Docs**: `Docs/endpoints.md` con las secciones de los 5 módulos (18 endpoints), incl. ejemplo de `GET /hoy` y el flujo iniciar→series→finalizar.
+- Verificado: smoke manual de 55 verificaciones (`/tmp/opencode/smoke-gimnasio.mjs`, servidor en 3200) y `npm test` **14/14**.
+
+### 2026-10-02 (1) — Módulo de gimnasio: esquema en Supabase (6 tablas)
 - **Migración** `supabase/migrations/20261002000000_gimnasio.sql` (aplicada a local con psql y al remoto con `npx supabase db push`):
   - Enum `unidad_peso` (**`kg`/`lbs`**, minúsculas tal como se definió para el módulo).
   - `ejercicios`: **catálogo universal sin `id_usuario`** (`nombre` UNIQUE, `grupo_muscular`), para que no se dupliquen y los PRs se unifiquen entre splits.
