@@ -46,6 +46,19 @@ El plan completo de implementación del frontend (arquitectura, sistema de dise�
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
 
+### 2026-10-02 — Módulo de gimnasio: esquema en Supabase (6 tablas)
+- **Migración** `supabase/migrations/20261002000000_gimnasio.sql` (aplicada a local con psql y al remoto con `npx supabase db push`):
+  - Enum `unidad_peso` (**`kg`/`lbs`**, minúsculas tal como se definió para el módulo).
+  - `ejercicios`: **catálogo universal sin `id_usuario`** (`nombre` UNIQUE, `grupo_muscular`), para que no se dupliquen y los PRs se unifiquen entre splits.
+  - `splits` (id_usuario FK CASCADE, nombre, `es_activo`): **un único split activo por usuario** garantizado con índice parcial `UNIQUE (id_usuario) WHERE es_activo`.
+  - `sesiones_plan` (id_split FK CASCADE, nombre_sesion, `dia_asignado smallint CHECK 1-7`): molde de días; UNIQUE `(id_split, dia_asignado)`.
+  - `ejercicios_por_sesion` (id_sesion_plan FK CASCADE, id_ejercicio **FK RESTRICT**, orden > 0): UNIQUE `(id_sesion_plan, orden)` y UNIQUE `(id_sesion_plan, id_ejercicio)`.
+  - `entrenamientos_historial` (id_usuario FK CASCADE, id_sesion_plan **FK RESTRICT** para no borrar el molde con historial, `fecha_inicio timestamptz DEFAULT now()`, `fecha_fin` nullable con `CHECK fecha_fin >= fecha_inicio`); índice `(id_usuario, fecha_inicio DESC)`.
+  - `series_historial` (id_entrenamiento FK CASCADE, id_ejercicio **FK RESTRICT** — redundante a propósito para PRs sin JOINs, `numero_serie`/`repeticiones`/`peso` con CHECKs > 0, `unidad_peso`): UNIQUE `(id_entrenamiento, id_ejercicio, numero_serie)` (la numeración es por ejercicio, no global en el entrenamiento) e índice `(id_ejercicio, peso DESC)` para el PR de cada ejercicio.
+  - RLS habilitado sin policies (el backend entra como `postgres`) + GRANTs a `anon`/`authenticated`/`service_role`, igual que el resto del esquema.
+- Smoke test local (transacción con ROLLBACK): CRUD básico OK y restricciones verificadas (segundo split activo → unique_violation, `dia_asignado=9` → check_violation).
+- Pendiente: backend (routes/controller/service `/api/gimnasio*` o similar) y frontend cuando se defina la UI; de aquí en adelante el usuario solo planea cambios de frontend.
+
 ### 2026-10-01 (7) — Filtros de movimientos (tipo, método, fecha y mes)
 - **Barra de filtros dentro del contenedor de Movimientos** (selects tipo/método/**mes con nombres de mes** y input `date` + botón ✕ para limpiar): consumen `GET /api/movimientos?fecha|mes|tipo|metodo` (los 4 filtros planeados, combinables). El select de mes muestra "Enero…Diciembre" pero su `value` es `YYYY-MM` del año actual (lo que espera el backend).
 - **`formFiltros` + `aplicarFiltros()`**: arma solo los parámetros con valor → `FinanzasService.obtenerMovimientos(filtros)` (sin filtros usa la caché SWR; con filtros pide directo para no contaminarla). Cancela la petición anterior al cambiar de filtro (last-wins) y limpia `error`.
