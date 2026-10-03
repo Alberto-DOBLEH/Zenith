@@ -96,7 +96,11 @@ export class Gimnasio implements OnInit, OnDestroy {
           this.cargarActivo();
         },
         error: (error) => {
-          this.error.set(this.authService.manejarError(error));
+          if (error?.status === 404) {
+            this.plan.set(null);
+          } else {
+            this.error.set(this.authService.manejarError(error));
+          }
           this.cargando.set(false);
         }
       })
@@ -107,7 +111,11 @@ export class Gimnasio implements OnInit, OnDestroy {
     this.suscripciones.push(
       this.gimnasioService.obtenerHistorial(filtros).subscribe({
         next: (historial) => this.historial.set(historial),
-        error: (error) => this.error.set(this.authService.manejarError(error))
+        error: (error) => {
+          if (error?.status !== 404) {
+            this.error.set(this.authService.manejarError(error));
+          }
+        }
       })
     );
   }

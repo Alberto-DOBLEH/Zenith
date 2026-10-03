@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { Rutinas } from './rutinas';
 import { GimnasioService } from '../../core/servicios/gimnasio.service';
@@ -84,6 +84,23 @@ describe('Rutinas', () => {
     expect(component.splits().length).toBe(0);
     expect(component.ejercicios().length).toBe(0);
     expect(component.cargando()).toBe(false);
+  });
+
+  it('si la carga responde 404 no se muestra banner de error', async () => {
+    servicio.obtenerSplits.mockReturnValue(throwError(() => ({ status: 404 })));
+    servicio.obtenerEjercicios.mockReturnValue(throwError(() => ({ status: 404 })));
+
+    fixture = TestBed.createComponent(Rutinas);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.error()).toBe('');
+    expect(component.cargando()).toBe(false);
+    expect(component.splits().length).toBe(0);
+    const texto: string = fixture.nativeElement.textContent ?? '';
+    expect(texto).toContain('No tienes splits creados');
   });
 
   it('abre el modal de nuevo split con el formulario limpio', () => {

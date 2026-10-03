@@ -102,12 +102,11 @@
     margin: 0;
 }
 
-.boton-agregar {
+.boton-crear {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.45rem 0.9rem;
-    font-size: 0.85rem;
+    padding: 0.6rem 1.1rem;
     text-decoration: none;
 }
 

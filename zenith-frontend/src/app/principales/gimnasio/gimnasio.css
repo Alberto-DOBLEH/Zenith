@@ -52,12 +52,11 @@
     margin: 0;
 }
 
-.boton-agregar {
+.boton-crear {
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
-    padding: 0.45rem 0.9rem;
-    font-size: 0.85rem;
+    padding: 0.6rem 1.1rem;
     text-decoration: none;
     white-space: nowrap;
 }
@@ -145,8 +144,10 @@
     margin: 0;
 }
 
-.estado-vacio a {
+.estado-vacio .boton-principal,
+.estado-vacio .boton-secundario {
     margin-top: 0.4rem;
+    padding: 0.6rem 1.2rem;
     text-decoration: none;
 }
 
@@ -269,6 +270,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    padding: 0.6rem 1.1rem;
 }
 
 .en-curso {
@@ -324,6 +326,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.4rem;
+    padding: 0.5rem 1rem;
     white-space: nowrap;
 }
 

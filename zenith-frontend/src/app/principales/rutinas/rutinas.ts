@@ -101,7 +101,9 @@ export class Rutinas implements OnInit, OnDestroy {
           this.cargando.set(false);
         },
         error: (error) => {
-          this.error.set(this.authService.manejarError(error));
+          if (error?.status !== 404) {
+            this.error.set(this.authService.manejarError(error));
+          }
           this.cargando.set(false);
         }
       })
@@ -112,7 +114,11 @@ export class Rutinas implements OnInit, OnDestroy {
     this.suscripciones.push(
       this.gimnasioService.obtenerEjercicios().subscribe({
         next: (ejercicios) => this.ejercicios.set(ejercicios),
-        error: (error) => this.error.set(this.authService.manejarError(error))
+        error: (error) => {
+          if (error?.status !== 404) {
+            this.error.set(this.authService.manejarError(error));
+          }
+        }
       })
     );
   }

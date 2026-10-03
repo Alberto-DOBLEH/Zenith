@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 
 import { Gimnasio } from './gimnasio';
 import { GimnasioService, PlanHoy } from '../../core/servicios/gimnasio.service';
@@ -126,6 +126,35 @@ describe('Gimnasio', () => {
     const texto: string = fixture.nativeElement.textContent ?? '';
     expect(texto).toContain('No tienes un split activo');
     expect(component.cargando()).toBe(false);
+  });
+
+  it('si la carga responde 404 se muestra el estado vacío sin banner de error', async () => {
+    servicio.obtenerPlan.mockReturnValue(throwError(() => ({ status: 404 })));
+    servicio.obtenerHistorial.mockReturnValue(throwError(() => ({ status: 404 })));
+
+    fixture = TestBed.createComponent(Gimnasio);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.error()).toBe('');
+    expect(component.cargando()).toBe(false);
+    expect(component.plan()).toBeNull();
+    const texto: string = fixture.nativeElement.textContent ?? '';
+    expect(texto).toContain('No tienes un split activo');
+  });
+
+  it('otros errores de carga sí se muestran como banner', async () => {
+    servicio.obtenerPlan.mockReturnValue(throwError(() => ({ status: 500, message: 'boom' })));
+
+    fixture = TestBed.createComponent(Gimnasio);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(component.error()).toBe('boom');
   });
 
   it('si hoy es descanso lo indica junto al nombre del split', async () => {
