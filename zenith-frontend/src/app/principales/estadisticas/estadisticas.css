@@ -4,18 +4,6 @@
     gap: 1.5rem;
 }
 
-.encabezado h1 {
-    color: var(--foreground);
-    font-size: 1.6rem;
-    margin: 0 0 0.25rem 0;
-}
-
-.subtitulo {
-    color: var(--muted-foreground);
-    font-size: 0.9rem;
-    margin: 0;
-}
-
 .carga {
     display: flex;
     align-items: center;

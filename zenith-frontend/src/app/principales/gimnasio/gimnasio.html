@@ -1,7 +1,7 @@
 <div class="gimnasio">
     <header class="encabezado">
         <div>
-            <h1>Gimnasio</h1>
+            <h1>Entrenamiento</h1>
             <p class="subtitulo">{{ fechaLarga || 'Tu entrenamiento de hoy' }}</p>
         </div>
         <a routerLink="/rutinas" class="boton-principal boton-crear">
@@ -18,7 +18,7 @@
     }
 
     @if (cargando()) {
-        <div class="lista-cargando tarjeta"><i class="bi bi-arrow-repeat girando"></i> Cargando gimnasio...</div>
+        <div class="lista-cargando tarjeta"><i class="bi bi-arrow-repeat girando"></i> Cargando entrenamiento...</div>
     } @else {
         <section class="tarjeta seccion">
             <div class="seccion-titulo">

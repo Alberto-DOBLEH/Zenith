@@ -10,68 +10,165 @@
         </div>
     </header>
 
-    @if (!cargando() && resumen() && resumen()!.habitos.length === 0) {
-        <div class="estado-vacio tarjeta">
-            <i class="bi bi-stars"></i>
-            <h2>Aún no tienes hábitos</h2>
-            <p>Crea tu primer hábito para empezar a construir tu racha.</p>
-            <a class="boton-principal" routerLink="/habitos">Crear un hábito</a>
-        </div>
-    } @else {
-        <div class="columnas">
-            <section class="tarjeta seccion-habitos">
-                <div class="seccion-titulo">
-                    <h2>Hábitos</h2>
-                    <span class="leyenda"><span class="punto bueno"></span> Buenos <span class="punto malo"></span> Malos</span>
+    <section class="stats-rapidas" aria-label="Resumen">
+        <div class="tarjeta stat">
+            @if (cargandoStats()) {
+                <p class="stat-cargando"><i class="bi bi-arrow-repeat girando"></i></p>
+            } @else {
+                <div class="stat-icono racha"><i class="bi bi-fire"></i></div>
+                <div>
+                    <p class="stat-valor">{{ stats()?.racha_actual ?? 0 }}</p>
+                    <p class="stat-etiqueta">Racha actual (días)</p>
                 </div>
+            }
+        </div>
+        <div class="tarjeta stat">
+            @if (cargandoStats()) {
+                <p class="stat-cargando"><i class="bi bi-arrow-repeat girando"></i></p>
+            } @else {
+                <div class="stat-icono cumplimiento"><i class="bi bi-percent"></i></div>
+                <div>
+                    <p class="stat-valor">{{ stats()?.cumplimiento ?? 0 }}%</p>
+                    <p class="stat-etiqueta">Cumplimiento del mes</p>
+                </div>
+            }
+        </div>
+        <div class="tarjeta stat">
+            @if (cargandoFinanzas) {
+                <p class="stat-cargando"><i class="bi bi-arrow-repeat girando"></i></p>
+            } @else {
+                <div class="stat-icono saldo"><i class="bi bi-wallet2"></i></div>
+                <div>
+                    <p class="stat-valor">{{ formatearMoneda(saldoTotal) }}</p>
+                    <p class="stat-etiqueta">Saldo total</p>
+                </div>
+            }
+        </div>
+        <div class="tarjeta stat">
+            @if (cargandoFinanzas) {
+                <p class="stat-cargando"><i class="bi bi-arrow-repeat girando"></i></p>
+            } @else {
+                <div class="stat-icono entradas"><i class="bi bi-arrow-down-right"></i></div>
+                <div>
+                    <p class="stat-valor">{{ formatearMoneda(entradasMes) }}</p>
+                    <p class="stat-etiqueta">Entradas del mes</p>
+                </div>
+            }
+        </div>
+        <div class="tarjeta stat">
+            @if (cargandoFinanzas) {
+                <p class="stat-cargando"><i class="bi bi-arrow-repeat girando"></i></p>
+            } @else {
+                <div class="stat-icono gastos"><i class="bi bi-arrow-up-right"></i></div>
+                <div>
+                    <p class="stat-valor">{{ formatearMoneda(gastosMes) }}</p>
+                    <p class="stat-etiqueta">Gastos del mes</p>
+                </div>
+            }
+        </div>
+    </section>
 
-                @if (cargandoHabitos()) {
-                    <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando hábitos...</p>
-                } @else if (habitos().length === 0) {
-                    <p class="vacio">No hay hábitos para hoy.</p>
-                } @else {
-                    @for (habito of habitos(); track habito.id_habito) {
-                        <div class="fila-habito" [class.completado]="completado(habito)" [class.malo]="!esBueno(habito)">
-                            <button class="fila-principal" (click)="verDetalles(habito)">
-                                <div class="fila-info">
-                                    <span class="habito-nombre">{{ habito.nombre }}</span>
-                                    @if (habito.tipo_habito === 3) {
-                                        <span class="habito-progreso">{{ habito.valor_realizado ?? 0 }} / {{ habito.meta ?? '∞' }} {{ habito.unidad || '' }}</span>
-                                    } @else if (habito.tipo_habito === 2) {
-                                        <span class="habito-progreso">Tiempo</span>
-                                    }
-                                </div>
-                            </button>
+    <div class="columnas">
+        <section class="tarjeta seccion-habitos">
+            <div class="seccion-titulo">
+                <h2>Hábitos de hoy</h2>
+                <span class="leyenda"><span class="punto bueno"></span> Buenos <span class="punto malo"></span> Malos</span>
+            </div>
 
-                            <div class="fila-acciones">
-                                @if (habito.tipo_habito === 1 || habito.tipo_habito === 4) {
-                                    <input type="checkbox"
-                                        class="checkbox-habito"
-                                        [checked]="marcado(habito)"
-                                        [disabled]="cargandoRegistro() || bloqueado(habito)"
-                                        (change)="alternarHabito(habito)"
-                                        (click)="$event.stopPropagation()">
-                                } @else if (habito.tipo_habito === 3) {
-                                    <span class="contador">{{ habito.valor_realizado ?? 0 }}</span>
-                                    <button class="boton-secundario boton-sumar" [disabled]="cargandoRegistro() || bloqueado(habito)"
-                                        (click)="incrementarRepeticion(habito)">
-                                        <i class="bi bi-plus-lg"></i>
-                                    </button>
+            @if (cargandoHabitos()) {
+                <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando hábitos...</p>
+            } @else if (!cargando() && resumen() && resumen()!.habitos.length === 0) {
+                <div class="estado-vacio">
+                    <i class="bi bi-stars"></i>
+                    <h2>Aún no tienes hábitos</h2>
+                    <p>Crea tu primer hábito para empezar a construir tu racha.</p>
+                    <a class="boton-principal" routerLink="/habitos">Crear un hábito</a>
+                </div>
+            } @else if (habitos().length === 0) {
+                <p class="vacio">No hay hábitos para hoy.</p>
+            } @else {
+                @for (habito of habitos(); track habito.id_habito) {
+                    <div class="fila-habito" [class.completado]="completado(habito)" [class.malo]="!esBueno(habito)">
+                        <button class="fila-principal" (click)="verDetalles(habito)">
+                            <div class="fila-info">
+                                <span class="habito-nombre">{{ habito.nombre }}</span>
+                                @if (habito.tipo_habito === 3) {
+                                    <span class="habito-progreso">{{ habito.valor_realizado ?? 0 }} / {{ habito.meta ?? '∞' }} {{ habito.unidad || '' }}</span>
                                 } @else if (habito.tipo_habito === 2) {
-                                    <button class="boton-secundario boton-tiempo" [disabled]="bloqueado(habito)"
-                                        (click)="abrirTimer(habito); $event.stopPropagation()">
-                                        <i class="bi bi-play-fill"></i>
-                                    </button>
+                                    <span class="habito-progreso">Tiempo</span>
                                 }
                             </div>
+                        </button>
+
+                        <div class="fila-acciones">
+                            @if (habito.tipo_habito === 1 || habito.tipo_habito === 4) {
+                                <input type="checkbox"
+                                    class="checkbox-habito"
+                                    [checked]="marcado(habito)"
+                                    [disabled]="cargandoRegistro() || bloqueado(habito)"
+                                    (change)="alternarHabito(habito)"
+                                    (click)="$event.stopPropagation()">
+                            } @else if (habito.tipo_habito === 3) {
+                                <span class="contador">{{ habito.valor_realizado ?? 0 }}</span>
+                                <button class="boton-secundario boton-sumar" [disabled]="cargandoRegistro() || bloqueado(habito)"
+                                    (click)="incrementarRepeticion(habito)">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            } @else if (habito.tipo_habito === 2) {
+                                <button class="boton-secundario boton-tiempo" [disabled]="bloqueado(habito)"
+                                    (click)="abrirTimer(habito); $event.stopPropagation()">
+                                    <i class="bi bi-play-fill"></i>
+                                </button>
+                            }
                         </div>
-                    }
+                    </div>
+                }
+            }
+        </section>
+
+        <div class="columna-derecha">
+            <section class="tarjeta seccion-gimnasio">
+                <div class="seccion-titulo">
+                    <h2>Entrenamiento de hoy</h2>
+                    <a class="ver-todo" routerLink="/entrenamiento">Ver todo</a>
+                </div>
+
+                @if (cargandoPlan()) {
+                    <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando plan...</p>
+                } @else if (!planHoy()) {
+                    <p class="vacio">No se pudo cargar el plan de hoy.</p>
+                } @else if (!planHoy()!.split) {
+                    <div class="estado-vacio gimnasio-vacio">
+                        <i class="bi bi-fire"></i>
+                        <p>No tienes un split activo. Crea tu rutina para empezar a entrenar.</p>
+                        <a class="boton-secundario" routerLink="/rutinas">Crear rutina</a>
+                    </div>
+                } @else if (planHoy()!.entrenamiento_activo) {
+                    <div class="gimnasio-sesion">
+                        <span class="badge-en-curso"><span class="punto"></span> EN CURSO</span>
+                        <p class="gimnasio-nombre">{{ planHoy()!.entrenamiento_activo!.nombre_sesion }}</p>
+                        <p class="gimnasio-detalle">Split {{ planHoy()!.split!.nombre }}</p>
+                        <a class="boton-principal" routerLink="/entrenamiento">Continuar</a>
+                    </div>
+                } @else if (!planHoy()!.sesion) {
+                    <div class="estado-vacio gimnasio-vacio">
+                        <i class="bi bi-moon-stars"></i>
+                        <p>Hoy es descanso en {{ planHoy()!.split!.nombre }}.</p>
+                        <a class="boton-secundario" routerLink="/rutinas">Ver rutina</a>
+                    </div>
+                } @else {
+                    <div class="gimnasio-sesion">
+                        <p class="gimnasio-nombre">{{ planHoy()!.sesion!.nombre_sesion }}</p>
+                        <p class="gimnasio-detalle">Split {{ planHoy()!.split!.nombre }} · {{ planHoy()!.ejercicios.length }} ejercicios</p>
+                        <a class="boton-principal" routerLink="/entrenamiento">Empezar</a>
+                    </div>
                 }
             </section>
 
             <section class="tarjeta seccion-eventos">
                 <div class="seccion-titulo">
                     <h2>Eventos próximos</h2>
+                    <a class="ver-todo" routerLink="/calendario">Ver todo</a>
                 </div>
 
                 @if (cargandoEventos()) {
@@ -91,7 +188,7 @@
                 }
             </section>
         </div>
-    }
+    </div>
 
     <app-modal-detalles-habito [habito]="habitosDetalles()" (cerrar)="habitosDetalles.set(null)"></app-modal-detalles-habito>
 

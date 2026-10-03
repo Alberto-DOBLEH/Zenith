@@ -177,6 +177,34 @@ Render de tarjetas de hábito por tipo:
 
 ---
 
+# Sección 6 — Reestructuración de navegación y dashboard (03-10-2026)
+
+## 6.1 Nuevos nombres de módulos y rutas ✅
+- Sidebar con **6 enlaces**: Principal (`/dashboard`), Hábitos (`/habitos`), **Calendario** (`/calendario`, antes Eventos), **Ideas** (`/ideas`, antes Notas), Finanzas (`/finanzas`) y **Entrenamiento** (`/entrenamiento`, antes Gimnasio). Estadísticas dejó de ser un enlace (ver 6.2).
+- Rutas renombradas en `app.routes.ts` con **redirect de las viejas**: `/eventos → /calendario`, `/notas → /ideas`, `/gimnasio → /entrenamiento` (`pathMatch: 'full'`, heredan `authGuard` al vivir bajo el layout).
+- Solo cambiaron rutas y textos de UI (títulos `<h1>`, "Volver al entrenamiento", etc.); carpetas/clases internas (`principales/eventos`, `class Eventos`…) se conservan (decisión del usuario: cero riesgo de imports rotos).
+- Specs ajustados: `gimnasio.spec` (encabezado "Entrenamiento") y `rutinas.spec` ("Volver al entrenamiento").
+
+## 6.2 Hábitos + Estadísticas en una sola pantalla (pestañas) ✅
+- `/habitos` tiene barra de **2 pestañas** (segmented control): **Hábitos** (lista + modales CRUD, contador y botón "Crear hábito" solo en esta pestaña) y **Estadísticas** (`<app-estadisticas>` incrustado, cero migración de lógica).
+- Estado de la pestaña **driveado por query param** (`/habitos?tab=estadisticas`): compartible, back-friendly; al salir de la pestaña se destruye el componente (charts se destruyen limpio en `ngOnDestroy`) y al volver se recarga desde caché SWR.
+- `/estadisticas` ya no es una ruta con componente: redirige con **`RedireccionTab`** (micro-componente `principales/redireccion-tab/` que hace `navigateByUrl('/habitos?tab=estadisticas')` en `ngOnInit`). *Nota: `redirectTo` con query params NO conserva el query en Angular, y una ruta solo con `canActivate` sin componente da `NG04014` — por eso el micro-componente.*
+- Se quitó el `<header>` propio de `estadisticas.html` (título duplicado bajo la pestaña).
+
+## 6.3 Dashboard con lo importante de los demás módulos ✅
+Bloques nuevos (más saludo/fecha y las secciones existentes):
+1. **Stats rápidas** (fila de 5 tarjetas): 🔥 racha actual y % cumplimiento del mes (`GET /estadisticas?periodo=mes`); saldo total, entradas y gastos del mes (`GET /metodos-pago` + `GET /movimientos` filtrado en cliente por `YYYY-MM`, misma lógica que la pantalla Finanzas).
+2. **Hábitos de hoy**: se conserva la lista interactiva completa (checkbox/contador/pomodoro, modal de detalles y de recaída); el estado vacío "Aún no tienes hábitos" ahora vive **dentro** de su tarjeta para que el resto del dashboard siga visible.
+3. **Entrenamiento de hoy** (`GET /entrenamientos/hoy`): 4 estados — sin split activo (CTA "Crear rutina" → `/rutinas`), descanso, sesión del día (nombre, split, #ejercicios, botón "Empezar") y **EN CURSO** (badge pulsante + "Continuar"). Cada bloque con enlace "Ver todo" a su módulo.
+4. **Eventos próximos** (se conserva) con "Ver todo" → `/calendario`.
+- Cada bloque tiene su propio estado de carga; los fallos de carga son locales (no dejan banner global).
+
+## 6.4 Verificación ✅
+- `ng build` OK (solo warnings preexistentes de presupuesto CSS) y `ng test --watch=false` **71/71** (5 tests nuevos: 2 de redirección/pestañas extra en hábitos — incluye prueba del redirect `/estadisticas` con query param — y 4 del dashboard: stats, finanzas, tarjeta de entrenamiento y eventos).
+- Backend sin cambios; la suite de seguridad no se corrió (Docker/Supabase local apagado).
+
+---
+
 ## Modales (estilo común a todos)
 
 Overlay `rgba(0,0,0,0.6)` + tarjeta `--card` centrada (radius 1rem, borde sutil, header con título + X, cuerpo con `.inputs-texto`/select estilizados, footer con botones). Aplica a todos los modales de las secciones.

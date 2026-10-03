@@ -6,6 +6,9 @@ import { DashboardService, HabitoResumen, ResumenDashboard } from '../../core/se
 import { HabitosService, Habito } from '../../core/servicios/habitos.service';
 import { BitacoraService } from '../../core/servicios/bitacora.service';
 import { EventosService, Evento } from '../../core/servicios/eventos.service';
+import { EstadisticasService, Estadisticas } from '../../core/servicios/estadisticas.service';
+import { FinanzasService, MetodoPago, Movimiento } from '../../core/servicios/finanzas.service';
+import { GimnasioService, PlanHoy } from '../../core/servicios/gimnasio.service';
 import { ModalDetallesHabito, DetallesHabito } from '../../compartidos/modal-detalles-habito/modal-detalles-habito';
 import { ModalTimer } from '../../compartidos/modal-timer/modal-timer';
 
@@ -32,6 +35,9 @@ export class Dashboard implements OnInit, OnDestroy {
   private readonly habitosService = inject(HabitosService);
   private readonly bitacoraService = inject(BitacoraService);
   private readonly eventosService = inject(EventosService);
+  private readonly estadisticasService = inject(EstadisticasService);
+  private readonly finanzasService = inject(FinanzasService);
+  private readonly gimnasioService = inject(GimnasioService);
 
   private suscripciones: Subscription[] = [];
   private metaInfo = new Map<number, Habito>();
@@ -44,6 +50,14 @@ export class Dashboard implements OnInit, OnDestroy {
   cargandoHabitos = signal(true);
   cargandoEventos = signal(true);
   cargandoRegistro = signal(false);
+  stats = signal<Estadisticas | null>(null);
+  cargandoStats = signal(true);
+  metodosPago = signal<MetodoPago[]>([]);
+  movimientos = signal<Movimiento[]>([]);
+  cargandoMetodos = signal(true);
+  cargandoMovimientos = signal(true);
+  planHoy = signal<PlanHoy | null>(null);
+  cargandoPlan = signal(true);
   habitosDetalles = signal<DetallesHabito | null>(null);
   recaidaModal = signal<{ nombre: string } | null>(null);
   timerAbierto = signal(false);
@@ -126,6 +140,83 @@ export class Dashboard implements OnInit, OnDestroy {
         error: () => this.cargandoEventos.set(false)
       })
     );
+
+    this.suscripciones.push(
+      this.estadisticasService.obtenerGenerales('mes').subscribe({
+        next: (datos) => {
+          this.stats.set(datos);
+          this.cargandoStats.set(false);
+        },
+        error: () => this.cargandoStats.set(false)
+      })
+    );
+
+    this.suscripciones.push(
+      this.finanzasService.obtenerMetodosPago().subscribe({
+        next: (metodos) => {
+          this.metodosPago.set(metodos);
+          this.cargandoMetodos.set(false);
+        },
+        error: () => this.cargandoMetodos.set(false)
+      })
+    );
+
+    this.suscripciones.push(
+      this.finanzasService.obtenerMovimientos().subscribe({
+        next: (movimientos) => {
+          this.movimientos.set(movimientos);
+          this.cargandoMovimientos.set(false);
+        },
+        error: () => this.cargandoMovimientos.set(false)
+      })
+    );
+
+    this.suscripciones.push(
+      this.gimnasioService.obtenerPlan().subscribe({
+        next: (plan) => {
+          this.planHoy.set(plan);
+          this.cargandoPlan.set(false);
+        },
+        error: () => this.cargandoPlan.set(false)
+      })
+    );
+  }
+
+  get saldoTotal(): number {
+    return this.metodosPago().reduce((total, m) => total + Number(m.saldo_actual), 0);
+  }
+
+  get cargandoFinanzas(): boolean {
+    return this.cargandoMetodos() || this.cargandoMovimientos();
+  }
+
+  get entradasMes(): number {
+    return this.movimientosDeMes('ENTRADA');
+  }
+
+  get gastosMes(): number {
+    return this.movimientosDeMes('GASTO');
+  }
+
+  private movimientosDeMes(tipo: Movimiento['tipo_movimiento']): number {
+    const mes = this.fechaMes();
+    return this.movimientos()
+      .filter(m => m.tipo_movimiento === tipo && String(m.fecha).slice(0, 7) === mes)
+      .reduce((total, m) => total + Number(m.cantidad), 0);
+  }
+
+  private fechaMes(): string {
+    const ahora = new Date();
+    const offset = ahora.getTimezoneOffset();
+    return new Date(ahora.getTime() - offset * 60000).toISOString().slice(0, 7);
+  }
+
+  formatearMoneda(valor: number | string): string {
+    return Number(valor).toLocaleString('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 2
+    });
   }
 
   private enriquecer(habito: HabitoResumen): HabitoVista {

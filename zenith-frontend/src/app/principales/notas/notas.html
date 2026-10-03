@@ -1,7 +1,7 @@
 <div class="notas">
     <header class="encabezado">
         <div>
-            <h1>Notas</h1>
+            <h1>Ideas</h1>
             <p class="subtitulo">Tu nota del día y el historial.</p>
         </div>
     </header>
@@ -50,7 +50,7 @@
                 <h2>Historial</h2>
 
                 @if (historial().length === 0) {
-                    <p class="vacio">Aún no tienes notas anteriores.</p>
+                    <p class="vacio">Aún no tienes ideas anteriores.</p>
                 } @else {
                     @for (nota of historial(); track nota.id_nota) {
                         <button class="tarjeta-nota" [class.activa]="vistaHistorial()?.id_nota === nota.id_nota" (click)="verNota(nota)">

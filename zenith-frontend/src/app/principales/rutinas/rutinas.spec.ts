@@ -75,7 +75,7 @@ describe('Rutinas', () => {
   it('muestra el encabezado y el enlace de vuelta', () => {
     const texto: string = fixture.nativeElement.textContent ?? '';
     expect(texto).toContain('Rutinas');
-    expect(texto).toContain('Volver al gimnasio');
+    expect(texto).toContain('Volver al entrenamiento');
   });
 
   it('muestra estados vacíos sin splits ni ejercicios', () => {

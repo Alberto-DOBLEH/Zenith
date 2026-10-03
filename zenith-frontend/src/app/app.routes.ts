@@ -25,24 +25,39 @@ export const routes: Routes = [
                 loadComponent: () => import('./principales/habitos/habitos').then(m => m.Habitos)
             },
             {
-                path: 'notas',
+                path: 'ideas',
                 loadComponent: () => import('./principales/notas/notas').then(m => m.Notas)
             },
             {
-                path: 'eventos',
+                path: 'notas',
+                redirectTo: 'ideas',
+                pathMatch: 'full'
+            },
+            {
+                path: 'calendario',
                 loadComponent: () => import('./principales/eventos/eventos').then(m => m.Eventos)
             },
             {
+                path: 'eventos',
+                redirectTo: 'calendario',
+                pathMatch: 'full'
+            },
+            {
                 path: 'estadisticas',
-                loadComponent: () => import('./principales/estadisticas/estadisticas').then(m => m.Estadisticas)
+                loadComponent: () => import('./principales/redireccion-tab/redireccion-tab').then(m => m.RedireccionTab)
             },
             {
                 path: 'finanzas',
                 loadComponent: () => import('./principales/finanzas/finanzas').then(m => m.Finanzas)
             },
             {
-                path: 'gimnasio',
+                path: 'entrenamiento',
                 loadComponent: () => import('./principales/gimnasio/gimnasio').then(m => m.Gimnasio)
+            },
+            {
+                path: 'gimnasio',
+                redirectTo: 'entrenamiento',
+                pathMatch: 'full'
             },
             {
                 path: 'rutinas',

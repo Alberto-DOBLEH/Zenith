@@ -118,7 +118,7 @@ describe('Gimnasio', () => {
 
   it('muestra el encabezado Gimnasio', () => {
     const texto: string = fixture.nativeElement.textContent ?? '';
-    expect(texto).toContain('Gimnasio');
+    expect(texto).toContain('Entrenamiento');
     expect(texto).toContain('Administrar rutinas');
   });
 

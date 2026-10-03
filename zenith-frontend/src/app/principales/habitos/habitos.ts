@@ -1,14 +1,16 @@
 import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/servicios/auth.service';
 import { HabitosService, Habito, HabitoPayload, TipoHabito } from '../../core/servicios/habitos.service';
 import { textoFrecuencia, textoObjetivo } from '../../core/utilidades/habito-formato';
 import { ModalDetallesHabito, DetallesHabito } from '../../compartidos/modal-detalles-habito/modal-detalles-habito';
+import { Estadisticas } from '../estadisticas/estadisticas';
 
 @Component({
   selector: 'app-habitos',
-  imports: [ReactiveFormsModule, FormsModule, ModalDetallesHabito],
+  imports: [ReactiveFormsModule, FormsModule, ModalDetallesHabito, Estadisticas],
   templateUrl: './habitos.html',
   styleUrl: './habitos.css',
 })
@@ -16,6 +18,8 @@ export class Habitos implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly habitosService = inject(HabitosService);
   private readonly fb = inject(FormBuilder);
+  private readonly ruta = inject(ActivatedRoute);
+  private readonly router = inject(Router);
 
   private suscripciones: Subscription[] = [];
 
@@ -23,6 +27,8 @@ export class Habitos implements OnInit, OnDestroy {
   error = signal('');
   habitos = signal<Habito[]>([]);
   tipos = signal<TipoHabito[]>([]);
+
+  pestana = signal<'habitos' | 'estadisticas'>('habitos');
 
   modalFormAbierto = signal(false);
   modoEdicion = signal(false);
@@ -54,12 +60,25 @@ export class Habitos implements OnInit, OnDestroy {
   });
 
   ngOnInit() {
+    this.suscripciones.push(
+      this.ruta.queryParams.subscribe(params => {
+        this.pestana.set(params['tab'] === 'estadisticas' ? 'estadisticas' : 'habitos');
+      })
+    );
     this.cargarTipos();
     this.cargarHabitos();
   }
 
   ngOnDestroy() {
     this.suscripciones.forEach(s => s.unsubscribe());
+  }
+
+  irAPestana(pestana: 'habitos' | 'estadisticas') {
+    if (this.pestana() === pestana) return;
+    this.pestana.set(pestana);
+    this.router.navigate(['/habitos'], {
+      queryParams: pestana === 'estadisticas' ? { tab: 'estadisticas' } : {}
+    });
   }
 
   private cargarTipos() {
