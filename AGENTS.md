@@ -40,11 +40,20 @@ Aplicación web de seguimiento de hábitos para la materia Desarrollo Web 2.
 
 ## Plan de trabajo del frontend
 
-El plan completo de implementación del frontend (arquitectura, sistema de diseño, secciones por prioridad y endpoints) vive en `Docs/plan-frontend.md`. Al retomar trabajo del frontend, consultarlo primero; las secciones se marcan ✅/⬜ según avance. La siguiente sección pendiente es la **Sección 1** (layout principal + dashboard con datos reales).
+El plan completo de implementación del frontend (arquitectura, sistema de diseño, secciones por prioridad y endpoints) vive en `Docs/plan-frontend.md`. Al retomar trabajo del frontend, consultarlo primero; las secciones se marcan ✅/⬜ según avance. Las secciones 1 a 5 están completas (núcleo, módulos de apoyo, pulido/perfil, estadísticas y gimnasio/rutinas); lo que sigue se define con el usuario (p. ej. fase futura del gimnasio: estadísticas, cronómetro, ejercicios no planeados).
 
 ## Registro de cambios por fecha
 
 Las entradas más recientes van al inicio. Al finalizar trabajo nuevo, agregar una entrada con la fecha del día y los cambios hechos.
+
+### 2026-10-02 (3) — Frontend del gimnasio: pantallas Gimnasio y Rutinas
+- **Nuevo `core/servicios/gimnasio.service.ts`**: los 18 endpoints del módulo (ejercicios, splits, sesiones, entrenamientos, series) con el patrón `ApiService` + `CacheService.swr`; interfaces que calcan las respuestas del backend (incl. `PlanHoy` con `pr`/`ultima_vez`, `ejercicios` como conteo en `SplitResumen` y `FiltrosHistorial` con índice para `api.get`). Claves nuevas en `CLAVES_CACHE`: `gimnasioHoy`, `gimnasioHistorial`, `splits`, `ejercicios` (series/iniciar/finalizar invalidan hoy+historial; gestión invalida splits+ejercicios+hoy).
+- **Pantalla `/gimnasio`** (`principales/gimnasio/`): **único enlace en el sidebar** (`bi-fire`, después de Finanzas). Tarjeta "Hoy" con 3 estados (sin split activo → CTA a `/rutinas`; descanso; sesión con plan + PR con trofeo en su unidad + "Última vez" + Iniciar). **Modo en curso**: badge "EN CURSO" pulsante, hora de inicio, Finalizar con confirmación, por ejercicio series registradas (editar/eliminar inline) y fila de nueva serie (reps/peso/kg-lbs/➕) con `numero_serie = max + 1` y validación local; receta desde `GET /hoy` con fallback `GET /splits/:id` si la sesión activa ≠ hoy, series desde `GET /entrenamientos/:id`. Historial con filtro de mes (nombres, valor `YYYY-MM`), clic → modal detalle (series por ejercicio) y 🗑 con confirmación.
+- **Pantalla `/rutinas`** (`principales/rutinas/`, ruta lazy **sin** enlace en sidebar; botón "← Volver al gimnasio"): rejilla Splits (activar/ver/editar/eliminar, badge "Activo", #sesiones) + Catálogo (filtro de grupo y búsqueda **en cliente**, CRUD con `datalist`). Modales: crear/editar split (solo nombre), detalle del split (sesiones Lunes→Domingo con receta numerada + "Agregar día"), nueva/editar sesión (nombre + día, eliminar dentro), receta del día (doble lista con ↑↓/quitar y toggle del catálogo), crear/editar ejercicio y confirmación genérica (split/sesión/ejercicio).
+- **Rutas**: `gimnasio` y `rutinas` lazy bajo `authGuard` en `app.routes.ts`.
+- **Tests**: `ng test --watch=false` **59/59** (24 nuevos: 11 gimnasio — estados, iniciar, modo activo con series, `numero_serie`, finalizar con confirmación, detalle, filtro de mes; 13 rutinas — modales, validación de split, filtros cliente, detalle con sesiones, receta orden/toggle/mover, guardar receta con orden, confirmaciones). `ng build` OK (warnings de CSS budgets: gimnasio 7.85 kB, rutinas 6.94 kB — se recortó gimnasio para no pasar el error de 8 kB).
+- **Docs**: `Docs/plan-frontend.md` con **Sección 5** y endpoints a consumir al día. Smoke del backend re-corrido: 55/55.
+- Fuera de alcance (fase futura): estadísticas/PRs históricos, cronómetro en vivo, "iniciar otra sesión", ejercicio no planeado en el entrenamiento en curso.
 
 ### 2026-10-02 (2) — Backend del módulo de gimnasio (5 módulos, 18 endpoints)
 - **5 módulos nuevos** montados en `app.js` (routes → controller → service, `verifyToken`, `validarId`, ownership `WHERE ... AND id_usuario`):

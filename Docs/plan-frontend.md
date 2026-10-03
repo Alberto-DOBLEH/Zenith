@@ -24,6 +24,7 @@ Plan completo del frontend (Angular 21 standalone) basado en `Docs/pantallas-pen
 - ✅ **Sección 2 completa**: Pomodoro (temporizador + ciclos; la página `/pomodoro` e historial se retiraron y ahora es el **modal-timer** `compartidos/modal-timer`), Eventos (calendario semanal + lista + modales), Notas (nota del día + historial).
 - ✅ **Sección 3 completa**: Perfil (3 tarjetas + avatar + modales editar datos / cambiar contraseña / eliminar cuenta / cerrar sesión), Gráficas Chart.js (línea semanal desde `bitacora?periodo=semana` + doughnut mensual desde `estadisticas`; hoy viven en la pantalla **Estadísticas**), pulido general.
 - ✅ **28-09-2026 — Primer cambio**: dashboard sin tarjetas de stats ni gráficas (solo hábitos + eventos), pantalla de hábitos con frecuencia/objetivo/pomodoro, modal-timer ampliado, y **Sección 4** (nueva pantalla Estadísticas).
+- ✅ **02-10-2026 — Gimnasio**: nueva pantalla `/gimnasio` (plan de hoy + entrenamiento en curso + historial) y `/rutinas` (splits, sesiones, receta y catálogo de ejercicios), con `gimnasio.service.ts` sobre los 18 endpoints del módulo. Sección 5.
 
 ## Sistema de diseño (derivado del login)
 
@@ -152,12 +153,36 @@ Render de tarjetas de hábito por tipo:
 
 ---
 
+# Sección 5 — Gimnasio y Rutinas (02-10-2026)
+
+## 5.1 Servicio `gimnasio.service.ts` ✅
+- Un solo service con los 5 grupos de endpoints del módulo: ejercicios, splits, sesiones, entrenamientos y series (patrón `ApiService` + `CacheService.swr`).
+- Claves nuevas en `CLAVES_CACHE`: `gimnasio:hoy`, `gimnasio:historial`, `splits`, `ejercicios`. Las mutaciones invalidan `hoy` + `historial` (series/iniciar/finalizar) o `splits` + `ejercicios` (gestión de rutinas).
+- `GET /entrenamientos` con filtros va directo (sin caché), igual que movimientos.
+
+## 5.2 Pantalla Gimnasio (`/gimnasio`) ✅
+- **Un solo enlace en el sidebar** (`bi-fire`); `/rutinas` no aparece ahí, se llega con el botón "Administrar rutinas".
+- Tarjeta **Hoy** con 3 estados: sin split activo (CTA a Rutinas), descanso (aviso + "Ver rutina") y sesión hoy (plan con ejercicios, badge **PR** con trofeo en la unidad en que se logró, "Última vez" y botón "Iniciar entrenamiento").
+- **Modo en curso**: badge pulsante "EN CURSO", hora de inicio (sin cronómetro, decisión del usuario), botón Finalizar con confirmación; por ejercicio: series registradas con editar/eliminar inline y fila para agregar serie (reps + peso + kg/lbs + ➕). `numero_serie` lo calcula el front como `max + 1`. Receta desde `GET /hoy` con fallback a `GET /splits/:id` si la sesión activa no es la de hoy; series desde `GET /entrenamientos/:id`.
+- **Historial**: filtro de mes (select con nombres, valor `YYYY-MM`), filas con sesión/split/fecha/ejercicios/series/duración → clic abre **modal detalle** (series agrupadas por ejercicio); 🗑 con confirmación. DELETE y finalizar también con confirmación.
+
+## 5.3 Pantalla Rutinas (`/rutinas`) ✅
+- Rejilla **Splits** + **Catálogo de ejercicios**; botón "← Volver al gimnasio".
+- Splits: fila con badge "Activo", #sesiones y acciones activar/ver/editar/eliminar. Catálogo: filtro de grupo + búsqueda (ambos cliente), CRUD con `datalist` de sugerencias.
+- Modales: **crear/editar split** (solo nombre — decisión: sin sesiones anidadas), **detalle del split** (sesiones Lunes→Domingo con receta numerada + "Agregar día"), **nueva/editar sesión** (nombre + día; eliminar dentro), **receta del día** (doble lista: elegidos con ↑↓/quitar + catálogo con toggle), **nuevo/editar ejercicio** y **confirmación genérica** (split/sesión/ejercicio).
+
+## 5.4 Verificación ✅
+- `ng build` OK (warnings de presupuesto CSS en gimnasio 7.85 kB y rutinas 6.94 kB, igual que eventos/finanzas) y `ng test --watch=false` **59/59** (24 tests nuevos: 11 de gimnasio y 13 de rutinas). Smoke manual del backend **55/55**.
+- Fuera de alcance (fase futura): estadísticas/PRs históricos, cronómetro en vivo, "iniciar otra sesión", agregar ejercicio no planeado al entrenamiento en curso.
+
+---
+
 ## Modales (estilo común a todos)
 
 Overlay `rgba(0,0,0,0.6)` + tarjeta `--card` centrada (radius 1rem, borde sutil, header con título + X, cuerpo con `.inputs-texto`/select estilizados, footer con botones). Aplica a todos los modales de las secciones.
 
 ## Endpoints a consumir
 
-Auth: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/verificar-email/:token`. Usuario: `GET /api/usuario/perfil`, `PUT /api/usuario/editar_perfil`, `PUT /api/usuario/cambiar_password`, `DELETE /api/usuario/`. Hábitos: `GET /api/habito/tipos`, `GET /api/habito`, `POST /api/habito`, `PUT/DELETE /api/habito/:id`. Bitácora: `POST /api/bitacora`, `GET /api/bitacora?periodo=`. Dashboard: `GET /api/dashboard` (solo `fecha` + `habitos`). Estadísticas: `GET /api/estadisticas?periodo=`, `GET /api/estadisticas/mapa?periodo=`. Eventos: `GET/POST /api/eventos`, `PUT/DELETE /api/eventos/:id` (con `avisos`). Notas: `GET/POST /api/notas`, `PUT /api/notas/:id`. Pomodoro: CRUD `/api/pomodoro` (en standby). Avatares: `GET /api/avatares`. Salud: `GET /health`.
+Auth: `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/verificar-email/:token`. Usuario: `GET /api/usuario/perfil`, `PUT /api/usuario/editar_perfil`, `PUT /api/usuario/cambiar_password`, `DELETE /api/usuario/`. Hábitos: `GET /api/habito/tipos`, `GET /api/habito`, `POST /api/habito`, `PUT/DELETE /api/habito/:id`. Bitácora: `POST /api/bitacora`, `GET /api/bitacora?periodo=`. Dashboard: `GET /api/dashboard` (solo `fecha` + `habitos`). Estadísticas: `GET /api/estadisticas?periodo=`, `GET /api/estadisticas/mapa?periodo=`. Eventos: `GET/POST /api/eventos`, `PUT/DELETE /api/eventos/:id` (con `avisos`). Notas: `GET/POST /api/notas`, `PUT /api/notas/:id`. Pomodoro: CRUD `/api/pomodoro` (en standby). Avatares: `GET /api/avatares`. Gimnasio: `GET/POST /api/ejercicios`, `PUT/DELETE /api/ejercicios/:id`, `GET/POST /api/splits`, `GET/PUT/DELETE /api/splits/:id`, `PUT /api/splits/:id/activar`, `POST /api/splits/:id/sesiones`, `PUT/DELETE /api/sesiones/:id`, `PUT /api/sesiones/:id/ejercicios`, `GET /api/entrenamientos/hoy`, `GET/POST /api/entrenamientos`, `GET/DELETE /api/entrenamientos/:id`, `PUT /api/entrenamientos/:id/finalizar`, `POST /api/entrenamientos/:id/series`, `PUT/DELETE /api/series/:id`. Salud: `GET /health`.
 
 Nota (28-09-2026): se retiraron los GET por id sin consumidor (`/api/habito/:id`, `/api/eventos/:id`, `/api/notas/:id`, `/api/notas/por-fecha`, `/api/estadisticas/habito/:id`).

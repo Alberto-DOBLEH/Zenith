@@ -1,0 +1,444 @@
+<div class="rutinas">
+    <header class="encabezado">
+        <div>
+            <h1>Rutinas</h1>
+            <p class="subtitulo">Tus splits, sesiones y catálogo de ejercicios.</p>
+        </div>
+        <a routerLink="/gimnasio" class="boton-secundario boton-volver">
+            <i class="bi bi-arrow-left"></i> Volver al gimnasio
+        </a>
+    </header>
+
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    @if (mensajeExito()) {
+        <div class="mensaje-exito"><i class="bi bi-check-circle"></i>{{ mensajeExito() }}</div>
+    }
+
+    @if (cargando()) {
+        <div class="lista-cargando tarjeta"><i class="bi bi-arrow-repeat girando"></i> Cargando rutinas...</div>
+    } @else {
+        <div class="rejilla">
+            <section class="tarjeta seccion">
+                <div class="seccion-titulo">
+                    <h2>Splits</h2>
+                    <button class="boton-secundario boton-agregar" (click)="abrirCrearSplit()">
+                        <i class="bi bi-plus-lg"></i> Nuevo
+                    </button>
+                </div>
+
+                @if (splits().length === 0) {
+                    <div class="estado-vacio">
+                        <i class="bi bi-diagram-3"></i>
+                        <p>No tienes splits creados. Crea uno para armar tu rutina semanal.</p>
+                        <button class="boton-principal" (click)="abrirCrearSplit()">Crear split</button>
+                    </div>
+                } @else {
+                    <ul class="elementos">
+                        @for (split of splits(); track split.id_split) {
+                            <li class="elemento">
+                                <span class="elemento-icono" [class.activo]="split.es_activo">
+                                    <i class="bi bi-diagram-3"></i>
+                                </span>
+                                <div class="elemento-datos">
+                                    <span class="elemento-nombre">
+                                        {{ split.nombre }}
+                                        @if (split.es_activo) {
+                                            <span class="badge-activo">Activo</span>
+                                        }
+                                    </span>
+                                    <span class="elemento-subtitulo">
+                                        {{ split.sesiones }} {{ split.sesiones === 1 ? 'sesión' : 'sesiones' }}
+                                    </span>
+                                </div>
+                                <div class="elemento-acciones">
+                                    @if (!split.es_activo) {
+                                        <button class="boton-icono" (click)="activarSplit(split.id_split)"
+                                            aria-label="Activar split" title="Activar">
+                                            <i class="bi bi-play-circle"></i>
+                                        </button>
+                                    }
+                                    <button class="boton-icono" (click)="abrirDetalle(split.id_split)"
+                                        aria-label="Ver detalle" title="Ver detalle">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="boton-icono" (click)="abrirEditarSplit(split)"
+                                        aria-label="Editar split" title="Editar">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="boton-icono" (click)="pedirEliminarSplit(split)"
+                                        aria-label="Eliminar split" title="Eliminar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+
+            <section class="tarjeta seccion">
+                <div class="seccion-titulo">
+                    <h2>Catálogo de ejercicios</h2>
+                    <button class="boton-secundario boton-agregar" (click)="abrirCrearEjercicio()">
+                        <i class="bi bi-plus-lg"></i> Nuevo
+                    </button>
+                </div>
+
+                <div class="filtros" [formGroup]="formFiltros">
+                    <label class="filtro">
+                        <span>Grupo</span>
+                        <select formControlName="grupo">
+                            <option value="">Todos</option>
+                            @for (grupo of gruposDisponibles; track grupo) {
+                                <option [value]="grupo">{{ grupo }}</option>
+                            }
+                        </select>
+                    </label>
+                    <label class="filtro filtro-texto">
+                        <span>Buscar</span>
+                        <input type="text" formControlName="q" placeholder="Nombre del ejercicio">
+                    </label>
+                </div>
+
+                @if (ejerciciosVisibles.length === 0) {
+                    <div class="estado-vacio">
+                        <i class="bi bi-search"></i>
+                        <p>{{ ejercicios().length === 0 ? 'El catálogo está vacío.' : 'No hay ejercicios con esa búsqueda.' }}</p>
+                    </div>
+                } @else {
+                    <ul class="elementos">
+                        @for (ejercicio of ejerciciosVisibles; track ejercicio.id_ejercicio) {
+                            <li class="elemento">
+                                <span class="elemento-icono"><i class="bi bi-activity"></i></span>
+                                <div class="elemento-datos">
+                                    <span class="elemento-nombre">{{ ejercicio.nombre }}</span>
+                                    <span class="elemento-subtitulo">{{ ejercicio.grupo_muscular }}</span>
+                                </div>
+                                <button class="boton-icono" (click)="abrirEditarEjercicio(ejercicio)"
+                                    aria-label="Editar ejercicio" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="boton-icono" (click)="pedirEliminarEjercicio(ejercicio)"
+                                    aria-label="Eliminar ejercicio" title="Eliminar">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                }
+            </section>
+        </div>
+    }
+</div>
+
+@if (modalSplitAbierto()) {
+    <div class="overlay" (click)="cerrarSplit()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicionSplit() ? 'Editar split' : 'Nuevo split' }}</h2>
+                <button class="boton-icono" (click)="cerrarSplit()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form [formGroup]="formSplit" (ngSubmit)="guardarSplit()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Nombre</span>
+                        <input class="inputs-texto" formControlName="nombre" placeholder="Ej. PPLxUL, Arnold Split">
+                    </label>
+
+                    @if (!modoEdicionSplit()) {
+                        <p class="aviso">
+                            <i class="bi bi-info-circle"></i>
+                            Después podrás agregar los días (sesiones) y sus ejercicios desde el detalle del split.
+                            El split nuevo queda inactivo hasta que lo actives.
+                        </p>
+                    }
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarSplit()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">
+                        {{ guardando() ? 'Guardando...' : (modoEdicionSplit() ? 'Guardar cambios' : 'Crear split') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalDetalleAbierto()) {
+    <div class="overlay" (click)="cerrarDetalle()">
+        <div class="modal modal-detalle" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ splitDetalle()?.nombre ?? 'Detalle del split' }}</h2>
+                <button class="boton-icono" (click)="cerrarDetalle()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-cuerpo">
+                @if (cargandoDetalle()) {
+                    <div class="lista-cargando"><i class="bi bi-arrow-repeat girando"></i> Cargando split...</div>
+                } @else if (splitDetalle(); as split) {
+                    @if (split.es_activo) {
+                        <p class="aviso"><i class="bi bi-check-circle"></i> Split activo: es el que se usa en "Hoy".</p>
+                    }
+
+                    @if (split.sesiones.length === 0) {
+                        <div class="estado-vacio">
+                            <i class="bi bi-calendar-plus"></i>
+                            <p>Este split todavía no tiene días asignados.</p>
+                        </div>
+                    } @else {
+                        <ul class="sesiones">
+                            @for (sesion of split.sesiones; track sesion.id_sesion_plan) {
+                                <li class="sesion">
+                                    <div class="sesion-cabecera">
+                                        <span class="sesion-dia">{{ textoDia(sesion.dia_asignado) }}</span>
+                                        <span class="sesion-nombre">{{ sesion.nombre_sesion }}</span>
+                                        <div class="sesion-acciones">
+                                            <button class="boton-icono" (click)="abrirReceta(sesion)"
+                                                aria-label="Editar ejercicios" title="Ejercicios del día">
+                                                <i class="bi bi-clipboard-check"></i>
+                                            </button>
+                                            <button class="boton-icono" (click)="abrirEditarSesion(sesion)"
+                                                aria-label="Editar sesión" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="boton-icono" (click)="pedirEliminarSesion(sesion)"
+                                                aria-label="Eliminar sesión" title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    @if ((sesion.ejercicios ?? []).length === 0) {
+                                        <p class="sesion-vacia">Sin ejercicios asignados.</p>
+                                    } @else {
+                                        <ol class="receta">
+                                            @for (ejercicio of sesion.ejercicios; track ejercicio.id_ejercicio) {
+                                                <li>{{ ejercicio.nombre }} <small>{{ ejercicio.grupo_muscular }}</small></li>
+                                            }
+                                        </ol>
+                                    }
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+
+            <div class="modal-pie">
+                <button type="button" class="boton-secundario" (click)="cerrarDetalle()">Cerrar</button>
+                <button type="button" class="boton-principal" (click)="abrirCrearSesion()" [disabled]="!splitDetalle()">
+                    <i class="bi bi-plus-lg"></i> Agregar día
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (modalSesionAbierto()) {
+    <div class="overlay" (click)="cerrarSesion()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicionSesion() ? 'Editar sesión' : 'Nueva sesión' }}</h2>
+                <button class="boton-icono" (click)="cerrarSesion()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form [formGroup]="formSesion" (ngSubmit)="guardarSesion()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Nombre de la sesión</span>
+                        <input class="inputs-texto" formControlName="nombre_sesion" placeholder="Ej. Push, Pull, Legs">
+                    </label>
+
+                    <label class="campo">
+                        <span>Día de la semana</span>
+                        <select class="inputs-texto" formControlName="dia_asignado">
+                            @for (dia of dias; track dia.valor) {
+                                <option [ngValue]="dia.valor">{{ dia.nombre }}</option>
+                            }
+                        </select>
+                    </label>
+
+                    <p class="aviso">
+                        <i class="bi bi-info-circle"></i>
+                        Un día sin sesión cuenta como descanso. Cada día solo puede tener una sesión.
+                    </p>
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    @if (modoEdicionSesion()) {
+                        <button type="button" class="boton-secundario boton-peligro-ligero"
+                            (click)="pedirEliminarSesion({ id_sesion_plan: sesionEditandoId()!, nombre_sesion: formSesion.value.nombre_sesion!, dia_asignado: formSesion.value.dia_asignado! })">
+                            Eliminar
+                        </button>
+                    }
+                    <button type="button" class="boton-secundario" (click)="cerrarSesion()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">
+                        {{ guardando() ? 'Guardando...' : (modoEdicionSesion() ? 'Guardar cambios' : 'Crear sesión') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalRecetaAbierto()) {
+    <div class="overlay" (click)="cerrarReceta()">
+        <div class="modal modal-receta" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Ejercicios · {{ recetaSesion()?.nombre_sesion }}</h2>
+                <button class="boton-icono" (click)="cerrarReceta()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-cuerpo">
+                <div class="receta-elegidos">
+                    <p class="receta-etiqueta">Orden del día ({{ recetaSeleccion().length }})</p>
+                    @if (recetaSeleccion().length === 0) {
+                        <p class="receta-vacia">Ningún ejercicio seleccionado.</p>
+                    } @else {
+                        <ul class="lista-elegidos">
+                            @for (idEjercicio of recetaSeleccion(); track idEjercicio; let i = $index) {
+                                <li>
+                                    <span class="elegido-num">{{ i + 1 }}</span>
+                                    <span class="elegido-nombre">{{ nombreEjercicio(idEjercicio) }}</span>
+                                    <button class="boton-icono" (click)="moverEnReceta(i, -1)" [disabled]="i === 0"
+                                        aria-label="Subir" title="Subir">
+                                        <i class="bi bi-chevron-up"></i>
+                                    </button>
+                                    <button class="boton-icono" (click)="moverEnReceta(i, 1)" [disabled]="i === recetaSeleccion().length - 1"
+                                        aria-label="Bajar" title="Bajar">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                    <button class="boton-icono" (click)="alternarEjercicio(idEjercicio)"
+                                        aria-label="Quitar" title="Quitar">
+                                        <i class="bi bi-x-lg"></i>
+                                    </button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                </div>
+
+                <div class="receta-disponibles">
+                    <p class="receta-etiqueta">Catálogo ({{ ejercicios().length }})</p>
+                    <ul class="lista-disponibles">
+                        @for (ejercicio of ejercicios(); track ejercicio.id_ejercicio) {
+                            <li>
+                                <button class="disponible" [class.elegido]="estaEnReceta(ejercicio.id_ejercicio)"
+                                    (click)="alternarEjercicio(ejercicio.id_ejercicio)">
+                                    <i class="bi" [class.bi-plus-lg]="!estaEnReceta(ejercicio.id_ejercicio)"
+                                        [class.bi-check-lg]="estaEnReceta(ejercicio.id_ejercicio)"></i>
+                                    <span>{{ ejercicio.nombre }}</span>
+                                    <small>{{ ejercicio.grupo_muscular }}</small>
+                                </button>
+                            </li>
+                        }
+                    </ul>
+                </div>
+
+                @if (mensajeForm()) {
+                    <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                }
+            </div>
+
+            <div class="modal-pie">
+                <button type="button" class="boton-secundario" (click)="cerrarReceta()">Cancelar</button>
+                <button type="button" class="boton-principal" (click)="guardarReceta()" [disabled]="guardando()">
+                    {{ guardando() ? 'Guardando...' : 'Guardar ejercicios' }}
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (modalEjercicioAbierto()) {
+    <div class="overlay" (click)="cerrarEjercicio()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicionEjercicio() ? 'Editar ejercicio' : 'Nuevo ejercicio' }}</h2>
+                <button class="boton-icono" (click)="cerrarEjercicio()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form [formGroup]="formEjercicio" (ngSubmit)="guardarEjercicio()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Nombre</span>
+                        <input class="inputs-texto" formControlName="nombre" placeholder="Ej. Press banca" list="sugerencias-ejercicio">
+                        <datalist id="sugerencias-ejercicio">
+                            @for (ejercicio of ejercicios(); track ejercicio.id_ejercicio) {
+                                <option [value]="ejercicio.nombre"></option>
+                            }
+                        </datalist>
+                    </label>
+
+                    <label class="campo">
+                        <span>Grupo muscular</span>
+                        <input class="inputs-texto" formControlName="grupo_muscular" placeholder="Ej. Pecho" list="sugerencias-grupo">
+                        <datalist id="sugerencias-grupo">
+                            @for (grupo of gruposDisponibles; track grupo) {
+                                <option [value]="grupo"></option>
+                            }
+                        </datalist>
+                    </label>
+
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarEjercicio()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">
+                        {{ guardando() ? 'Guardando...' : (modoEdicionEjercicio() ? 'Guardar cambios' : 'Crear ejercicio') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (confirmacion(); as confirmacion) {
+    <div class="overlay" (click)="cerrarConfirmacion()">
+        <div class="modal modal-confirmacion" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ confirmacion.titulo }}</h2>
+                <button class="boton-icono" (click)="cerrarConfirmacion()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-cuerpo">
+                <p class="confirmacion-texto">{{ confirmacion.mensaje }}</p>
+            </div>
+
+            <div class="modal-pie">
+                <button type="button" class="boton-secundario" (click)="cerrarConfirmacion()">Cancelar</button>
+                <button type="button" class="boton-peligro" (click)="ejecutarConfirmacion()" [disabled]="confirmando()">
+                    {{ confirmando() ? 'Procesando...' : 'Eliminar' }}
+                </button>
+            </div>
+        </div>
+    </div>
+}

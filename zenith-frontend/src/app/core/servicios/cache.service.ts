@@ -14,7 +14,11 @@ export const CLAVES_CACHE = {
     avatares: 'avatares',
     metodosPago: 'metodosPago',
     categorias: 'categorias',
-    movimientos: 'movimientos'
+    movimientos: 'movimientos',
+    gimnasioHoy: 'gimnasio:hoy',
+    gimnasioHistorial: 'gimnasio:historial',
+    splits: 'splits',
+    ejercicios: 'ejercicios'
 } as const;
 
 /** Tiempo de vida por defecto de una entrada (ms) antes de refrescar en segundo plano. */

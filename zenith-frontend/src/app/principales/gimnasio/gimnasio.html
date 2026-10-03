@@ -1,0 +1,339 @@
+<div class="gimnasio">
+    <header class="encabezado">
+        <div>
+            <h1>Gimnasio</h1>
+            <p class="subtitulo">{{ fechaLarga || 'Tu entrenamiento de hoy' }}</p>
+        </div>
+        <a routerLink="/rutinas" class="boton-secundario boton-agregar">
+            <i class="bi bi-list-check"></i> Administrar rutinas
+        </a>
+    </header>
+
+    @if (error()) {
+        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ error() }}</div>
+    }
+
+    @if (mensajeExito()) {
+        <div class="mensaje-exito"><i class="bi bi-check-circle"></i>{{ mensajeExito() }}</div>
+    }
+
+    @if (cargando()) {
+        <div class="lista-cargando tarjeta"><i class="bi bi-arrow-repeat girando"></i> Cargando gimnasio...</div>
+    } @else {
+        <section class="tarjeta seccion">
+            <div class="seccion-titulo">
+                <h2>Hoy</h2>
+                @if (planActual?.split; as split) {
+                    <span class="contador"><i class="bi bi-fire"></i> {{ split.nombre }}</span>
+                }
+            </div>
+
+            @if (activo !== null) {
+                @if (planActual?.entrenamiento_activo; as entrenamiento) {
+                    <div class="en-curso">
+                        <div class="en-curso-cabecera">
+                            <span class="badge-en-curso"><span class="punto"></span> EN CURSO</span>
+                            <span class="en-curso-datos">
+                                {{ entrenamiento.nombre_sesion }} · Inició {{ horaInicio(entrenamiento.fecha_inicio) }}
+                            </span>
+                            <button class="boton-peligro boton-finalizar" (click)="pedirFinalizar()">
+                                <i class="bi bi-stop-circle"></i> Finalizar
+                            </button>
+                        </div>
+
+                        @if (errorActivo()) {
+                            <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ errorActivo() }}</div>
+                        }
+
+                        @if (cargandoSerie()) {
+                            <div class="lista-cargando"><i class="bi bi-arrow-repeat girando"></i> Cargando ejercicios...</div>
+                        } @else if (ejerciciosActivos.length === 0) {
+                            <div class="aviso">
+                                <i class="bi bi-info-circle"></i>
+                                Este entrenamiento no tiene ejercicios en su receta.
+                            </div>
+                        } @else {
+                            @for (ejercicio of ejerciciosActivos; track ejercicio.id_ejercicio) {
+                                <div class="ejercicio">
+                                    <div class="ejercicio-cabecera">
+                                        <span class="ejercicio-orden">{{ ejercicio.orden }}</span>
+                                        <div class="ejercicio-titulo">
+                                            <span class="ejercicio-nombre">{{ ejercicio.nombre }}</span>
+                                            <span class="ejercicio-grupo">{{ ejercicio.grupo_muscular }}</span>
+                                        </div>
+                                        @if (ejercicio.pr; as pr) {
+                                            <span class="badge-pr" [title]="'PR desde ' + fechaCorta(pr.fecha)">
+                                                <i class="bi bi-trophy"></i> {{ pr.peso }} {{ pr.unidad_peso }} × {{ pr.repeticiones }}
+                                            </span>
+                                        }
+                                    </div>
+
+                                    @if (seriesDe(ejercicio).length > 0) {
+                                        <ul class="series">
+                                            @for (serie of seriesDe(ejercicio); track serie.id_serie) {
+                                                @if (serieEditando()?.id_serie === serie.id_serie) {
+                                                    <li class="serie editando">
+                                                        <span class="serie-num">{{ serie.numero_serie }}</span>
+                                                        <input class="input-serie" type="number" min="1"
+                                                            [(ngModel)]="serieEditando()!.repeticiones" aria-label="Repeticiones">
+                                                        <span class="serie-x">×</span>
+                                                        <input class="input-serie" type="number" min="0" step="0.5"
+                                                            [(ngModel)]="serieEditando()!.peso" aria-label="Peso">
+                                                        <select class="select-serie" [(ngModel)]="serieEditando()!.unidad_peso" aria-label="Unidad">
+                                                            <option value="kg">kg</option>
+                                                            <option value="lbs">lbs</option>
+                                                        </select>
+                                                        <button class="boton-icono" (click)="guardarEdicionSerie()"
+                                                            [disabled]="guardando()" aria-label="Guardar serie" title="Guardar">
+                                                            <i class="bi bi-check-lg"></i>
+                                                        </button>
+                                                        <button class="boton-icono" (click)="cancelarEdicionSerie()"
+                                                            aria-label="Cancelar edición" title="Cancelar">
+                                                            <i class="bi bi-x-lg"></i>
+                                                        </button>
+                                                    </li>
+                                                } @else {
+                                                    <li class="serie">
+                                                        <span class="serie-num">{{ serie.numero_serie }}</span>
+                                                        <span class="serie-valor">{{ serie.repeticiones }} × {{ serie.peso }} {{ serie.unidad_peso }}</span>
+                                                        <button class="boton-icono" (click)="editarSerie(serie)"
+                                                            aria-label="Editar serie" title="Editar">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button class="boton-icono" (click)="eliminarSerie(serie.id_serie)"
+                                                            [disabled]="guardando()" aria-label="Eliminar serie" title="Eliminar">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </li>
+                                                }
+                                            }
+                                        </ul>
+                                    } @else {
+                                        <p class="serie-vacia">Sin series todavía.</p>
+                                    }
+
+                                    <div class="serie-nueva">
+                                        <input class="input-serie" type="number" min="1" placeholder="Reps"
+                                            [(ngModel)]="borradorPara(ejercicio.id_ejercicio).repeticiones"
+                                            [attr.aria-label]="'Repeticiones de ' + ejercicio.nombre">
+                                        <input class="input-serie" type="number" min="0" step="0.5" placeholder="Peso"
+                                            [(ngModel)]="borradorPara(ejercicio.id_ejercicio).peso"
+                                            [attr.aria-label]="'Peso de ' + ejercicio.nombre">
+                                        <select class="select-serie" [(ngModel)]="borradorPara(ejercicio.id_ejercicio).unidad_peso"
+                                            [attr.aria-label]="'Unidad de ' + ejercicio.nombre">
+                                            <option value="kg">kg</option>
+                                            <option value="lbs">lbs</option>
+                                        </select>
+                                        <button class="boton-icono boton-agregar-serie" (click)="agregarSerie(ejercicio.id_ejercicio)"
+                                            [disabled]="guardando()" [title]="'Registrar serie ' + ejercicio.nombre">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            } @else if (!planActual?.split) {
+                <div class="estado-vacio">
+                    <i class="bi bi-calendar-x"></i>
+                    <p>No tienes un split activo. Crea tu rutina para empezar a entrenar.</p>
+                    <a routerLink="/rutinas" class="boton-principal">Crear split</a>
+                </div>
+            } @else if (!planActual?.sesion) {
+                <div class="aviso">
+                    <i class="bi bi-moon"></i>
+                    Hoy es descanso en {{ planActual!.split!.nombre }}. Vuelve mañana o administra tu rutina.
+                </div>
+                <div class="descanso-acciones">
+                    <a routerLink="/rutinas" class="boton-secundario">Ver rutina</a>
+                </div>
+            } @else {
+                <div class="sesion-cabecera">
+                    <div class="sesion-datos">
+                        <h3>{{ planActual!.sesion!.nombre_sesion }}</h3>
+                        <p>{{ textoDia(planActual!.dia_semana) }} · Split {{ planActual!.split!.nombre }}</p>
+                    </div>
+                    <button class="boton-principal" (click)="iniciar()" [disabled]="guardando()">
+                        <i class="bi bi-play-fill"></i>
+                        {{ guardando() ? 'Iniciando...' : 'Iniciar entrenamiento' }}
+                    </button>
+                </div>
+
+                @if (planActual!.ejercicios.length === 0) {
+                    <div class="aviso">
+                        <i class="bi bi-info-circle"></i>
+                        Esta sesión no tiene ejercicios. Agrégalos desde Administrar rutinas.
+                    </div>
+                } @else {
+                    <ul class="elementos">
+                        @for (ejercicio of planActual!.ejercicios; track ejercicio.id_ejercicio) {
+                            <li class="elemento">
+                                <span class="elemento-icono"><i class="bi bi-activity"></i></span>
+                                <div class="elemento-datos">
+                                    <span class="elemento-nombre">{{ ejercicio.nombre }}</span>
+                                    <span class="elemento-subtitulo">
+                                        {{ ejercicio.grupo_muscular }}
+                                        @if (ejercicio.ultima_vez; as ultima) {
+                                            · Última vez: {{ fechaCorta(ultima.fecha) }}
+                                        }
+                                    </span>
+                                </div>
+                                @if (ejercicio.pr; as pr) {
+                                    <span class="badge-pr" [title]="'PR desde ' + fechaCorta(pr.fecha)">
+                                        <i class="bi bi-trophy"></i> {{ pr.peso }} {{ pr.unidad_peso }} × {{ pr.repeticiones }}
+                                    </span>
+                                }
+                            </li>
+                        }
+                    </ul>
+                }
+            }
+        </section>
+
+        <section class="tarjeta seccion">
+            <div class="seccion-titulo">
+                <h2>Historial</h2>
+                <span class="contador">{{ historial().length }}</span>
+            </div>
+
+            <div class="filtros" [formGroup]="formFiltros">
+                <label class="filtro">
+                    <span>Mes</span>
+                    <select formControlName="mes" (change)="onCambioMes($event)">
+                        <option value="">Todos</option>
+                        @for (mes of mesesDisponibles; track mes.valor) {
+                            <option [value]="mes.valor">{{ mes.nombre }}</option>
+                        }
+                    </select>
+                </label>
+
+                @if (formFiltros.value.mes) {
+                    <button class="boton-icono filtro-limpiar" (click)="limpiarFiltroMes()" aria-label="Limpiar filtro" title="Limpiar filtro">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                }
+            </div>
+
+            @if (filtrando()) {
+                <div class="lista-cargando"><i class="bi bi-arrow-repeat girando"></i> Aplicando filtro...</div>
+            } @else if (historial().length === 0) {
+                <div class="estado-vacio">
+                    <i class="bi bi-journal-check"></i>
+                    <p>{{ formFiltros.value.mes ? 'No hay entrenamientos en ese mes.' : 'Aún no tienes entrenamientos registrados.' }}</p>
+                </div>
+            } @else {
+                <ul class="elementos">
+                    @for (entrenamiento of historial(); track entrenamiento.id_entrenamiento) {
+                        <li class="elemento elemento-clickeable" (click)="abrirDetalle(entrenamiento.id_entrenamiento)">
+                            <span class="elemento-icono"><i class="bi bi-fire"></i></span>
+                            <div class="elemento-datos">
+                                <span class="elemento-nombre">{{ entrenamiento.nombre_sesion }} · {{ entrenamiento.nombre_split }}</span>
+                                <span class="elemento-subtitulo">
+                                    {{ fechaCorta(entrenamiento.fecha_inicio) }}
+                                    · {{ entrenamiento.ejercicios }} ejercicios
+                                    · {{ entrenamiento.series }} series
+                                    @if (entrenamiento.duracion_minutos !== null) {
+                                        · {{ entrenamiento.duracion_minutos }} min
+                                    }
+                                </span>
+                            </div>
+                            <button class="boton-icono" (click)="$event.stopPropagation(); pedirEliminarEntrenamiento(entrenamiento.id_entrenamiento)"
+                                aria-label="Eliminar entrenamiento" title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            }
+        </section>
+    }
+</div>
+
+@if (modalDetalleAbierto()) {
+    <div class="overlay" (click)="cerrarDetalle()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Detalle del entrenamiento</h2>
+                <button class="boton-icono" (click)="cerrarDetalle()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-cuerpo">
+                @if (cargandoDetalle()) {
+                    <div class="lista-cargando"><i class="bi bi-arrow-repeat girando"></i> Cargando detalle...</div>
+                } @else if (detalle(); as entrenamiento) {
+                    <div class="detalle-resumen">
+                        <span class="detalle-sesion">{{ entrenamiento.nombre_sesion }} · {{ entrenamiento.nombre_split }}</span>
+                        <span class="detalle-fecha">
+                            {{ fechaCorta(entrenamiento.fecha_inicio) }} · {{ horaInicio(entrenamiento.fecha_inicio) }}
+                            @if (entrenamiento.fecha_fin) {
+                                – {{ horaInicio(entrenamiento.fecha_fin) }}
+                            }
+                        </span>
+                        <span class="detalle-cifras">
+                            @if (entrenamiento.duracion_minutos !== null) {
+                                {{ entrenamiento.duracion_minutos }} min ·
+                            }
+                            {{ entrenamiento.ejercicios.length }} ejercicios · {{ totalSeries(entrenamiento) }} series
+                        </span>
+                    </div>
+
+                    @if (entrenamiento.ejercicios.length === 0) {
+                        <div class="estado-vacio">
+                            <i class="bi bi-journal-x"></i>
+                            <p>Este entrenamiento no tiene series registradas.</p>
+                        </div>
+                    } @else {
+                        <ul class="detalle-ejercicios">
+                            @for (ejercicio of entrenamiento.ejercicios; track ejercicio.id_ejercicio) {
+                                <li class="detalle-ejercicio">
+                                    <div class="detalle-ejercicio-titulo">
+                                        <span>{{ ejercicio.nombre }}</span>
+                                        <small>{{ ejercicio.grupo_muscular }}</small>
+                                    </div>
+                                    <div class="detalle-series">
+                                        @for (serie of ejercicio.series; track serie.id_serie) {
+                                            <span class="chip-serie">
+                                                {{ serie.numero_serie }} · {{ serie.repeticiones }} × {{ serie.peso }} {{ serie.unidad_peso }}
+                                            </span>
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                }
+            </div>
+
+            <div class="modal-pie">
+                <button type="button" class="boton-secundario" (click)="cerrarDetalle()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (confirmacion(); as confirmacion) {
+    <div class="overlay" (click)="cerrarConfirmacion()">
+        <div class="modal modal-confirmacion" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ confirmacion.titulo }}</h2>
+                <button class="boton-icono" (click)="cerrarConfirmacion()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-cuerpo">
+                <p class="confirmacion-texto">{{ confirmacion.mensaje }}</p>
+            </div>
+
+            <div class="modal-pie">
+                <button type="button" class="boton-secundario" (click)="cerrarConfirmacion()">Cancelar</button>
+                <button type="button" class="boton-peligro" (click)="ejecutarConfirmacion()" [disabled]="confirmando()">
+                    {{ confirmando() ? 'Procesando...' : 'Confirmar' }}
+                </button>
+            </div>
+        </div>
+    </div>
+}
