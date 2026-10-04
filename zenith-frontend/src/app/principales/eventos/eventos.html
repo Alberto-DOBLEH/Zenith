@@ -4,9 +4,14 @@
             <h1>Calendario</h1>
             <p class="subtitulo">Tu semana organizada.</p>
         </div>
-        <button class="boton-principal boton-crear" (click)="abrirCrear()">
-            <i class="bi bi-plus-lg"></i> Nuevo evento
-        </button>
+        <div class="acciones-encabezado">
+            <button class="boton-secundario boton-crear" (click)="abrirCrearActividad()">
+                <i class="bi bi-check2-square"></i> Nueva actividad
+            </button>
+            <button class="boton-principal boton-crear" (click)="abrirCrear()">
+                <i class="bi bi-plus-lg"></i> Nuevo evento
+            </button>
+        </div>
     </header>
 
     @if (error()) {
@@ -42,7 +47,25 @@
 
                         @for (dia of diasSemana(); track dia.getTime()) {
                             <div class="columna-dia" [class.hoy]="esHoy(dia)">
-                                <div class="celda-cabecera" [class.hoy]="esHoy(dia)">{{ etiquetaDia(dia) }}</div>
+                                <div class="celda-cabecera" [class.hoy]="esHoy(dia)">
+                                    <span class="etiqueta-dia">{{ etiquetaDia(dia) }}</span>
+                                    @for (actividad of actividadesDelDia(dia); track actividad.id_actividad) {
+                                        <button
+                                            type="button"
+                                            class="chip-actividad"
+                                            [class.vencida]="esVencida(actividad)"
+                                            [class.completada]="actividad.estado === 'COMPLETADA'"
+                                            [title]="actividad.titulo"
+                                            (click)="abrirEditarActividad(actividad)">
+                                            @if (actividad.estado === 'COMPLETADA') {
+                                                <i class="bi bi-check2-circle"></i>
+                                            } @else if (esVencida(actividad)) {
+                                                <i class="bi bi-exclamation-circle-fill"></i>
+                                            }
+                                            {{ actividad.titulo }}
+                                        </button>
+                                    }
+                                </div>
                                 <div class="cuerpo-dia">
                                     @for (hora of horas(); track hora) {
                                         <div class="celda"></div>
@@ -80,6 +103,32 @@
                             <p class="evento-fecha">{{ formatearFecha(evento.fecha_inicio) }}</p>
                         </div>
                     </button>
+                }
+            }
+
+            <h2 class="titulo-actividades">Actividades</h2>
+            @if (actividadesOrdenadas().length === 0) {
+                <p class="vacio">Sin actividades.</p>
+            } @else {
+                @for (actividad of actividadesOrdenadas(); track actividad.id_actividad) {
+                    <div
+                        class="fila-actividad"
+                        [class.vencida]="esVencida(actividad)"
+                        [class.completada]="actividad.estado === 'COMPLETADA'">
+                        <button
+                            type="button"
+                            class="casilla-actividad"
+                            (click)="alternarEstadoActividad(actividad, $event)"
+                            [attr.aria-label]="actividad.estado === 'PENDIENTE' ? 'Marcar como completada' : 'Marcar como pendiente'">
+                            <i class="bi" [class.bi-check2-circle-fill]="actividad.estado === 'COMPLETADA'" [class.bi-circle]="actividad.estado !== 'COMPLETADA'"></i>
+                        </button>
+                        <button type="button" class="texto-actividad" (click)="abrirEditarActividad(actividad)">
+                            <p class="evento-titulo">{{ actividad.titulo }}</p>
+                            <p class="evento-fecha">
+                                {{ formatearFechaCorta(actividad.fecha_limite) }}@if (esVencida(actividad)) {<span class="etiqueta-vencida"> · vencida</span>}
+                            </p>
+                        </button>
+                    </div>
                 }
             }
         </aside>
@@ -225,6 +274,72 @@
             <div class="modal-pie">
                 <button class="boton-secundario" (click)="cancelarEliminar()">Cancelar</button>
                 <button class="boton-peligro" (click)="confirmarEliminar()">Eliminar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (modalActividadAbierto()) {
+    <div class="overlay" (click)="cerrarFormActividad()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ modoEdicionActividad() ? 'Editar actividad' : 'Nueva actividad' }}</h2>
+                <button class="boton-icono" (click)="cerrarFormActividad()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <form (ngSubmit)="guardarActividad()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>Título</span>
+                        <input class="inputs-texto" [(ngModel)]="formActTitulo" name="titulo" placeholder="Ej. Entregar tarea de cálculo">
+                    </label>
+
+                    <label class="campo">
+                        <span>Descripción</span>
+                        <textarea class="inputs-texto" [(ngModel)]="formActDescripcion" name="descripcion" rows="3" placeholder="Opcional"></textarea>
+                    </label>
+
+                    <label class="campo">
+                        <span>Fecha límite</span>
+                        <input class="inputs-texto" type="date" [(ngModel)]="formActFecha" name="fecha">
+                    </label>
+
+                    @if (mensajeActividad()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeActividad() }}</div>
+                    }
+                </div>
+
+                <div class="modal-pie">
+                    @if (modoEdicionActividad()) {
+                        <button type="button" class="boton-peligro" (click)="preguntarEliminarActividad()">Eliminar</button>
+                    }
+                    <button type="button" class="boton-secundario" (click)="cerrarFormActividad()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardandoActividad()">
+                        {{ guardandoActividad() ? 'Guardando...' : (modoEdicionActividad() ? 'Guardar cambios' : 'Crear actividad') }}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalEliminarActividadAbierto() && actividadAEliminar()) {
+    <div class="overlay" (click)="cancelarEliminarActividad()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Eliminar actividad</h2>
+                <button class="boton-icono" (click)="cancelarEliminarActividad()" aria-label="Cerrar">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="modal-cuerpo">
+                <p class="texto-eliminar">¿Seguro que quieres eliminar la actividad <strong>"{{ actividadAEliminar()!.titulo }}"</strong>?</p>
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cancelarEliminarActividad()">Cancelar</button>
+                <button class="boton-peligro" (click)="confirmarEliminarActividad()">Eliminar</button>
             </div>
         </div>
     </div>

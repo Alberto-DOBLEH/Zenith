@@ -309,7 +309,9 @@ test("validación de ids en rutas con :id", async () => {
         ["/api/sesiones/1.5", "PUT", 400],
         ["/api/entrenamientos/xyz", "GET", 400],
         ["/api/entrenamientos/abc/finalizar", "PUT", 400],
-        ["/api/series/abc", "DELETE", 400]
+        ["/api/series/abc", "DELETE", 400],
+        ["/api/actividades/abc", "PUT", 400],
+        ["/api/actividades/1.5", "DELETE", 400]
     ];
     for (const [ruta, metodo, esperado] of casos) {
         const res = await pedir(ruta, { metodo, token });
@@ -399,6 +401,14 @@ test("IDOR: usuario A no puede acceder a recursos del usuario B", async () => {
     assert.equal(movimientoB.status, 201);
     const idMovimientoB = movimientoB.data.movimiento.id_movimiento;
 
+    const actividadB = await pedir("/api/actividades", {
+        metodo: "POST",
+        token: tokenB,
+        cuerpo: { titulo: "Actividad de B", fecha_limite: "2026-12-05" }
+    });
+    assert.equal(actividadB.status, 201);
+    const idActividadB = actividadB.data.actividad.id_actividad;
+
     const catalogoB = await pedir("/api/ejercicios", { token: tokenB });
     assert.equal(catalogoB.status, 200);
     const ejercicioB = catalogoB.data[0];
@@ -462,7 +472,9 @@ test("IDOR: usuario A no puede acceder a recursos del usuario B", async () => {
         [`/api/entrenamientos/${idEntrenoB}/finalizar`, "PUT", null],
         [`/api/entrenamientos/${idEntrenoB}/series`, "POST", { id_ejercicio: ejercicioB.id_ejercicio, numero_serie: 2, repeticiones: 5, peso: 60, unidad_peso: "kg" }],
         [`/api/series/${idSerieB}`, "PUT", { repeticiones: 1 }],
-        [`/api/series/${idSerieB}`, "DELETE", null]
+        [`/api/series/${idSerieB}`, "DELETE", null],
+        [`/api/actividades/${idActividadB}`, "PUT", { titulo: "Intruso" }],
+        [`/api/actividades/${idActividadB}`, "DELETE", null]
     ];
     for (const [ruta, metodo, cuerpo] of intentos) {
         const res = await pedir(ruta, { metodo, token: tokenA, cuerpo });
@@ -496,6 +508,13 @@ test("IDOR: usuario A no puede acceder a recursos del usuario B", async () => {
     assert.ok(
         !(splitsA.data || []).some(s => s.id_split === idSplitB),
         "A no debe ver el split de B"
+    );
+
+    const actividadesA = await pedir("/api/actividades", { token: tokenA });
+    assert.equal(actividadesA.status, 200);
+    assert.ok(
+        !(actividadesA.data || []).some(a => a.id_actividad === idActividadB),
+        "A no debe ver la actividad de B"
     );
 });
 
@@ -995,6 +1014,110 @@ test("gimnasio: flujo de entrenamiento, series y PR", async () => {
     const sinSplit = await pedir("/api/entrenamientos", { metodo: "POST", token, cuerpo: {} });
     assert.equal(sinSplit.status, 400);
     assert.ok(/split activo/i.test(sinSplit.data.message), "el mensaje explica que falta un split activo");
+});
+
+test("actividades: validación de payloads, filtros y estados", async () => {
+    const usuario = await registrar("act1");
+    const token = await iniciarSesion(usuario);
+    usuariosCreados.push({ token });
+
+    const invalidos = [
+        [{ fecha_limite: "2026-12-01" }, "sin titulo"],
+        [{ titulo: "   ", fecha_limite: "2026-12-01" }, "titulo vacio"],
+        [{ titulo: "x".repeat(101), fecha_limite: "2026-12-01" }, "titulo > 100"],
+        [{ titulo: "Ok" }, "sin fecha"],
+        [{ titulo: "Ok", fecha_limite: "01/12/2026" }, "fecha formato malo"],
+        [{ titulo: "Ok", fecha_limite: "2026-13-01" }, "fecha inexistente"],
+        [{ titulo: "Ok", fecha_limite: "2026-12-01", estado: "HECHA" }, "estado invalido"]
+    ];
+    for (const [cuerpo, desc] of invalidos) {
+        const res = await pedir("/api/actividades", { metodo: "POST", token, cuerpo });
+        assert.equal(res.status, 400, `${desc} debe ser 400`);
+    }
+
+    const filtros = ["?fecha=ayer", "?fecha=2026-1-1", "?mes=2026", "?mes=2026-13"];
+    for (const q of filtros) {
+        const res = await pedir(`/api/actividades${q}`, { token });
+        assert.equal(res.status, 400, `filtro ${q} debe ser 400`);
+    }
+
+    const creada = await pedir("/api/actividades", {
+        metodo: "POST",
+        token,
+        cuerpo: { titulo: "Entregar informe", descripcion: "En PDF", fecha_limite: "2026-12-01" }
+    });
+    assert.equal(creada.status, 201);
+    assert.equal(creada.data.actividad.estado, "PENDIENTE");
+    const id = creada.data.actividad.id_actividad;
+
+    const sinCampos = await pedir(`/api/actividades/${id}`, { metodo: "PUT", token, cuerpo: {} });
+    assert.equal(sinCampos.status, 400, "PUT sin campos debe ser 400");
+
+    const noExiste = await pedir("/api/actividades/999999", {
+        metodo: "PUT",
+        token,
+        cuerpo: { titulo: "X" }
+    });
+    assert.equal(noExiste.status, 404);
+
+    const completada = await pedir(`/api/actividades/${id}`, {
+        metodo: "PUT",
+        token,
+        cuerpo: { estado: "COMPLETADA" }
+    });
+    assert.equal(completada.status, 200);
+    assert.equal(completada.data.actividad.estado, "COMPLETADA");
+
+    const porFecha = await pedir("/api/actividades?fecha=2026-12-01", { token });
+    assert.equal(porFecha.status, 200);
+    assert.equal(porFecha.data.length, 1);
+
+    const porMes = await pedir("/api/actividades?mes=2026-12", { token });
+    assert.equal(porMes.status, 200);
+    assert.ok(porMes.data.some(a => a.id_actividad === id));
+
+    const otroMes = await pedir("/api/actividades?mes=2026-11", { token });
+    assert.equal(otroMes.status, 200);
+    assert.ok(!otroMes.data.some(a => a.id_actividad === id));
+
+    const borrada = await pedir(`/api/actividades/${id}`, { metodo: "DELETE", token });
+    assert.equal(borrada.status, 200);
+    const doble = await pedir(`/api/actividades/${id}`, { metodo: "DELETE", token });
+    assert.equal(doble.status, 404);
+
+    // Evento sin avisos recibe aviso automatico 15 min antes; con avisos se respetan
+    const ev = await pedir("/api/eventos", {
+        metodo: "POST",
+        token,
+        cuerpo: {
+            titulo: "Sin avisos",
+            fecha_inicio: "2026-12-10T15:00:00.000Z",
+            fecha_fin: "2026-12-10T16:00:00.000Z"
+        }
+    });
+    assert.equal(ev.status, 201);
+    const evGet = await pedir("/api/eventos", { token });
+    const evCreado = (evGet.data || []).find(e => e.id_evento === ev.data.id_evento);
+    assert.equal(evCreado.avisos.length, 1, "debe recibir un aviso automatico");
+    const esperado = Date.parse("2026-12-10T15:00:00.000Z") - 15 * 60000;
+    assert.equal(Date.parse(evCreado.avisos[0]), esperado);
+
+    const ev2 = await pedir("/api/eventos", {
+        metodo: "POST",
+        token,
+        cuerpo: {
+            titulo: "Con avisos",
+            fecha_inicio: "2026-12-10T15:00:00.000Z",
+            fecha_fin: "2026-12-10T16:00:00.000Z",
+            avisos: ["2026-12-09T10:00:00.000Z", "2026-12-10T14:30:00.000Z"]
+        }
+    });
+    assert.equal(ev2.status, 201);
+    const ev2Get = await pedir("/api/eventos", { token });
+    const ev2Creado = (ev2Get.data || []).find(e => e.id_evento === ev2.data.id_evento);
+    assert.equal(ev2Creado.avisos.length, 2, "los avisos enviados se respetan completos");
+    assert.equal(Date.parse(ev2Creado.avisos[0]), Date.parse("2026-12-09T10:00:00.000Z"));
+    assert.equal(Date.parse(ev2Creado.avisos[1]), Date.parse("2026-12-10T14:30:00.000Z"));
 });
 
 test("XSS almacenado: el backend guarda y devuelve el payload tal cual (el render lo escapa Angular)", async () => {

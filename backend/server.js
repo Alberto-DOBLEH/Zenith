@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import app from './src/app.js';
 import { iniciarScheduler } from './src/jobs/recordatorios.job.js';
+import { iniciarSchedulerResumen } from './src/jobs/resumen.job.js';
 
 const PORT = process.env.PORT || 3000;
 
@@ -20,4 +21,5 @@ app.listen(PORT, () => {
     
     // Iniciar scheduler de recordatorios
     iniciarScheduler();
+    iniciarSchedulerResumen();
 });

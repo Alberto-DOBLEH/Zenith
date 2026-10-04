@@ -6,6 +6,7 @@ export const CLAVES_CACHE = {
     habitos: 'habitos',
     habitosTipos: 'habitos:tipos',
     eventos: 'eventos',
+    actividades: 'actividades',
     notas: 'notas',
     dashboard: 'dashboard',
     estadisticasGenerales: 'estadisticas:generales',

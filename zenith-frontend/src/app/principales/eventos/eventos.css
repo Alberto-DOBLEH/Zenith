@@ -337,3 +337,121 @@ textarea.inputs-texto {
         grid-template-columns: 1fr;
     }
 }
+
+/* Encabezado con dos botones (evento + actividad) */
+.acciones-encabezado {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+/* Cabecera de día con chips de actividades (misma clase en la columna de horas,
+   así que la altura fija mantiene las filas alineadas). */
+.celda-cabecera {
+    height: 3.6rem;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 0.2rem;
+    padding: 0.3rem 0.2rem;
+    overflow: hidden;
+    white-space: normal;
+    line-height: 1.2;
+}
+
+.etiqueta-dia {
+    white-space: nowrap;
+}
+
+.chip-actividad {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 0.65rem;
+    padding: 0.1rem 0.45rem;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.chip-actividad:hover {
+    border-color: var(--primary);
+}
+
+.chip-actividad.vencida {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #EF4444;
+    color: #EF4444;
+}
+
+.chip-actividad.completada {
+    opacity: 0.55;
+    text-decoration: line-through;
+}
+
+/* Sección de actividades en el panel lateral */
+.titulo-actividades {
+    margin-top: 1.5rem !important;
+}
+
+.fila-actividad {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    border-bottom: 1px solid var(--border);
+    padding: 0.55rem 0;
+}
+
+.fila-actividad:last-child {
+    border-bottom: none;
+}
+
+.casilla-actividad {
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--muted-foreground);
+    font-size: 1.2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.casilla-actividad:hover {
+    color: var(--primary);
+}
+
+.fila-actividad.vencida .casilla-actividad {
+    color: #EF4444;
+}
+
+.texto-actividad {
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+}
+
+.fila-actividad.vencida .evento-titulo {
+    color: #EF4444;
+}
+
+.fila-actividad.completada .evento-titulo {
+    text-decoration: line-through;
+    color: var(--muted-foreground);
+}
+
+.etiqueta-vencida {
+    color: #EF4444;
+    font-weight: 600;
+}

@@ -100,7 +100,18 @@ export const crearEvento = async (id_usuario, datos) => {
         );
 
         const id_evento = result.rows[0].id_evento;
-        await insertarAvisos(client, id_evento, avisos);
+
+        // Si no se definieron avisos, se agrega uno automático 15 minutos
+        // antes del inicio (si eso aún no quedó en el pasado).
+        let listaAvisos = Array.isArray(avisos) ? avisos.filter(Boolean) : [];
+        if (listaAvisos.length === 0) {
+            const inicio = new Date(fecha_inicio);
+            const aviso = new Date(inicio.getTime() - 15 * 60000);
+            if (!isNaN(inicio.getTime()) && aviso.getTime() >= Date.now()) {
+                listaAvisos = [aviso.toISOString()];
+            }
+        }
+        await insertarAvisos(client, id_evento, listaAvisos);
 
         await client.query("COMMIT");
         return { message: "Evento creado con exito", id_evento };

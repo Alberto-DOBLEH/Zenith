@@ -1,6 +1,14 @@
 import { BrevoClient } from '@getbrevo/brevo';
+import { ZONA_HORARIA, fechaLarga } from '../config/zona.js';
 
 const client = new BrevoClient({ apiKey: process.env.BREVO_API_KEY });
+
+// Escapa HTML mínimo para interpolaciones de datos del usuario en plantillas.
+const esc = (valor) => String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 
 export const enviarCorreo = async (opciones) => {
     const { para, asunto, html } = opciones;
@@ -80,6 +88,7 @@ export const enviarAvisoEvento = async (correo, nombreUsuario, evento) => {
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: ZONA_HORARIA,
     });
 
     const html = `
@@ -133,6 +142,133 @@ export const enviarAvisoEvento = async (correo, nombreUsuario, evento) => {
     return enviarCorreo({
         para: correo,
         asunto: `${titulo} - Recordatorio de evento`,
+        html,
+    });
+};
+
+export const enviarResumenPendientes = async (correo, nombreUsuario, datos) => {
+    const { fecha, habitos, actividades } = datos;
+
+    const itemsHabitos = (habitos || [])
+        .map(h => `<li>${esc(h.nombre)}${h.frecuencia ? ` <span class="etiqueta">(${esc(h.frecuencia.toLowerCase())})</span>` : ''}</li>`)
+        .join('');
+    const itemsActividades = (actividades || [])
+        .map(a => `<li>${esc(a.titulo)}${a.descripcion ? `<p class="detalle">${esc(a.descripcion)}</p>` : ''}</li>`)
+        .join('');
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 28px; }
+            .header p { margin: 5px 0 0; opacity: 0.9; }
+            .content { padding: 30px; }
+            .content h2 { color: #333; font-size: 18px; margin: 20px 0 10px; }
+            .content h2:first-child { margin-top: 0; }
+            .content ul { margin: 0; padding-left: 20px; color: #555; line-height: 1.8; }
+            .content .etiqueta { color: #999; font-size: 13px; }
+            .content .detalle { margin: 2px 0 8px; color: #777; font-size: 13px; }
+            .fecha { text-align: center; color: #666; margin: 10px 0 20px; font-size: 15px; }
+            .boton-abrir { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 25px; font-weight: bold; margin: 20px 0 5px; text-align: center; }
+            .vacio { text-align: center; color: #10B981; font-weight: bold; }
+            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Resumen del dia</h1>
+                <p>Zenith - Habit Tracker</p>
+            </div>
+            <div class="content">
+                <p class="fecha">Hola ${esc(nombreUsuario)}, esto es lo que te falta para hoy (${esc(fechaLarga(fecha))}):</p>
+
+                @ifHabitos@
+                @ifActividades@
+
+                <div style="text-align:center;">
+                    <a href="${process.env.FRONTEND_URL || ''}" class="boton-abrir">Abrir Zenith</a>
+                </div>
+            </div>
+            <div class="footer">
+                <p>Este es un recordatorio automatico de Zenith.</p>
+                <p>2026 Zenith - Habit Tracker</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `
+        .replace('@ifHabitos@', itemsHabitos
+            ? `<h2>Habitos pendientes</h2><ul>${itemsHabitos}</ul>`
+            : '')
+        .replace('@ifActividades@', itemsActividades
+            ? `<h2>Actividades que vencen hoy</h2><ul>${itemsActividades}</ul>`
+            : '');
+
+    return enviarCorreo({
+        para: correo,
+        asunto: `Resumen del dia - Zenith`,
+        html,
+    });
+};
+
+export const enviarVencimientoActividad = async (correo, nombreUsuario, datos) => {
+    const { fecha, actividades } = datos;
+
+    const items = (actividades || [])
+        .map(a => `<li>${esc(a.titulo)}${a.descripcion ? `<p class="detalle">${esc(a.descripcion)}</p>` : ''}</li>`)
+        .join('');
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 26px; }
+            .header p { margin: 5px 0 0; opacity: 0.9; }
+            .content { padding: 30px; }
+            .content h2 { color: #333; font-size: 18px; margin: 0 0 10px; }
+            .content ul { margin: 0; padding-left: 20px; color: #555; line-height: 1.8; }
+            .content .detalle { margin: 2px 0 8px; color: #777; font-size: 13px; }
+            .fecha { text-align: center; color: #666; margin: 10px 0 15px; font-size: 15px; }
+            .boton-abrir { display: inline-block; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; text-decoration: none; padding: 14px 40px; border-radius: 25px; font-weight: bold; margin: 20px 0 5px; text-align: center; }
+            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Manana vence</h1>
+                <p>Zenith - Habit Tracker</p>
+            </div>
+            <div class="content">
+                <p class="fecha">Hola ${esc(nombreUsuario)}, manana (${esc(fechaLarga(fecha))}) vence:</p>
+                <ul>${items}</ul>
+                <div style="text-align:center;">
+                    <a href="${process.env.FRONTEND_URL || ''}" class="boton-abrir">Abrir Zenith</a>
+                </div>
+            </div>
+            <div class="footer">
+                <p>Este es un recordatorio automatico de Zenith.</p>
+                <p>2026 Zenith - Habit Tracker</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    return enviarCorreo({
+        para: correo,
+        asunto: `Mañana vence - Zenith`,
         html,
     });
 };

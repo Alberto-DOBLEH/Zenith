@@ -451,7 +451,7 @@ Response:
 # Módulo: Eventos
 
 ## Endpoint: Crear evento
-Descripcion: Crea un evento (bloque en el calendario) con sus avisos/recordatorios opcionales.
+Descripcion: Crea un evento (bloque en el calendario) con sus avisos/recordatorios opcionales. Las fechas se envían como ISO 8601 con offset (ej. `Z` o `-06:00`) y se almacenan como instante (`timestamptz`). Si `avisos` viene vacío o ausente, se crea **un aviso automático 15 minutos antes del inicio** (si eso aún no quedó en el pasado); si se envían avisos, se respetan tal cual (pueden ser varios).
 Ruta:
 - {POST} /api/eventos/
 
@@ -462,10 +462,10 @@ Body:
 {
   "titulo": "Examen Lenguajes",
   "descripcion": "Examen parcial",
-  "fecha_inicio": "2026-09-16T14:00:00",
-  "fecha_fin": "2026-09-16T17:00:00",
+  "fecha_inicio": "2026-09-16T14:00:00.000Z",
+  "fecha_fin": "2026-09-16T17:00:00.000Z",
   "color": "#ef4444",
-  "avisos": ["2026-09-11T12:00:00", "2026-09-16T10:00:00"]
+  "avisos": ["2026-09-11T12:00:00.000Z", "2026-09-16T10:00:00.000Z"]
 }
 ```
 
@@ -511,10 +511,10 @@ Body:
 {
   "titulo": "Examen Lenguajes (Final)",
   "descripcion": "Examen final",
-  "fecha_inicio": "2026-09-16T15:00:00",
-  "fecha_fin": "2026-09-16T18:00:00",
+  "fecha_inicio": "2026-09-16T15:00:00.000Z",
+  "fecha_fin": "2026-09-16T18:00:00.000Z",
   "color": "#3b82f6",
-  "avisos": ["2026-09-16T10:00:00"]
+  "avisos": ["2026-09-16T10:00:00.000Z"]
 }
 ```
 
@@ -537,6 +537,88 @@ Response:
 {
   "message": "Evento eliminado con exito"
 }
+```
+
+---
+
+# Módulo: Actividades
+
+Tareas con fecha de entrega (todo el día), visibles como chips en el Calendario. `estado` arranca en `PENDIENTE` y pasa a `COMPLETADA` al marcarlas.
+
+## Endpoint: Obtener actividades
+Descripcion: Lista las actividades del usuario, con filtros opcionales combinables.
+Ruta:
+- {GET} /api/actividades?fecha=YYYY-MM-DD&mes=YYYY-MM
+
+Header: `Authorization: Bearer <token>`
+
+Response:
+```json
+[
+  {
+    "id_actividad": 1,
+    "titulo": "Entregar tarea de cálculo",
+    "descripcion": "Capítulos 4 y 5",
+    "fecha_limite": "2026-10-05",
+    "estado": "PENDIENTE",
+    "created_at": "2026-10-04T12:00:00.000Z"
+  }
+]
+```
+
+## Endpoint: Crear actividad
+Ruta:
+- {POST} /api/actividades
+
+Header: `Authorization: Bearer <token>`
+
+Body:
+```json
+{
+  "titulo": "Entregar tarea de cálculo",
+  "descripcion": "Capítulos 4 y 5",
+  "fecha_limite": "2026-10-05"
+}
+```
+
+Response:
+```json
+{
+  "message": "Actividad creada con exito",
+  "actividad": { "id_actividad": 1, "titulo": "Entregar tarea de cálculo", "descripcion": "Capítulos 4 y 5", "fecha_limite": "2026-10-05", "estado": "PENDIENTE", "created_at": "2026-10-04T12:00:00.000Z" }
+}
+```
+
+Errores: `400` (título/falta fecha o formato `YYYY-MM-DD` inválido, >100 chars, estado que no sea `PENDIENTE`/`COMPLETADA`).
+
+## Endpoint: Editar actividad
+Descripcion: Modifica título, descripción, fecha límite o estado (para marcar completada se manda solo `estado`). Debe enviarse al menos un campo.
+Ruta:
+- {PUT} /api/actividades/:id_actividad
+
+Header: `Authorization: Bearer <token>`
+
+Body (ejemplo para marcar completada):
+```json
+{ "estado": "COMPLETADA" }
+```
+
+Response:
+```json
+{ "message": "Actividad modificada con exito", "actividad": { "id_actividad": 1, "estado": "COMPLETADA" } }
+```
+
+Errores: `404` si no existe o es de otro usuario.
+
+## Endpoint: Eliminar actividad
+Ruta:
+- {DELETE} /api/actividades/:id_actividad
+
+Header: `Authorization: Bearer <token>`
+
+Response:
+```json
+{ "message": "Actividad eliminada con exito" }
 ```
 
 ---
@@ -1521,3 +1603,25 @@ Ruta:
 - {DELETE} /api/series/:id_serie
 
 Errores: `404` no existe/no pertenece.
+
+---
+
+# Tareas automáticas (jobs)
+
+No son endpoints: corren dentro del proceso del backend con `node-cron` y arrancan con el servidor. Solo ejecutan si el servidor está despierto (keep-alive con `pg_cron` de Supabase).
+
+## Avisos de eventos (`src/jobs/recordatorios.job.js`)
+- Cada 5 minutos procesa `recordatorios_evento` pendientes de usuarios con correo verificado.
+- Ventana de envío: entre −30 min y +10 min respecto a `NOW()`; lo vencido hace más de 30 min se cierra **sin correo** (no se reenvía tarde).
+- `fecha_recordatorio` ahora es `timestamptz` (instante); los avisos se envían a la hora real que eligió el usuario.
+
+## Resumen de pendientes y vencimientos (`src/jobs/resumen.job.js`)
+- Se ejecuta a `HORA_RESUMEN` (default `08:00`) en la zona `ZONA_HORARIA` (default `America/Monterrey`).
+- **Resumen del día** (correo `RESUMEN_DIARIO`): hábitos activos programados hoy (DIARIO, SEMANAL si el día coincide en `habito_dias`, MENSUAL si `dia_del_mes` coincide) sin registro `COMPLETADO`/`EVITADO`, **+** actividades con `fecha_limite = hoy` en `PENDIENTE`. Un correo por usuario; si no hay pendientes no se envía.
+- **Mañana vence** (correo `ACTIVIDAD_VENCE_MANANA`): actividades con `fecha_limite = mañana` en `PENDIENTE`, agrupadas en un solo correo el día anterior.
+- Dedup idempotente en `correos_enviados (usuario, tipo, referencia, fecha)`: un reinicio de Render no duplica envíos. Correo sólo a usuarios con `email_verificado = TRUE`.
+- Prueba manual (envía sin dedup a la BD de `.env`): `cd backend && node scripts/probar-resumen.mjs`.
+
+## Variables de entorno
+- `ZONA_HORARIA` (default `America/Monterrey`): zona con la que los jobs calculan "hoy" y las horas de envío; también formatea las fechas de los correos.
+- `HORA_RESUMEN` (default `08:00`, formato `HH:MM`): hora local de envío del resumen y del aviso "mañana vence".

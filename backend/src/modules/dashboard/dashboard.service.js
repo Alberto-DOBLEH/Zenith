@@ -2,7 +2,7 @@ import db from "../../config/db.js";
 import { fechaHoySQL } from "../../config/fecha.js";
 
 // Filtro SQL para hábitos según su frecuencia y una fecha dada
-const filtroFrecuencia = (alias, fechaExpr) => `
+export const filtroFrecuencia = (alias, fechaExpr) => `
     (
         ${alias}.frecuencia = 'DIARIO'
         OR (${alias}.frecuencia = 'SEMANAL' AND EXISTS (

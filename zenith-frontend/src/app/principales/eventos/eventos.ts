@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Subscription } from 'rxjs';
 import { AuthService } from '../../core/servicios/auth.service';
 import { EventosService, Evento } from '../../core/servicios/eventos.service';
+import { ActividadesService, Actividad, ActividadPayload } from '../../core/servicios/actividades.service';
 
 const HORA_INICIO = 0;
 const HORA_FIN = 24;
@@ -24,12 +25,14 @@ interface Bloque {
 export class Eventos implements OnInit, OnDestroy {
   private readonly authService = inject(AuthService);
   private readonly eventosService = inject(EventosService);
+  private readonly actividadesService = inject(ActividadesService);
 
   private suscripciones: Subscription[] = [];
 
   cargando = signal(true);
   error = signal('');
   eventos = signal<Evento[]>([]);
+  actividades = signal<Actividad[]>([]);
 
   semanaInicio = this.inicioDeSemana(new Date());
 
@@ -40,6 +43,14 @@ export class Eventos implements OnInit, OnDestroy {
   eventoDetalle = signal<Evento | null>(null);
   modalEliminarAbierto = signal(false);
   eventoAEliminar = signal<Evento | null>(null);
+
+  modalActividadAbierto = signal(false);
+  modoEdicionActividad = signal(false);
+  actividadEditandoId = signal<number | null>(null);
+  modalEliminarActividadAbierto = signal(false);
+  actividadAEliminar = signal<Actividad | null>(null);
+  guardandoActividad = signal(false);
+  mensajeActividad = signal('');
 
   guardando = signal(false);
   mensajeForm = signal('');
@@ -55,8 +66,13 @@ export class Eventos implements OnInit, OnDestroy {
   formColor = COLORES_EVENTO[0];
   formAvisos: string[] = [];
 
+  formActTitulo = '';
+  formActDescripcion = '';
+  formActFecha = '';
+
   ngOnInit() {
     this.cargarEventos();
+    this.cargarActividades();
   }
 
   ngOnDestroy() {
@@ -75,6 +91,15 @@ export class Eventos implements OnInit, OnDestroy {
           this.error.set(this.authService.manejarError(error));
           this.cargando.set(false);
         }
+      })
+    );
+  }
+
+  private cargarActividades() {
+    this.suscripciones.push(
+      this.actividadesService.obtener().subscribe({
+        next: (actividades) => this.actividades.set(actividades),
+        error: (error) => this.error.set(this.authService.manejarError(error))
       })
     );
   }
@@ -248,7 +273,7 @@ export class Eventos implements OnInit, OnDestroy {
     this.formHora = `${String(inicio.getHours()).padStart(2, '0')}:${String(inicio.getMinutes()).padStart(2, '0')}`;
     this.formDuracion = Math.max(15, Math.round((fin.getTime() - inicio.getTime()) / 60000));
     this.formColor = evento.color && this.colores.includes(evento.color) ? evento.color : COLORES_EVENTO[0];
-    this.formAvisos = (evento.avisos || []).map(a => a.slice(0, 16));
+    this.formAvisos = (evento.avisos || []).map(a => this.aInputLocal(a));
     this.modalFormAbierto.set(true);
   }
 
@@ -270,19 +295,21 @@ export class Eventos implements OnInit, OnDestroy {
       return;
     }
 
-    const fechaInicio = this.aISO(this.formFecha, this.formHora);
-    const inicioDate = new Date(fechaInicio);
+    const inicioDate = new Date(`${this.formFecha}T${this.formHora}:00`);
+    if (isNaN(inicioDate.getTime())) {
+      this.mensajeForm.set('Fecha u hora de inicio inválidas.');
+      return;
+    }
     const finDate = new Date(inicioDate.getTime() + this.formDuracion * 60000);
-    const fechaFin = this.aISO(this.formFecha, `${String(finDate.getHours()).padStart(2, '0')}:${String(finDate.getMinutes()).padStart(2, '0')}`);
 
     const payload = {
       titulo: this.formTitulo.trim(),
       descripcion: this.formDescripcion.trim() || null,
-      fecha_inicio: fechaInicio,
-      fecha_fin: fechaFin,
+      fecha_inicio: inicioDate.toISOString(),
+      fecha_fin: finDate.toISOString(),
       color: this.formColor,
       avisos: this.formAvisos
-        .map(a => this.aISODeLocal(a))
+        .map(a => this.aInstante(a))
         .filter((a): a is string => !!a)
     };
 
@@ -308,15 +335,19 @@ export class Eventos implements OnInit, OnDestroy {
     );
   }
 
-  private aISO(fecha: string, hora: string): string {
-    return `${fecha}T${hora}:00`;
+  /** ISO instantáneo (UTC) a valor local para input datetime-local. */
+  private aInputLocal(iso: string): string {
+    const fecha = new Date(iso);
+    if (isNaN(fecha.getTime())) return '';
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${fecha.getFullYear()}-${pad(fecha.getMonth() + 1)}-${pad(fecha.getDate())}T${pad(fecha.getHours())}:${pad(fecha.getMinutes())}`;
   }
 
-  private aISODeLocal(valor: string): string | null {
+  /** Valor de input datetime-local (hora local) a ISO instantáneo (UTC). */
+  private aInstante(valor: string): string | null {
     if (!valor) return null;
-    const [fecha, hora] = valor.split('T');
-    if (!fecha || !hora) return null;
-    return `${fecha}T${hora}:00`;
+    const fecha = new Date(valor);
+    return isNaN(fecha.getTime()) ? null : fecha.toISOString();
   }
 
   verDetalles(evento: Evento) {
@@ -353,6 +384,129 @@ export class Eventos implements OnInit, OnDestroy {
           this.modalDetallesAbierto.set(false);
           this.eventoDetalle.set(null);
           this.cargarEventos();
+        },
+        error: (error) => this.error.set(this.authService.manejarError(error))
+      })
+    );
+  }
+
+  // ---------- Actividades (tareas con fecha de entrega) ----------
+
+  actividadesDelDia(dia: Date): Actividad[] {
+    const clave = this.formatoDia(dia);
+    return this.actividades().filter(a => a.fecha_limite === clave);
+  }
+
+  esVencida(actividad: Actividad): boolean {
+    if (actividad.estado !== 'PENDIENTE') return false;
+    return actividad.fecha_limite < this.formatoDia(new Date());
+  }
+
+  actividadesOrdenadas(): Actividad[] {
+    return [...this.actividades()].sort((a, b) =>
+      a.fecha_limite.localeCompare(b.fecha_limite) || a.id_actividad - b.id_actividad
+    );
+  }
+
+  formatearFechaCorta(fechaYYYYMMDD: string): string {
+    const d = new Date(`${fechaYYYYMMDD}T00:00:00`);
+    if (isNaN(d.getTime())) return fechaYYYYMMDD;
+    return d.toLocaleDateString('es-MX', { weekday: 'short', day: 'numeric', month: 'short' });
+  }
+
+  abrirCrearActividad() {
+    this.modoEdicionActividad.set(false);
+    this.actividadEditandoId.set(null);
+    this.mensajeActividad.set('');
+    this.formActTitulo = '';
+    this.formActDescripcion = '';
+    this.formActFecha = this.formatoDia(new Date());
+    this.modalActividadAbierto.set(true);
+  }
+
+  abrirEditarActividad(actividad: Actividad) {
+    this.modoEdicionActividad.set(true);
+    this.actividadEditandoId.set(actividad.id_actividad);
+    this.mensajeActividad.set('');
+    this.formActTitulo = actividad.titulo;
+    this.formActDescripcion = actividad.descripcion || '';
+    this.formActFecha = actividad.fecha_limite;
+    this.modalActividadAbierto.set(true);
+  }
+
+  cerrarFormActividad() {
+    this.modalActividadAbierto.set(false);
+  }
+
+  guardarActividad() {
+    if (!this.formActTitulo.trim() || !this.formActFecha) {
+      this.mensajeActividad.set('Título y fecha límite son obligatorios.');
+      return;
+    }
+
+    const payload: ActividadPayload = {
+      titulo: this.formActTitulo.trim(),
+      descripcion: this.formActDescripcion.trim() || null,
+      fecha_limite: this.formActFecha
+    };
+
+    this.guardandoActividad.set(true);
+    this.mensajeActividad.set('');
+
+    const operacion = this.modoEdicionActividad()
+      ? this.actividadesService.editar(this.actividadEditandoId()!, payload)
+      : this.actividadesService.crear(payload);
+
+    this.suscripciones.push(
+      operacion.subscribe({
+        next: () => {
+          this.guardandoActividad.set(false);
+          this.modalActividadAbierto.set(false);
+          this.cargarActividades();
+        },
+        error: (error) => {
+          this.guardandoActividad.set(false);
+          this.mensajeActividad.set(this.authService.manejarError(error));
+        }
+      })
+    );
+  }
+
+  alternarEstadoActividad(actividad: Actividad, evento?: Event) {
+    evento?.stopPropagation();
+    const estado = actividad.estado === 'PENDIENTE' ? 'COMPLETADA' : 'PENDIENTE';
+    this.suscripciones.push(
+      this.actividadesService.editar(actividad.id_actividad, { estado }).subscribe({
+        next: () => this.cargarActividades(),
+        error: (error) => this.error.set(this.authService.manejarError(error))
+      })
+    );
+  }
+
+  preguntarEliminarActividad() {
+    const actividad = this.modalActividadAbierto() ? this.actividades().find(a => a.id_actividad === this.actividadEditandoId()) : null;
+    this.actividadAEliminar.set(actividad || null);
+    if (actividad) {
+      this.modalActividadAbierto.set(false);
+      this.modalEliminarActividadAbierto.set(true);
+    }
+  }
+
+  cancelarEliminarActividad() {
+    this.modalEliminarActividadAbierto.set(false);
+    this.actividadAEliminar.set(null);
+  }
+
+  confirmarEliminarActividad() {
+    const actividad = this.actividadAEliminar();
+    if (!actividad) return;
+
+    this.suscripciones.push(
+      this.actividadesService.eliminar(actividad.id_actividad).subscribe({
+        next: () => {
+          this.modalEliminarActividadAbierto.set(false);
+          this.actividadAEliminar.set(null);
+          this.cargarActividades();
         },
         error: (error) => this.error.set(this.authService.manejarError(error))
       })

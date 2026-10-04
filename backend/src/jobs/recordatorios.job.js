@@ -5,10 +5,21 @@ import { enviarAvisoEvento } from '../services/correo.service.js';
 // Función para procesar recordatorios pendientes
 const procesarRecordatorios = async () => {
     try {
-        // Buscar recordatorios que están por vencer en los próximos 10 minutos
-        // o que están atrasados (hasta 30 min) y no se enviaron
-        // Usamos una ventana más amplia porque las fechas se guardan como hora local
-        // del usuario pero NOW() es UTC
+        // Cerrar avisos que vencieron hace más de 30 min sin enviarse:
+        // se marcan como vistos sin correo para no reintentarlos para siempre.
+        const descartados = await db.query(
+            `UPDATE recordatorios_evento
+             SET enviado = TRUE, fecha_envio = NOW()
+             WHERE (enviado IS NULL OR enviado = FALSE)
+               AND fecha_recordatorio < NOW() - INTERVAL '30 minutes'
+             RETURNING id_recordatorio`
+        );
+        if (descartados.rows.length > 0) {
+            console.log(`[Scheduler] Descartados ${descartados.rows.length} avisos vencidos (mas de 30 min atras)`);
+        }
+
+        // Ventana de envío: dentro de los próximos 10 min o atrasados
+        // hasta 30 min (margen por retrasos de ejecución del cron).
         const result = await db.query(`
             SELECT 
                 re.id_recordatorio,
@@ -29,6 +40,7 @@ const procesarRecordatorios = async () => {
                 (re.enviado IS NULL OR re.enviado = FALSE)
                 AND u.email_verificado = TRUE
                 AND re.fecha_recordatorio <= NOW() + INTERVAL '10 minutes'
+                AND re.fecha_recordatorio >= NOW() - INTERVAL '30 minutes'
             ORDER BY re.fecha_recordatorio ASC
             LIMIT 10
         `);
@@ -81,26 +93,6 @@ const procesarRecordatorios = async () => {
 
 // Iniciar scheduler - cada 5 minutos
 export const iniciarScheduler = () => {
-    // Verificar si hay campo enviado en recordatorios_evento
-    db.query(`
-        DO $$ 
-        BEGIN 
-            IF NOT EXISTS (
-                SELECT 1 FROM information_schema.columns 
-                WHERE table_name = 'recordatorios_evento' 
-                AND column_name = 'enviado'
-            ) THEN
-                ALTER TABLE recordatorios_evento 
-                ADD COLUMN enviado BOOLEAN DEFAULT FALSE,
-                ADD COLUMN fecha_envio TIMESTAMP;
-            END IF;
-        END $$;
-    `).then(() => {
-        console.log('[Scheduler] Campo "enviado" verificado en recordatorios_evento');
-    }).catch(error => {
-        console.error('[Scheduler] Error al verificar campo enviado:', error);
-    });
-
     // Programar ejecución cada 5 minutos
     cron.schedule('*/5 * * * *', () => {
         console.log('[Scheduler] Ejecutando procesamiento de recordatorios...');
