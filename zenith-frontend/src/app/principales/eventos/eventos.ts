@@ -69,6 +69,7 @@ export class Eventos implements OnInit, OnDestroy {
   formActTitulo = '';
   formActDescripcion = '';
   formActFecha = '';
+  formActAvisos: string[] = [];
 
   ngOnInit() {
     this.cargarEventos();
@@ -421,6 +422,7 @@ export class Eventos implements OnInit, OnDestroy {
     this.formActTitulo = '';
     this.formActDescripcion = '';
     this.formActFecha = this.formatoDia(new Date());
+    this.formActAvisos = [];
     this.modalActividadAbierto.set(true);
   }
 
@@ -431,6 +433,7 @@ export class Eventos implements OnInit, OnDestroy {
     this.formActTitulo = actividad.titulo;
     this.formActDescripcion = actividad.descripcion || '';
     this.formActFecha = actividad.fecha_limite;
+    this.formActAvisos = Array.isArray(actividad.avisos) ? [...actividad.avisos] : [];
     this.modalActividadAbierto.set(true);
   }
 
@@ -447,7 +450,8 @@ export class Eventos implements OnInit, OnDestroy {
     const payload: ActividadPayload = {
       titulo: this.formActTitulo.trim(),
       descripcion: this.formActDescripcion.trim() || null,
-      fecha_limite: this.formActFecha
+      fecha_limite: this.formActFecha,
+      avisos: (this.formActAvisos || []).filter(a => !!a)
     };
 
     this.guardandoActividad.set(true);
@@ -470,6 +474,34 @@ export class Eventos implements OnInit, OnDestroy {
         }
       })
     );
+  }
+
+  agregarAvisoActividad() {
+    this.formActAvisos = [...(this.formActAvisos || []), ''];
+  }
+
+  quitarAvisoActividad(indice: number) {
+    this.formActAvisos = (this.formActAvisos || []).filter((_, i) => i !== indice);
+  }
+
+  agregarAvisoSemanaAntes() {
+    if (!this.formActFecha) return;
+    const base = new Date(`${this.formActFecha}T00:00:00Z`);
+    base.setUTCDate(base.getUTCDate() - 7);
+    const fecha = base.toISOString().slice(0, 10);
+    if (!this.formActAvisos.includes(fecha)) {
+      this.formActAvisos = [...(this.formActAvisos || []), fecha].sort();
+    }
+  }
+
+  agregarAvisoDosDiasAntes() {
+    if (!this.formActFecha) return;
+    const base = new Date(`${this.formActFecha}T00:00:00Z`);
+    base.setUTCDate(base.getUTCDate() - 2);
+    const fecha = base.toISOString().slice(0, 10);
+    if (!this.formActAvisos.includes(fecha)) {
+      this.formActAvisos = [...(this.formActAvisos || []), fecha].sort();
+    }
   }
 
   alternarEstadoActividad(actividad: Actividad, evento?: Event) {

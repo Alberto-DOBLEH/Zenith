@@ -306,6 +306,28 @@
                         <input class="inputs-texto" type="date" [(ngModel)]="formActFecha" name="fecha">
                     </label>
 
+                    <div class="campo">
+                        <div class="aviso-cabecera">
+                            <span>Avisos / recordatorios</span>
+                            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+                                <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAvisoSemanaAntes()">1 semana antes</button>
+                                <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAvisoDosDiasAntes()">2 días antes</button>
+                                <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAvisoActividad()">
+                                    <i class="bi bi-plus-lg"></i> Agregar fecha
+                                </button>
+                            </div>
+                        </div>
+                        @for (aviso of formActAvisos; track $index) {
+                            <div class="fila-aviso">
+                                <input class="inputs-texto" type="date" [(ngModel)]="formActAvisos[$index]" [name]="'avisoAct' + $index">
+                                <button type="button" class="boton-icono peligro" (click)="quitarAvisoActividad($index)" aria-label="Quitar aviso">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                        }
+                        <p class="texto-ayuda">Podrás recibir correos en esas fechas. También llega un aviso el mismo día si lo configuras.</p>
+                    </div>
+
                     @if (mensajeActividad()) {
                         <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeActividad() }}</div>
                     }
