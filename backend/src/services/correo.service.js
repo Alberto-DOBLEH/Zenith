@@ -217,6 +217,74 @@ export const enviarResumenPendientes = async (correo, nombreUsuario, datos) => {
     });
 };
 
+export const enviarAvisoActividad = async (correo, nombreUsuario, datos) => {
+    const { titulo, descripcion, fecha_limite, fecha_aviso } = datos;
+
+    const fechaLimiteFormateada = fechaLimite
+        ? new Date(`${fecha_limite}T00:00:00Z`).toLocaleDateString('es-MX', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              timeZone: 'UTC',
+          })
+        : '';
+
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 100%); color: white; padding: 30px; text-align: center; }
+            .header h1 { margin: 0; font-size: 28px; }
+            .header p { margin: 5px 0 0; opacity: 0.9; }
+            .content { padding: 30px; }
+            .content h2 { color: #333; margin-bottom: 15px; text-align: center; }
+            .actividad-card { background: #f8f9fa; border-radius: 10px; padding: 20px; margin: 15px 0; border-left: 4px solid #3b82f6; }
+            .actividad-card h3 { margin: 0 0 10px; color: #333; }
+            .actividad-card p { margin: 5px 0; color: #666; }
+            .actividad-card .label { font-weight: bold; color: #555; }
+            .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #999; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Recordatorio de Actividad</h1>
+                <p>Zenith - Habit Tracker</p>
+            </div>
+            <div class="content">
+                <h2>Hola, ${esc(nombreUsuario)}</h2>
+                <p>Tienes un recordatorio para esta actividad:</p>
+                
+                <div class="actividad-card">
+                    <h3>${esc(titulo)}</h3>
+                    ${descripcion ? `<p><span class="label">Descripcion:</span> ${esc(descripcion)}</p>` : ''}
+                    <p><span class="label">Fecha limite:</span> ${fechaLimiteFormateada}</p>
+                    ${fecha_aviso ? `<p><span class="label">Aviso:</span> ${esc(fecha_aviso)}</p>` : ''}
+                </div>
+                
+                <p style="text-align: center; margin-top: 20px;">No olvides revisar y completar esta actividad a tiempo.</p>
+            </div>
+            <div class="footer">
+                <p>Este es un recordatorio automatico de Zenith.</p>
+                <p>2026 Zenith - Habit Tracker</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    return enviarCorreo({
+        para: correo,
+        asunto: `${titulo} - Recordatorio de actividad`,
+        html,
+    });
+};
+
 export const enviarVencimientoActividad = async (correo, nombreUsuario, datos) => {
     const { fecha, actividades } = datos;
 
