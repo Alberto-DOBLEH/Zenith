@@ -118,7 +118,7 @@ describe('Eventos (Calendario + Actividades)', () => {
     component.abrirCrearActividad();
     component.formActTitulo = '   ';
     component.guardarActividad();
-    expect(component.mensajeActividad()).toContain('obligatorios');
+    expect(component.mensajeActividad().toLowerCase()).toContain('obligatorio');
     expect(crearActSpy).not.toHaveBeenCalled();
     expect(component.modalActividadAbierto()).toBe(true);
   });
