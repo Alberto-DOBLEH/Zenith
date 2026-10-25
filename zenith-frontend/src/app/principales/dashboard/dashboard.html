@@ -167,10 +167,11 @@
 
             <section class="tarjeta seccion-eventos">
                 <div class="seccion-titulo">
-                    <h2>Eventos próximos</h2>
+                    <h2>Agenda</h2>
                     <a class="ver-todo" routerLink="/calendario">Ver todo</a>
                 </div>
 
+                <h3 class="subtitulo-agenda">Eventos próximos</h3>
                 @if (cargandoEventos()) {
                     <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando eventos...</p>
                 } @else if (eventosProximos().length === 0) {
@@ -182,6 +183,25 @@
                             <div>
                                 <p class="evento-titulo">{{ evento.titulo }}</p>
                                 <p class="evento-fecha">{{ formatearEvento(evento.fecha_inicio) }}</p>
+                            </div>
+                        </div>
+                    }
+                }
+
+                <h3 class="subtitulo-agenda subtitulo-agenda-actividades">Actividades pendientes</h3>
+                @if (cargandoActividades()) {
+                    <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando actividades...</p>
+                } @else if (actividadesPendientes().length === 0) {
+                    <p class="vacio">Sin actividades pendientes.</p>
+                } @else {
+                    @for (actividad of actividadesPendientes(); track actividad.id_actividad) {
+                        <div class="fila-evento" [class.vencida]="esVencidaAct(actividad)">
+                            <span class="punto-evento punto-actividad"></span>
+                            <div>
+                                <p class="evento-titulo">{{ actividad.titulo }}</p>
+                                <p class="evento-fecha">
+                                    {{ formatearFechaCortaAct(actividad.fecha_limite) }}@if (esVencidaAct(actividad)) {<span class="etiqueta-vencida"> · vencida</span>}
+                                </p>
                             </div>
                         </div>
                     }

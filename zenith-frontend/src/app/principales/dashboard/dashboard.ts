@@ -6,6 +6,7 @@ import { DashboardService, HabitoResumen, ResumenDashboard } from '../../core/se
 import { HabitosService, Habito } from '../../core/servicios/habitos.service';
 import { BitacoraService } from '../../core/servicios/bitacora.service';
 import { EventosService, Evento } from '../../core/servicios/eventos.service';
+import { ActividadesService, Actividad } from '../../core/servicios/actividades.service';
 import { EstadisticasService, Estadisticas } from '../../core/servicios/estadisticas.service';
 import { FinanzasService, MetodoPago, Movimiento } from '../../core/servicios/finanzas.service';
 import { GimnasioService, PlanHoy } from '../../core/servicios/gimnasio.service';
@@ -35,6 +36,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private readonly habitosService = inject(HabitosService);
   private readonly bitacoraService = inject(BitacoraService);
   private readonly eventosService = inject(EventosService);
+  private readonly actividadesService = inject(ActividadesService);
   private readonly estadisticasService = inject(EstadisticasService);
   private readonly finanzasService = inject(FinanzasService);
   private readonly gimnasioService = inject(GimnasioService);
@@ -47,8 +49,10 @@ export class Dashboard implements OnInit, OnDestroy {
   resumen = signal<ResumenDashboard | null>(null);
   habitos = signal<HabitoVista[]>([]);
   eventosProximos = signal<Evento[]>([]);
+  actividadesPendientes = signal<Actividad[]>([]);
   cargandoHabitos = signal(true);
   cargandoEventos = signal(true);
+  cargandoActividades = signal(true);
   cargandoRegistro = signal(false);
   stats = signal<Estadisticas | null>(null);
   cargandoStats = signal(true);
@@ -138,6 +142,20 @@ export class Dashboard implements OnInit, OnDestroy {
           this.cargandoEventos.set(false);
         },
         error: () => this.cargandoEventos.set(false)
+      })
+    );
+
+    this.suscripciones.push(
+      this.actividadesService.obtener().subscribe({
+        next: (actividades) => {
+          const hoy = this.formatoFechaYMD(new Date());
+          this.actividadesPendientes.set(actividades
+            .filter(a => a.estado === 'PENDIENTE')
+            .sort((a, b) => a.fecha_limite.localeCompare(b.fecha_limite))
+            .slice(0, 4));
+          this.cargandoActividades.set(false);
+        },
+        error: () => this.cargandoActividades.set(false)
       })
     );
 
@@ -353,5 +371,19 @@ export class Dashboard implements OnInit, OnDestroy {
     return fechaDate.toLocaleDateString('es-MX', {
       weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
     });
+  }
+
+  formatearFechaCortaAct(fechaYYYYMMDD: string): string {
+    const d = new Date(`${fechaYYYYMMDD}T00:00:00Z`);
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+  }
+
+  esVencidaAct(actividad: Actividad): boolean {
+    const hoy = this.formatoFechaYMD(new Date());
+    return actividad.estado === 'PENDIENTE' && actividad.fecha_limite < hoy;
+  }
+
+  private formatoFechaYMD(fecha: Date): string {
+    return `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')}`;
   }
 }
