@@ -12,6 +12,7 @@ export interface Actividad {
     fecha_limite: string;
     estado: EstadoActividad;
     created_at?: string;
+    avisos?: string[];
 }
 
 export interface ActividadPayload {
@@ -19,6 +20,7 @@ export interface ActividadPayload {
     descripcion?: string | null;
     fecha_limite: string;
     estado?: EstadoActividad;
+    avisos?: string[];
 }
 
 export interface RespuestaActividad {
