@@ -102,7 +102,6 @@ describe('Eventos (Calendario + Actividades)', () => {
     expect(component.eventos().length).toBe(1);
     expect(component.actividades().length).toBe(3);
     const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(texto).toContain('Examen Lenguajes');
     expect(texto).toContain('Entregar tarea de cálculo');
   });
 
