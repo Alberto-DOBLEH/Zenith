@@ -134,7 +134,8 @@ describe('Eventos (Calendario + Actividades)', () => {
     expect(crearActSpy).toHaveBeenCalledWith({
       titulo: 'Entregar tarea',
       descripcion: 'Cap 4',
-      fecha_limite: hoy
+      fecha_limite: hoy,
+      avisos: []
     });
     expect(component.modalActividadAbierto()).toBe(false);
   });
