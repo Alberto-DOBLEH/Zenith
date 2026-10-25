@@ -2,7 +2,7 @@
     <header class="encabezado">
         <div>
             <h1>Calendario</h1>
-            <p class="subtitulo">Tu semana organizada.</p>
+            <p class="subtitulo">Eventos, actividades y recordatorios.</p>
         </div>
         <div class="acciones-encabezado">
             <button class="boton-secundario boton-crear" (click)="abrirCrearActividad()">
@@ -19,349 +19,180 @@
     }
 
     <div class="disposicion">
-        <section class="tarjeta calendario">
+        <section class="tarjeta calendario-mensual">
             <div class="barra-calendario">
-                <h2>{{ etiquetaMes() }}</h2>
+                <h2>{{ etiquetaMesActual() }}</h2>
                 <div class="navegacion">
-                    <button class="boton-icono" (click)="semanaAnterior()" aria-label="Semana anterior">
+                    <button class="boton-icono" (click)="mesAnterior()" aria-label="Mes anterior">
                         <i class="bi bi-chevron-left"></i>
                     </button>
-                    <button class="boton-secundario boton-hoy" (click)="irASemanaActual()" title="Ir a la semana actual">{{ rangoSemana() }}</button>
-                    <button class="boton-icono" (click)="semanaSiguiente()" aria-label="Semana siguiente">
+                    <button class="boton-secundario boton-hoy" (click)="irAMesActual()">Hoy</button>
+                    <button class="boton-icono" (click)="mesSiguiente()" aria-label="Mes siguiente">
                         <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
             </div>
 
-            @if (cargando()) {
-                <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando...</p>
-            } @else {
-                <div class="contenedor-calendario">
-                    <div class="grid-calendario">
-                        <div class="columna-horas">
-                            <div class="celda-cabecera"></div>
-                            @for (hora of horas(); track hora) {
-                                <div class="celda-hora">{{ etiquetaHora(hora) }}</div>
+            <div class="grid-mes-cabecera">
+                <div>Lun</div>
+                <div>Mar</div>
+                <div>Mié</div>
+                <div>Jue</div>
+                <div>Vie</div>
+                <div>Sáb</div>
+                <div>Dom</div>
+            </div>
+
+            <div class="grid-mes">
+                @for (dia of diasMes(); track dia.fecha.getTime()) {
+                    <button
+                        type="button"
+                        class="celda-mes"
+                        [class.otro-mes]="dia.esOtroMes"
+                        [class.hoy]="dia.esHoy"
+                        [class.con-marcador]="tieneEventosODia(dia.fecha)"
+                        (click)="abrirDia(dia.fecha)">
+                        <span class="numero-dia">{{ dia.fecha.getDate() }}</span>
+                        <span class="marcadores">
+                            @if (actividadesDelDia(dia.fecha).length > 0) {
+                                <span class="marcador marcador-actividad" title="Actividades"></span>
                             }
-                        </div>
-
-                        @for (dia of diasSemana(); track dia.getTime()) {
-                            <div class="columna-dia" [class.hoy]="esHoy(dia)">
-                                <div class="celda-cabecera" [class.hoy]="esHoy(dia)">
-                                    <span class="etiqueta-dia">{{ etiquetaDia(dia) }}</span>
-                                    @for (actividad of actividadesDelDia(dia); track actividad.id_actividad) {
-                                        <button
-                                            type="button"
-                                            class="chip-actividad"
-                                            [class.vencida]="esVencida(actividad)"
-                                            [class.completada]="actividad.estado === 'COMPLETADA'"
-                                            [title]="actividad.titulo"
-                                            (click)="abrirEditarActividad(actividad)">
-                                            @if (actividad.estado === 'COMPLETADA') {
-                                                <i class="bi bi-check2-circle"></i>
-                                            } @else if (esVencida(actividad)) {
-                                                <i class="bi bi-exclamation-circle-fill"></i>
-                                            }
-                                            {{ actividad.titulo }}
-                                        </button>
-                                    }
-                                </div>
-                                <div class="cuerpo-dia">
-                                    @for (hora of horas(); track hora) {
-                                        <div class="celda"></div>
-                                    }
-                                    @for (evento of eventosDelDia(dia); track evento.id_evento) {
-                                        @if (bloqueDelDia(evento, dia)!.esInicio) {
-                                            <button
-                                                class="bloque-evento"
-                                                [style.top]="bloqueDelDia(evento, dia)!.top + '%'"
-                                                [style.height]="bloqueDelDia(evento, dia)!.height + '%'"
-                                                [style.background-color]="evento.color || '#6366F1'"
-                                                (click)="verDetalles(evento)">
-                                                {{ evento.titulo }}
-                                            </button>
-                                        }
-                                    }
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
-            }
-        </section>
-
-        <aside class="tarjeta lista-proximos">
-            <h2>Próximos eventos</h2>
-            @if (proximos().length === 0) {
-                <p class="vacio">Sin eventos próximos.</p>
-            } @else {
-                @for (evento of proximos(); track evento.id_evento) {
-                    <button class="fila-evento" (click)="verDetalles(evento)">
-                        <span class="punto-evento" [style.background-color]="evento.color || '#6366F1'"></span>
-                        <div>
-                            <p class="evento-titulo">{{ evento.titulo }}</p>
-                            <p class="evento-fecha">{{ formatearFecha(evento.fecha_inicio) }}</p>
-                        </div>
+                            @if (eventosDelDia(dia.fecha).length > 0) {
+                                <span class="marcador marcador-evento" title="Eventos"></span>
+                            }
+                        </span>
                     </button>
                 }
-            }
+            </div>
+        </section>
 
-            <h2 class="titulo-actividades">Actividades</h2>
-            @if (actividadesOrdenadas().length === 0) {
-                <p class="vacio">Sin actividades.</p>
-            } @else {
-                @for (actividad of actividadesOrdenadas(); track actividad.id_actividad) {
-                    <div
-                        class="fila-actividad"
-                        [class.vencida]="esVencida(actividad)"
-                        [class.completada]="actividad.estado === 'COMPLETADA'">
-                        <button
-                            type="button"
-                            class="casilla-actividad"
-                            (click)="alternarEstadoActividad(actividad, $event)"
-                            [attr.aria-label]="actividad.estado === 'PENDIENTE' ? 'Marcar como completada' : 'Marcar como pendiente'">
-                            <i class="bi" [class.bi-check2-circle-fill]="actividad.estado === 'COMPLETADA'" [class.bi-circle]="actividad.estado !== 'COMPLETADA'"></i>
+        <aside class="tarjeta panel-lateral">
+            <div class="seccion-panel">
+                <h2>Próximos eventos</h2>
+                @if (proximos().length === 0) {
+                    <p class="vacio">Sin eventos próximos.</p>
+                } @else {
+                    @for (evento of proximos(); track evento.id_evento) {
+                        <button class="fila-evento" (click)="verDetalles(evento)">
+                            <span class="punto-evento" [style.background-color]="evento.color || '#6366F1'"></span>
+                            <div>
+                                <p class="evento-titulo">{{ evento.titulo }}</p>
+                                <p class="evento-fecha">{{ formatearFecha(evento.fecha_inicio) }}</p>
+                            </div>
                         </button>
-                        <button type="button" class="texto-actividad" (click)="abrirEditarActividad(actividad)">
-                            <p class="evento-titulo">{{ actividad.titulo }}</p>
-                            <p class="evento-fecha">
-                                {{ formatearFechaCorta(actividad.fecha_limite) }}@if (esVencida(actividad)) {<span class="etiqueta-vencida"> · vencida</span>}
-                            </p>
-                        </button>
-                    </div>
+                    }
                 }
-            }
+            </div>
+
+            <div class="seccion-panel">
+                <h2 class="titulo-actividades">Actividades</h2>
+                @if (actividadesOrdenadas().length === 0) {
+                    <p class="vacio">Sin actividades.</p>
+                } @else {
+                    @for (actividad of actividadesOrdenadas(); track actividad.id_actividad) {
+                        <div
+                            class="fila-actividad"
+                            [class.vencida]="esVencida(actividad)"
+                            [class.completada]="actividad.estado === 'COMPLETADA'">
+                            <button
+                                type="button"
+                                class="casilla-actividad"
+                                (click)="alternarEstadoActividad(actividad, $event)"
+                                [attr.aria-label]="actividad.estado === 'PENDIENTE' ? 'Marcar como completada' : 'Marcar como pendiente'">
+                                <i class="bi" [class.bi-check2-circle-fill]="actividad.estado === 'COMPLETADA'" [class.bi-circle]="actividad.estado !== 'COMPLETADA'"></i>
+                            </button>
+                            <button type="button" class="texto-actividad" (click)="abrirEditarActividad(actividad)">
+                                <p class="evento-titulo">{{ actividad.titulo }}</p>
+                                <p class="evento-fecha">
+                                    {{ formatearFechaCorta(actividad.fecha_limite) }}@if (esVencida(actividad)) {<span class="etiqueta-vencida"> · vencida</span>}
+                                </p>
+                            </button>
+                        </div>
+                    }
+                }
+            </div>
         </aside>
     </div>
 </div>
 
-@if (modalFormAbierto()) {
-    <div class="overlay" (click)="cerrarForm()">
-        <div class="modal" (click)="$event.stopPropagation()">
+@if (modalDiaAbierto() && diaSeleccionado()) {
+    <div class="overlay" (click)="cerrarDia()">
+        <div class="modal modal-dia" (click)="$event.stopPropagation()">
             <div class="modal-cabecera">
-                <h2>{{ modoEdicion() ? 'Editar evento' : 'Nuevo evento' }}</h2>
-                <button class="boton-icono" (click)="cerrarForm()" aria-label="Cerrar">
+                <div>
+                    <h2>{{ tituloDiaSeleccionado() }}</h2>
+                    <p class="subtitulo-modal">Eventos y actividades del día</p>
+                </div>
+                <button class="boton-icono" (click)="cerrarDia()" aria-label="Cerrar">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
-
-            <form (ngSubmit)="guardar()">
-                <div class="modal-cuerpo">
-                    <label class="campo">
-                        <span>Título</span>
-                        <input class="inputs-texto" [(ngModel)]="formTitulo" name="titulo" placeholder="Ej. Examen parcial">
-                    </label>
-
-                    <label class="campo">
-                        <span>Descripción</span>
-                        <textarea class="inputs-texto" [(ngModel)]="formDescripcion" name="descripcion" rows="3" placeholder="Opcional"></textarea>
-                    </label>
-
-                    <div class="campo-fila">
-                        <label class="campo">
-                            <span>Fecha</span>
-                            <input class="inputs-texto" type="date" [(ngModel)]="formFecha" name="fecha">
-                        </label>
-                        <label class="campo">
-                            <span>Hora de inicio</span>
-                            <input class="inputs-texto" type="time" [(ngModel)]="formHora" name="hora">
-                        </label>
-                        <label class="campo">
-                            <span>Duración (minutos)</span>
-                            <input class="inputs-texto" type="number" min="15" step="15" [(ngModel)]="formDuracion" name="duracion">
-                        </label>
-                    </div>
-
-                    <div class="campo">
-                        <span>Color</span>
-                        <div class="paleta">
-                            @for (color of colores; track color) {
-                                <button
-                                    type="button"
-                                    class="muestra-color"
-                                    [class.seleccionado]="formColor === color"
-                                    [style.background-color]="color"
-                                    (click)="formColor = color"
-                                    [attr.aria-label]="'Color ' + color"></button>
+            <div class="modal-cuerpo modal-cuerpo-dia">
+                <section class="seccion-dia">
+                    <h3><i class="bi bi-check2-square"></i> Actividades (todo el día)</h3>
+                    @if (actividadesDelDiaSeleccionado().length === 0) {
+                        <p class="vacio">Sin actividades para este día.</p>
+                    } @else {
+                        <div class="lista-actividades-dia">
+                            @for (actividad of actividadesDelDiaSeleccionado(); track actividad.id_actividad) {
+                                <div class="fila-actividad-dia" [class.completada]="actividad.estado === 'COMPLETADA'" [class.vencida]="esVencida(actividad)">
+                                    <button
+                                        type="button"
+                                        class="casilla-actividad"
+                                        (click)="alternarEstadoActividad(actividad, $event)">
+                                        <i class="bi" [class.bi-check2-circle-fill]="actividad.estado === 'COMPLETADA'" [class.bi-circle]="actividad.estado !== 'COMPLETADA'"></i>
+                                    </button>
+                                    <button type="button" class="texto-actividad" (click)="abrirEditarActividad(actividad); cerrarDia()">
+                                        <p class="evento-titulo">{{ actividad.titulo }}</p>
+                                        <p class="evento-fecha">{{ actividad.descripcion || 'Sin descripción' }}</p>
+                                    </button>
+                                </div>
                             }
                         </div>
-                    </div>
-
-                    <div class="campo">
-                        <div class="aviso-cabecera">
-                            <span>Avisos / recordatorios</span>
-                            <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAviso()">
-                                <i class="bi bi-plus-lg"></i> Agregar
-                            </button>
-                        </div>
-                        @for (aviso of formAvisos; track $index) {
-                            <div class="fila-aviso">
-                                <input class="inputs-texto" type="datetime-local" [(ngModel)]="formAvisos[$index]" [name]="'aviso' + $index">
-                                <button type="button" class="boton-icono peligro" (click)="quitarAviso($index)" aria-label="Quitar aviso">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
-                        }
-                    </div>
-
-                    @if (mensajeForm()) {
-                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
                     }
-                </div>
+                </section>
 
-                <div class="modal-pie">
-                    <button type="button" class="boton-secundario" (click)="cerrarForm()">Cancelar</button>
-                    <button type="submit" class="boton-principal" [disabled]="guardando()">
-                        {{ guardando() ? 'Guardando...' : (modoEdicion() ? 'Guardar cambios' : 'Crear evento') }}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-}
-
-@if (modalDetallesAbierto() && eventoDetalle()) {
-    <div class="overlay" (click)="cerrarDetalles()">
-        <div class="modal" (click)="$event.stopPropagation()">
-            <div class="modal-cabecera">
-                <h2>{{ eventoDetalle()!.titulo }}</h2>
-                <button class="boton-icono" (click)="cerrarDetalles()" aria-label="Cerrar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div class="modal-cuerpo">
-                <div class="detalle-fila">
-                    <span class="detalle-etiqueta">Fecha</span>
-                    <span class="detalle-valor">{{ formatearFecha(eventoDetalle()!.fecha_inicio) }} — {{ formatearFecha(eventoDetalle()!.fecha_fin) }}</span>
-                </div>
-                @if (eventoDetalle()!.descripcion) {
-                    <div class="detalle-fila">
-                        <span class="detalle-etiqueta">Descripción</span>
-                        <span class="detalle-valor">{{ eventoDetalle()!.descripcion }}</span>
-                    </div>
-                }
-                @if ((eventoDetalle()!.avisos || []).length > 0) {
-                    <div class="detalle-fila">
-                        <span class="detalle-etiqueta">Avisos</span>
-                        <ul class="detalle-lista">
-                            @for (aviso of eventoDetalle()!.avisos; track aviso) {
-                                <li>{{ formatearFecha(aviso) }}</li>
-                            }
-                        </ul>
-                    </div>
-                }
-            </div>
-            <div class="modal-pie">
-                <button class="boton-peligro" (click)="preguntarEliminar()">Eliminar</button>
-                <button class="boton-secundario" (click)="abrirEditar(eventoDetalle()!)">Editar</button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (modalEliminarAbierto() && eventoAEliminar()) {
-    <div class="overlay" (click)="cancelarEliminar()">
-        <div class="modal" (click)="$event.stopPropagation()">
-            <div class="modal-cabecera">
-                <h2>Eliminar evento</h2>
-                <button class="boton-icono" (click)="cancelarEliminar()" aria-label="Cerrar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div class="modal-cuerpo">
-                <p class="texto-eliminar">¿Seguro que quieres eliminar el evento <strong>"{{ eventoAEliminar()!.titulo }}"</strong>?</p>
-            </div>
-            <div class="modal-pie">
-                <button class="boton-secundario" (click)="cancelarEliminar()">Cancelar</button>
-                <button class="boton-peligro" (click)="confirmarEliminar()">Eliminar</button>
-            </div>
-        </div>
-    </div>
-}
-
-@if (modalActividadAbierto()) {
-    <div class="overlay" (click)="cerrarFormActividad()">
-        <div class="modal" (click)="$event.stopPropagation()">
-            <div class="modal-cabecera">
-                <h2>{{ modoEdicionActividad() ? 'Editar actividad' : 'Nueva actividad' }}</h2>
-                <button class="boton-icono" (click)="cerrarFormActividad()" aria-label="Cerrar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-
-            <form (ngSubmit)="guardarActividad()">
-                <div class="modal-cuerpo">
-                    <label class="campo">
-                        <span>Título</span>
-                        <input class="inputs-texto" [(ngModel)]="formActTitulo" name="titulo" placeholder="Ej. Entregar tarea de cálculo">
-                    </label>
-
-                    <label class="campo">
-                        <span>Descripción</span>
-                        <textarea class="inputs-texto" [(ngModel)]="formActDescripcion" name="descripcion" rows="3" placeholder="Opcional"></textarea>
-                    </label>
-
-                    <label class="campo">
-                        <span>Fecha límite</span>
-                        <input class="inputs-texto" type="date" [(ngModel)]="formActFecha" name="fecha">
-                    </label>
-
-                    <div class="campo">
-                        <div class="aviso-cabecera">
-                            <span>Avisos / recordatorios</span>
-                            <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
-                                <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAvisoSemanaAntes()">1 semana antes</button>
-                                <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAvisoDosDiasAntes()">2 días antes</button>
-                                <button type="button" class="boton-secundario boton-agregar-aviso" (click)="agregarAvisoActividad()">
-                                    <i class="bi bi-plus-lg"></i> Agregar fecha
-                                </button>
+                <section class="seccion-dia">
+                    <h3><i class="bi bi-calendar-event"></i> Eventos por hora</h3>
+                    @if (eventosDelDiaSeleccionado().length === 0) {
+                        <p class="vacio">Sin eventos en este día.</p>
+                    } @else {
+                        <div class="contenedor-calendario contenedor-calendario-modal">
+                            <div class="grid-calendario">
+                                <div class="columna-horas">
+                                    <div class="celda-cabecera"></div>
+                                    @for (hora of horas(); track hora) {
+                                        <div class="celda-hora">{{ etiquetaHora(hora) }}</div>
+                                    }
+                                </div>
+                                <div class="columna-dia columna-dia-modal">
+                                    <div class="celda-cabecera"></div>
+                                    <div class="cuerpo-dia cuerpo-dia-modal">
+                                        @for (hora of horas(); track hora) {
+                                            <div class="celda"></div>
+                                        }
+                                        @for (evento of eventosDelDiaSeleccionado(); track evento.id_evento) {
+                                            @if (bloqueDelDia(evento, diaSeleccionado()!)!.esInicio) {
+                                                <button
+                                                    class="bloque-evento"
+                                                    [style.top]="bloqueDelDia(evento, diaSeleccionado()!)!.top + '%'"
+                                                    [style.height]="bloqueDelDia(evento, diaSeleccionado()!)!.height + '%'"
+                                                    [style.background-color]="evento.color || '#6366F1'"
+                                                    (click)="verDetalles(evento); cerrarDia()">
+                                                    {{ evento.titulo }}
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        @for (aviso of formActAvisos; track $index) {
-                            <div class="fila-aviso">
-                                <input class="inputs-texto" type="date" [(ngModel)]="formActAvisos[$index]" [name]="'avisoAct' + $index">
-                                <button type="button" class="boton-icono peligro" (click)="quitarAvisoActividad($index)" aria-label="Quitar aviso">
-                                    <i class="bi bi-x-lg"></i>
-                                </button>
-                            </div>
-                        }
-                        <p class="texto-ayuda">Podrás recibir correos en esas fechas. También llega un aviso el mismo día si lo configuras.</p>
-                    </div>
-
-                    @if (mensajeActividad()) {
-                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeActividad() }}</div>
                     }
-                </div>
-
-                <div class="modal-pie">
-                    @if (modoEdicionActividad()) {
-                        <button type="button" class="boton-peligro" (click)="preguntarEliminarActividad()">Eliminar</button>
-                    }
-                    <button type="button" class="boton-secundario" (click)="cerrarFormActividad()">Cancelar</button>
-                    <button type="submit" class="boton-principal" [disabled]="guardandoActividad()">
-                        {{ guardandoActividad() ? 'Guardando...' : (modoEdicionActividad() ? 'Guardar cambios' : 'Crear actividad') }}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-}
-
-@if (modalEliminarActividadAbierto() && actividadAEliminar()) {
-    <div class="overlay" (click)="cancelarEliminarActividad()">
-        <div class="modal" (click)="$event.stopPropagation()">
-            <div class="modal-cabecera">
-                <h2>Eliminar actividad</h2>
-                <button class="boton-icono" (click)="cancelarEliminarActividad()" aria-label="Cerrar">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <div class="modal-cuerpo">
-                <p class="texto-eliminar">¿Seguro que quieres eliminar la actividad <strong>"{{ actividadAEliminar()!.titulo }}"</strong>?</p>
+                </section>
             </div>
             <div class="modal-pie">
-                <button class="boton-secundario" (click)="cancelarEliminarActividad()">Cancelar</button>
-                <button class="boton-peligro" (click)="confirmarEliminarActividad()">Eliminar</button>
+                <button class="boton-secundario" (click)="abrirCrearActividad(); cerrarDia()">Nueva actividad</button>
+                <button class="boton-principal" (click)="abrirCrear(); cerrarDia()">Nuevo evento</button>
             </div>
         </div>
     </div>

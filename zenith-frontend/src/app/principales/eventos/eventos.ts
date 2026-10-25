@@ -16,6 +16,12 @@ interface Bloque {
     esInicio: boolean;
 }
 
+interface DiaMes {
+    fecha: Date;
+    esOtroMes: boolean;
+    esHoy: boolean;
+}
+
 @Component({
   selector: 'app-eventos',
   imports: [FormsModule],
@@ -35,6 +41,7 @@ export class Eventos implements OnInit, OnDestroy {
   actividades = signal<Actividad[]>([]);
 
   semanaInicio = this.inicioDeSemana(new Date());
+  mesActual = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
 
   modalFormAbierto = signal(false);
   modoEdicion = signal(false);
@@ -70,6 +77,9 @@ export class Eventos implements OnInit, OnDestroy {
   formActDescripcion = '';
   formActFecha = '';
   formActAvisos: string[] = [];
+
+  modalDiaAbierto = signal(false);
+  diaSeleccionado = signal<Date | null>(null);
 
   ngOnInit() {
     this.cargarEventos();
@@ -123,6 +133,42 @@ export class Eventos implements OnInit, OnDestroy {
     return dias;
   }
 
+  diasMes(): DiaMes[] {
+    const year = this.mesActual.getFullYear();
+    const month = this.mesActual.getMonth();
+    const primerDia = new Date(year, month, 1);
+    const ultimoDia = new Date(year, month + 1, 0);
+    const dias: DiaMes[] = [];
+
+    let inicio = primerDia.getDay() - 1;
+    if (inicio < 0) inicio += 7;
+
+    for (let i = inicio - 1; i >= 0; i--) {
+      const fecha = new Date(year, month, -i);
+      dias.push({ fecha, esOtroMes: true, esHoy: this.esHoy(fecha) });
+    }
+
+    for (let d = 1; d <= ultimoDia.getDate(); d++) {
+      const fecha = new Date(year, month, d);
+      dias.push({ fecha, esOtroMes: false, esHoy: this.esHoy(fecha) });
+    }
+
+    while (dias.length % 7 !== 0) {
+      const ultimo = dias[dias.length - 1].fecha;
+      const fecha = new Date(ultimo);
+      fecha.setDate(fecha.getDate() + 1);
+      dias.push({ fecha, esOtroMes: true, esHoy: this.esHoy(fecha) });
+    }
+
+    return dias;
+  }
+
+  tieneEventosODia(dia: Date): boolean {
+    const tieneEventos = this.eventos().some(e => this.mismoDiaCalendario(e.fecha_inicio, dia) || this.mismoDiaCalendario(e.fecha_fin, dia));
+    const tieneActividades = this.actividadesDelDia(dia).length > 0;
+    return tieneEventos || tieneActividades;
+  }
+
   rangoSemana(): string {
     const primer = this.diasSemana()[0];
     const ultimo = this.diasSemana()[6];
@@ -141,6 +187,19 @@ export class Eventos implements OnInit, OnDestroy {
 
   irASemanaActual() {
     this.semanaInicio = this.inicioDeSemana(new Date());
+    this.mesActual = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  }
+
+  mesAnterior() {
+    this.mesActual = new Date(this.mesActual.getFullYear(), this.mesActual.getMonth() - 1, 1);
+  }
+
+  mesSiguiente() {
+    this.mesActual = new Date(this.mesActual.getFullYear(), this.mesActual.getMonth() + 1, 1);
+  }
+
+  irAMesActual() {
+    this.mesActual = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   }
 
   etiquetaMes(): string {
@@ -153,6 +212,10 @@ export class Eventos implements OnInit, OnDestroy {
     const mesInicio = primer.toLocaleDateString('es-MX', { month: 'short' });
     const mesFin = ultimo.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' });
     return `${mesInicio} — ${mesFin}`;
+  }
+
+  etiquetaMesActual(): string {
+    return this.mesActual.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' });
   }
 
   etiquetaDia(dia: Date): string {
@@ -401,6 +464,36 @@ export class Eventos implements OnInit, OnDestroy {
   esVencida(actividad: Actividad): boolean {
     if (actividad.estado !== 'PENDIENTE') return false;
     return actividad.fecha_limite < this.formatoDia(new Date());
+  }
+
+  abrirDia(dia: Date) {
+    this.diaSeleccionado.set(new Date(dia.getFullYear(), dia.getMonth(), dia.getDate()));
+    this.modalDiaAbierto.set(true);
+  }
+
+  cerrarDia() {
+    this.modalDiaAbierto.set(false);
+    this.diaSeleccionado.set(null);
+  }
+
+  eventosDelDiaSeleccionado(): Evento[] {
+    const dia = this.diaSeleccionado();
+    if (!dia) return [];
+    return this.eventos()
+      .filter(e => this.mismoDiaCalendario(e.fecha_inicio, dia) || this.mismoDiaCalendario(e.fecha_fin, dia))
+      .filter(e => this.bloqueDelDia(e, dia) !== null);
+  }
+
+  actividadesDelDiaSeleccionado(): Actividad[] {
+    const dia = this.diaSeleccionado();
+    if (!dia) return [];
+    return this.actividadesDelDia(dia);
+  }
+
+  tituloDiaSeleccionado(): string {
+    const dia = this.diaSeleccionado();
+    if (!dia) return '';
+    return dia.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   }
 
   actividadesOrdenadas(): Actividad[] {
