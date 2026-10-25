@@ -1,0 +1,101 @@
+{
+  "generado": "2026-10-25T01:05:50.924Z",
+  "repo": "Zenith",
+  "backend": {
+    "port": 3000,
+    "modules": [
+      "actividades",
+      "auth",
+      "avatares",
+      "bitacora",
+      "categorias",
+      "dashboard",
+      "ejercicios",
+      "entrenamientos",
+      "estadisticas",
+      "eventos",
+      "habitos",
+      "metodos_pago",
+      "movimientos",
+      "notas",
+      "pomodoro",
+      "series",
+      "sesiones",
+      "splits",
+      "usuarios"
+    ],
+    "mounts": [
+      "app.use(helmet()",
+      "app.use(cors({ origin: permitirOrigen })",
+      "app.use(express.json()",
+      "app.use(\"/api/auth/login\", limiteLogin)",
+      "app.use(\"/api/auth/register\", limiteRegistro)",
+      "app.use(\"/api/auth\", authRoutes)",
+      "app.use(\"/api/usuario\", usuariosRoutes)",
+      "app.use(\"/api/habito\", habitosRoutes)",
+      "app.use(\"/api/bitacora\", bitacoraRoutes)",
+      "app.use(\"/api/dashboard\", dashboardRoutes)",
+      "app.use(\"/api/estadisticas\", estadisticasRoutes)",
+      "app.use(\"/api/eventos\", eventosRoutes)",
+      "app.use(\"/api/actividades\", actividadesRoutes)",
+      "app.use(\"/api/notas\", notasRoutes)",
+      "app.use(\"/api/pomodoro\", pomodoroRoutes)",
+      "app.use(\"/api/avatares\", avataresRoutes)",
+      "app.use(\"/api/metodos-pago\", metodosPagoRoutes)",
+      "app.use(\"/api/categorias\", categoriasRoutes)",
+      "app.use(\"/api/movimientos\", movimientosRoutes)",
+      "app.use(\"/api/ejercicios\", ejerciciosRoutes)",
+      "app.use(\"/api/splits\", splitsRoutes)",
+      "app.use(\"/api/sesiones\", sesionesRoutes)",
+      "app.use(\"/api/entrenamientos\", entrenamientosRoutes)",
+      "app.use(\"/api/series\", seriesRoutes)",
+      "app.use(errorHandler)"
+    ]
+  },
+  "frontend": {
+    "framework": "Angular 21",
+    "dirs": [
+      "auth",
+      "compartidos",
+      "core",
+      "principales"
+    ],
+    "principales": [
+      "dashboard",
+      "estadisticas",
+      "eventos",
+      "finanzas",
+      "gimnasio",
+      "habitos",
+      "layout-principal",
+      "no-encontrado",
+      "notas",
+      "perfil",
+      "redireccion-tab",
+      "rutinas"
+    ],
+    "rutas": "import { Routes } from '@angular/router';\nimport { authGuard } from './core/guardias/auth.guard';\n\nexport const routes: Routes = [\n    {\n        path: 'autenticacion',\n        loadComponent: () => import('./auth/autenticacion/autenticacion').then(m => m.Autenticacion)\n    },\n    {\n        path: 'verificar-correo/:token',\n        loadComponent: () => import('./auth/verificar-correo/verificar-correo').then(m => m.VerificarCorreo)\n    },\n    {\n        path: '',\n        canActivate: [authGuard],\n        loadComponent: () => import('./principales/layout-principal/layout-principal').then(m => m.LayoutPrincipal),\n        children: [\n            { path: '', redirectTo: 'dashboard', pathMatch: 'full' },\n            {\n                path: 'dashboard',\n                loadComponent: () => import('./principales/dashboard/dashboard').then(m => m.Dashboard)\n            },\n            {\n                path: 'habitos',\n                loadComponent: () => import('./principales/habitos/habitos').then(m => m.Habitos)\n            },\n            {\n                path: 'ideas',\n                loadComponent: () => import('./principales/notas/notas').then(m => m.Notas)\n            },\n            {\n                path: 'notas',\n                redirectTo: 'ideas',\n                pathMatch: 'full'\n            },\n            {\n                path: 'calendario',\n                loadComponent: () => import('./principales/eventos/eventos').then(m => m.Eventos)\n            },\n            {\n                path: 'eventos',\n                redirectTo: 'calendario',\n                pathMatch: 'full'\n            },\n            {\n                path: 'estadisticas',\n                loadComponent: () => import('./principales/redireccion-tab/redireccion-tab').then(m => m.RedireccionTab)\n            },\n            {\n                path: 'finanzas',\n                loadComponent: () => import('./principales/finanzas/finanzas').then(m => m.Finanzas)\n            },\n            {\n                path: 'entrenamiento',\n                loadComponent: () => import('./principales/gimnasio/gimnasio').then(m => m.Gimnasio)\n            },\n            {\n                path: 'gimnasio',\n                redirectTo: 'entrenamiento',\n                pathMatch: 'full'\n            },\n            {\n                path: 'rutinas',\n                loadComponent: () => import('./principales/rutinas/rutinas').then(m => m.Rutinas)\n            },\n            {\n                path: 'perfil',\n                loadComponent: () => import('./principales/perfil/perfil').then(m => m.Perfil)\n            }\n        ]\n    },\n    {\n        path: '**',\n        loadComponent: () => import('./principales/no-encontrado/no-encontrado').then(m => m.NoEncontrado)\n    }\n];"
+  },
+  "supabase": {
+    "migrations": [
+      "20260813141352_remote_schema.sql",
+      "20260813220000_backend_reconciliacion.sql",
+      "20260825000000_habito_pomodoro_habilitado.sql",
+      "20260826000000_verificacion_correo.sql",
+      "20260929000000_keep_awake_ping.sql",
+      "20261001000000_finanzas.sql",
+      "20261001010000_metodos_pago_unico_nombre_tipo.sql",
+      "20261002000000_gimnasio.sql",
+      "20261002010000_gimnasio_seed.sql",
+      "20261003000000_keep_awake_ping_firma_pg_net.sql",
+      "20261004000000_actividades_correos_tz.sql"
+    ]
+  },
+  "docs": [
+    "plan-frontend.md",
+    "endpoints.md",
+    "ideas-por-modulo.md",
+    "pantallas-pensadas.md",
+    "indice-proyecto.json"
+  ]
+}

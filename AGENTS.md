@@ -17,6 +17,7 @@ Aplicación web de seguimiento de hábitos para la materia Desarrollo Web 2.
 ## Git
 
 - **Estándar: todo cambio terminado se commitea y se manda a `main` sin preguntar** (verificar con `git status`/`git diff` antes, mensaje acorde al estilo del repo). Solo se omite el push si el usuario dice explícitamente que no.
+- **Regla obligatoria:** por cada cambio que se haga, por más pequeño que sea, debe crearse un commit con mensaje claro y descriptivo y hacerse `git push origin main` inmediatamente después del commit. No acumular múltiples cambios en un solo commit sin razón justificada. Siempre verificar con `git status`/`git diff` antes de commitear.
 
 ## Convenciones backend
 
