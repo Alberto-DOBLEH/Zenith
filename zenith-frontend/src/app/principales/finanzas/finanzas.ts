@@ -175,10 +175,15 @@ export class Finanzas implements OnInit, OnDestroy {
     this.suscripciones.push(
       this.finanzasService.obtenerPrestamos(filtros).subscribe({
         next: (prestamos) => {
-          this.prestamos.set(prestamos);
+          this.prestamos.set(prestamos || []);
           this.cargandoPrestamos.set(false);
         },
-        error: (error) => {
+        error: (error: any) => {
+          if (error?.status === 404) {
+            this.prestamos.set([]);
+            this.cargandoPrestamos.set(false);
+            return;
+          }
           this.error.set(this.authService.manejarError(error));
           this.cargandoPrestamos.set(false);
         }
