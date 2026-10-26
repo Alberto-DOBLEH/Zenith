@@ -16,6 +16,11 @@ describe('Finanzas', () => {
     crearCategoria: ReturnType<typeof vi.fn>;
     editarCategoria: ReturnType<typeof vi.fn>;
     crearMovimiento: ReturnType<typeof vi.fn>;
+    obtenerPrestamos: ReturnType<typeof vi.fn>;
+    obtenerPrestamo: ReturnType<typeof vi.fn>;
+    crearPrestamo: ReturnType<typeof vi.fn>;
+    registrarAbono: ReturnType<typeof vi.fn>;
+    obtenerAbonos: ReturnType<typeof vi.fn>;
   };
 
   beforeEach(async () => {
@@ -26,7 +31,12 @@ describe('Finanzas', () => {
       crearMetodoPago: vi.fn(() => of({ message: 'ok', metodo: {} })),
       crearCategoria: vi.fn(() => of({ message: 'ok', categoria: {} })),
       editarCategoria: vi.fn(() => of({ message: 'ok' })),
-      crearMovimiento: vi.fn(() => of({ message: 'ok', movimiento: {} }))
+      crearMovimiento: vi.fn(() => of({ message: 'ok', movimiento: {} })),
+      obtenerPrestamos: vi.fn(() => of([])),
+      obtenerPrestamo: vi.fn(() => of({})),
+      crearPrestamo: vi.fn(() => of({ message: 'ok', prestamo: {} })),
+      registrarAbono: vi.fn(() => of({ message: 'ok', prestamo: {} })),
+      obtenerAbonos: vi.fn(() => of([]))
     };
 
     await TestBed.configureTestingModule({
