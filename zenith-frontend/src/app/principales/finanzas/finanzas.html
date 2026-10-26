@@ -98,6 +98,72 @@
             </section>
         </div>
 
+
+        <section class="tarjeta seccion">
+            <div class="seccion-titulo">
+                <h2>Préstamos</h2>
+                <div class="seccion-acciones">
+                    <button class="boton-principal boton-crear" (click)="abrirCrearPrestamo()">
+                        <i class="bi bi-plus-lg"></i> Nuevo préstamo
+                    </button>
+                </div>
+            </div>
+
+            <div class="pestanas">
+                <button class="pestana" [class.activa]="tabPrestamos() === 'ME_PRESTAN'" (click)="cambiarTabPrestamos('ME_PRESTAN')">Préstamos a mí</button>
+                <button class="pestana" [class.activa]="tabPrestamos() === 'PRESTO'" (click)="cambiarTabPrestamos('PRESTO')">Yo presto</button>
+            </div>
+
+            <div class="filtros filtros-prestamos">
+                <button class="filtro-chip" [class.activo]="filtroPrestamosEstado() === ''" (click)="cambiarFiltroPrestamos('')">Todos</button>
+                <button class="filtro-chip" [class.activo]="filtroPrestamosEstado() === 'ACTIVO'" (click)="cambiarFiltroPrestamos('ACTIVO')">Activos</button>
+                <button class="filtro-chip" [class.activo]="filtroPrestamosEstado() === 'LIQUIDADO'" (click)="cambiarFiltroPrestamos('LIQUIDADO')">Liquidados</button>
+            </div>
+
+            @if (cargandoPrestamos()) {
+                <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando préstamos...</p>
+            } @else if (prestamos().length === 0) {
+                <div class="estado-vacio">
+                    <i class="bi bi-cash-coin"></i>
+                    <p>Sin préstamos registrados.</p>
+                </div>
+            } @else {
+                <div class="lista-prestamos">
+                    @for (prestamo of prestamos(); track prestamo.id_prestamo) {
+                        <article class="prestamo-card">
+                            <div class="prestamo-cabecera">
+                                <div>
+                                    <h3>{{ prestamo.persona }}</h3>
+                                    <p class="prestamo-fecha">{{ fechaCorta(prestamo.fecha) }} · {{ prestamo.metodo_nombre }}</p>
+                                    @if (prestamo.concepto) {
+                                        <p class="prestamo-concepto">{{ prestamo.concepto }}</p>
+                                    }
+                                </div>
+                                <span class="badge-estado" [class.liquidado]="prestamo.estado === 'LIQUIDADO'">{{ prestamo.estado === 'LIQUIDADO' ? 'Liquidado' : 'Activo' }}</span>
+                            </div>
+                            <div class="prestamo-montos">
+                                <div>
+                                    <span class="monto-label">Monto total</span>
+                                    <span class="monto-valor">{{ formatearMonedaValor(prestamo.monto_total) }}</span>
+                                </div>
+                                <div>
+                                    <span class="monto-label">Saldo pendiente</span>
+                                    <span class="monto-valor pendiente">{{ formatearMonedaValor(prestamo.saldo_pendiente) }}</span>
+                                </div>
+                            </div>
+                            <div class="prestamo-acciones">
+                                <button class="boton-secundario" (click)="abrirHistorial(prestamo)"><i class="bi bi-clock-history"></i> Historial</button>
+                                @if (prestamo.estado === 'ACTIVO') {
+                                    <button class="boton-principal" (click)="abrirAbono(prestamo)"><i class="bi bi-cash-stack"></i> Registrar abono</button>
+                                }
+                            </div>
+                        </article>
+                    }
+                </div>
+            }
+        </section>
+
+
         <section class="tarjeta seccion">
             <div class="seccion-titulo">
                 <h2>Movimientos</h2>
@@ -380,6 +446,149 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+}
+
+@if (modalPrestamoAbierto()) {
+    <div class="overlay" (click)="cerrarPrestamo()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>{{ tabPrestamos() === 'ME_PRESTAN' ? 'Nuevo préstamo recibido' : 'Nuevo préstamo otorgado' }}</h2>
+                <button class="boton-icono" (click)="cerrarPrestamo()" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <form [formGroup]="formPrestamo" (ngSubmit)="guardarPrestamo()">
+                <div class="modal-cuerpo">
+                    <label class="campo">
+                        <span>{{ tabPrestamos() === 'ME_PRESTAN' ? '¿Quién me prestó?' : '¿A quién le presté?' }}</span>
+                        <input class="inputs-texto" formControlName="persona" placeholder="Nombre">
+                    </label>
+                    @if (tabPrestamos() === 'ME_PRESTAN') {
+                        <label class="campo">
+                            <span>Concepto (opcional)</span>
+                            <input class="inputs-texto" formControlName="concepto" placeholder="Ej. Renta, emergencia">
+                        </label>
+                    }
+                    <div class="campo-fila">
+                        <label class="campo">
+                            <span>Monto total</span>
+                            <input class="inputs-texto" type="number" step="0.01" min="0.01" formControlName="monto_total">
+                        </label>
+                        <label class="campo">
+                            <span>Fecha</span>
+                            <input class="inputs-texto" type="date" formControlName="fecha">
+                        </label>
+                    </div>
+                    <label class="campo">
+                        <span>{{ tabPrestamos() === 'ME_PRESTAN' ? 'Método de pago donde ingresó el dinero' : 'Método de pago del cual salió el dinero' }}</span>
+                        <select formControlName="id_metodo_pago">
+                            <option [ngValue]="null">Selecciona un método</option>
+                            @for (metodo of metodosPago(); track metodo.id_metodo) {
+                                <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} - {{ etiquetaMetodo(metodo.tipo) }} ({{ formatearMonedaValor(metodo.saldo_actual) }})</option>
+                            }
+                        </select>
+                    </label>
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarPrestamo()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">{{ guardando() ? 'Guardando...' : 'Crear préstamo' }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalAbonoAbierto() && prestamoSeleccionado()) {
+    <div class="overlay" (click)="cerrarAbono()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <h2>Registrar abono</h2>
+                <button class="boton-icono" (click)="cerrarAbono()" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <form [formGroup]="formAbono" (ngSubmit)="guardarAbono()">
+                <div class="modal-cuerpo">
+                    <p class="info-prestamo">Préstamo con <strong>{{ prestamoSeleccionado()!.persona }}</strong> · Saldo pendiente: <strong>{{ formatearMonedaValor(prestamoSeleccionado()!.saldo_pendiente) }}</strong></p>
+                    <div class="campo-fila">
+                        <label class="campo">
+                            <span>Monto del abono</span>
+                            <input class="inputs-texto" type="number" step="0.01" min="0.01" formControlName="monto">
+                        </label>
+                        <label class="campo">
+                            <span>Fecha</span>
+                            <input class="inputs-texto" type="date" formControlName="fecha">
+                        </label>
+                    </div>
+                    <label class="campo">
+                        <span>{{ prestamoSeleccionado()!.tipo === 'ME_PRESTAN' ? 'Método con el que pago' : 'Método donde recibo el pago' }}</span>
+                        <select formControlName="id_metodo_pago">
+                            <option [ngValue]="null">Selecciona un método</option>
+                            @for (metodo of metodosPago(); track metodo.id_metodo) {
+                                <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} - {{ etiquetaMetodo(metodo.tipo) }}</option>
+                            }
+                        </select>
+                    </label>
+                    @if (mensajeForm()) {
+                        <div class="mensaje-error"><i class="bi bi-exclamation-triangle"></i>{{ mensajeForm() }}</div>
+                    }
+                </div>
+                <div class="modal-pie">
+                    <button type="button" class="boton-secundario" (click)="cerrarAbono()">Cancelar</button>
+                    <button type="submit" class="boton-principal" [disabled]="guardando()">{{ guardando() ? 'Guardando...' : 'Registrar abono' }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+}
+
+@if (modalHistorialAbierto() && prestamoSeleccionado()) {
+    <div class="overlay" (click)="cerrarHistorial()">
+        <div class="modal modal-historial" (click)="$event.stopPropagation()">
+            <div class="modal-cabecera">
+                <div>
+                    <h2>Historial de abonos</h2>
+                    <p class="subtitulo-modal">{{ prestamoSeleccionado()!.persona }} · {{ fechaCorta(prestamoSeleccionado()!.fecha) }}</p>
+                </div>
+                <button class="boton-icono" (click)="cerrarHistorial()" aria-label="Cerrar"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="modal-cuerpo">
+                <div class="resumen-historial">
+                    <div>
+                        <span class="monto-label">Total</span>
+                        <span class="monto-valor">{{ formatearMonedaValor(prestamoSeleccionado()!.monto_total) }}</span>
+                    </div>
+                    <div>
+                        <span class="monto-label">Abonado</span>
+                        <span class="monto-valor">{{ formatearMonedaValor(abonosTotal()) }}</span>
+                    </div>
+                    <div>
+                        <span class="monto-label">Pendiente</span>
+                        <span class="monto-valor pendiente">{{ formatearMonedaValor(prestamoSeleccionado()!.saldo_pendiente) }}</span>
+                    </div>
+                </div>
+                @if (cargandoAbonos()) {
+                    <p class="vacio"><i class="bi bi-arrow-repeat girando"></i> Cargando...</p>
+                } @else if (abonosPrestamo().length === 0) {
+                    <p class="vacio">Sin abonos registrados.</p>
+                } @else {
+                    <ul class="lista-abonos">
+                        @for (abono of abonosPrestamo(); track abono.id_pago_prestamo) {
+                            <li class="abono-item">
+                                <div>
+                                    <p class="abono-fecha">{{ fechaCorta(abono.fecha) }}</p>
+                                    <p class="abono-metodo">{{ abono.metodo_nombre }}</p>
+                                </div>
+                                <span class="abono-monto">{{ formatearMonedaValor(abono.monto) }}</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <div class="modal-pie">
+                <button class="boton-secundario" (click)="cerrarHistorial()">Cerrar</button>
+            </div>
         </div>
     </div>
 }

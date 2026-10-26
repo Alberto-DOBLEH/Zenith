@@ -384,3 +384,191 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Préstamos */
+.pestanas {
+    display: flex;
+    gap: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0.9rem;
+}
+
+.pestana {
+    background: transparent;
+    border: none;
+    color: var(--muted-foreground);
+    padding: 0.5rem 0.9rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.pestana.activa {
+    color: var(--foreground);
+    border-bottom: 2px solid var(--primary);
+}
+
+.filtros-prestamos {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+
+.filtro-chip {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted-foreground);
+    border-radius: 999px;
+    padding: 0.35rem 0.8rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.filtro-chip.activo {
+    color: var(--foreground);
+    border-color: var(--primary);
+}
+
+.lista-prestamos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.prestamo-card {
+    border: 1px solid var(--border);
+    border-radius: 0.6rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+}
+
+.prestamo-cabecera {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.prestamo-cabecera h3 {
+    margin: 0;
+    color: var(--foreground);
+}
+
+.prestamo-fecha {
+    margin: 0.2rem 0 0 0;
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+}
+
+.prestamo-concepto {
+    margin: 0.3rem 0 0 0;
+    color: var(--muted-foreground);
+    font-size: 0.9rem;
+}
+
+.badge-estado {
+    align-self: flex-start;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+    font-size: 0.8rem;
+}
+
+.badge-estado.liquidado {
+    background: rgba(16, 185, 129, 0.12);
+    color: #10b981;
+}
+
+.prestamo-montos {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.monto-label {
+    display: block;
+    color: var(--muted-foreground);
+    font-size: 0.85rem;
+}
+
+.monto-valor {
+    display: block;
+    color: var(--foreground);
+    font-weight: 600;
+    font-size: 1.05rem;
+}
+
+.monto-valor.pendiente {
+    color: #f59e0b;
+}
+
+.prestamo-acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.info-prestamo {
+    background: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.7rem 0.9rem;
+    color: var(--foreground);
+    margin: 0 0 1rem 0;
+}
+
+.modal-historial {
+    width: min(560px, 95vw);
+}
+
+.resumen-historial {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.resumen-historial > div {
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    padding: 0.7rem 0.8rem;
+}
+
+.lista-abonos {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.abono-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.abono-item:last-child {
+    border-bottom: none;
+}
+
+.abono-fecha {
+    margin: 0;
+    color: var(--foreground);
+}
+
+.abono-metodo {
+    margin: 0.2rem 0 0 0;
+    color: var(--muted-foreground);
+    font-size: 0.88rem;
+}
+
+.abono-monto {
+    color: var(--foreground);
+    font-weight: 600;
+}
