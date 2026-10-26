@@ -154,7 +154,7 @@
                             <div class="prestamo-acciones">
                                 <button class="boton-secundario" (click)="abrirHistorial(prestamo)"><i class="bi bi-clock-history"></i> Historial</button>
                                 @if (prestamo.estado === 'ACTIVO') {
-                                    <button class="boton-principal" (click)="abrirAbono(prestamo)"><i class="bi bi-cash-stack"></i> Registrar abono</button>
+                                    <button class="boton-principal boton-crear" (click)="abrirAbono(prestamo)"><i class="bi bi-cash-stack"></i> Registrar abono</button>
                                 }
                             </div>
                         </article>
