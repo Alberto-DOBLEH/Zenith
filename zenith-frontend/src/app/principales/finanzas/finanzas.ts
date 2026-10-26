@@ -640,10 +640,11 @@ export class Finanzas implements OnInit, OnDestroy {
           this.recargarMovimientos();
           this.recargarMetodos();
         },
-        error: (error) => {
+        error: (error: any) => {
           console.error('error prestamo', error);
           this.guardando.set(false);
-          this.mensajeForm.set(this.authService.manejarError(error));
+          const msg = error?.error?.message || error?.message || this.authService.manejarError(error);
+          this.mensajeForm.set(msg);
         }
       })
     );
