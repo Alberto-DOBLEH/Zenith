@@ -748,9 +748,4 @@ export class Finanzas implements OnInit, OnDestroy {
     return num.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
   }
 
-  fechaCorta(valor: string): string {
-    if (!valor) return '';
-    const d = new Date(`${valor}T00:00:00Z`);
-    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-  }
 }
