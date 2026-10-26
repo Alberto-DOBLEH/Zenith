@@ -154,20 +154,26 @@
 }
 
 .filtro select,
-.filtro input {
+.campo select,
+.filtro input,
+.campo input[type="number"],
+.campo input[type="date"] {
     background-color: var(--background);
     border: 1px solid var(--border);
     border-radius: 0.45rem;
     color: var(--foreground);
     font-family: inherit;
-    font-size: 0.82rem;
-    padding: 0.45rem 0.55rem;
+    font-size: 0.9rem;
+    padding: 0.6rem 0.75rem;
     width: 100%;
     box-sizing: border-box;
 }
 
 .filtro select:focus,
-.filtro input:focus {
+.campo select:focus,
+.filtro input:focus,
+.campo input[type="number"]:focus,
+.campo input[type="date"]:focus {
     border-color: var(--primary);
     outline: none;
 }
