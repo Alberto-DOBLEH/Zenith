@@ -723,11 +723,4 @@ export class Finanzas implements OnInit, OnDestroy {
   abonosTotal(): number {
     return this.abonosPrestamo().reduce((acc, a) => acc + Number(a.monto || 0), 0);
   }
-
-  cambiarTab(tab: 'movimientos' | 'prestamos') {
-    this.tabFinanzas.set(tab);
-    if (tab === 'prestamos') {
-      this.cargarPrestamos();
-    }
-  }
 }
