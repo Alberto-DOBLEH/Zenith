@@ -624,10 +624,11 @@ export class Finanzas implements OnInit, OnDestroy {
       tipo: this.tabPrestamos(),
       persona: v.persona!,
       concepto: v.concepto || null,
-      monto_total: v.monto_total!,
+      monto_total: Number(v.monto_total),
       fecha: v.fecha!,
       id_metodo_pago: Number(v.id_metodo_pago)
     };
+    console.log('payload prestamo', payload);
     this.suscripciones.push(
       this.finanzasService.crearPrestamo(payload).subscribe({
         next: (resp) => {
@@ -640,6 +641,7 @@ export class Finanzas implements OnInit, OnDestroy {
           this.recargarMetodos();
         },
         error: (error) => {
+          console.error('error prestamo', error);
           this.guardando.set(false);
           this.mensajeForm.set(this.authService.manejarError(error));
         }
