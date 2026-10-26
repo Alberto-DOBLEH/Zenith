@@ -59,6 +59,48 @@ export type FiltrosMovimientos = {
     metodo?: number;
 };
 
+export type TipoPrestamo = 'ME_PRESTAN' | 'PRESTO';
+export type EstadoPrestamo = 'ACTIVO' | 'LIQUIDADO';
+
+export interface Prestamo {
+    id_prestamo: number;
+    tipo: TipoPrestamo;
+    persona: string;
+    concepto: string | null;
+    monto_total: number | string;
+    saldo_pendiente: number | string;
+    fecha: string;
+    estado: EstadoPrestamo;
+    id_metodo_pago: number;
+    metodo_nombre?: string;
+    metodo_tipo?: string;
+}
+
+export interface PrestamoPago {
+    id_pago_prestamo: number;
+    monto: number | string;
+    fecha: string;
+    id_metodo_pago: number;
+    id_movimiento?: number | null;
+    metodo_nombre?: string;
+    metodo_tipo?: string;
+}
+
+export interface PrestamoPayload {
+    tipo: TipoPrestamo;
+    persona: string;
+    concepto?: string | null;
+    monto_total: number | string;
+    fecha: string;
+    id_metodo_pago: number;
+}
+
+export interface AbonoPayload {
+    monto: number | string;
+    fecha?: string;
+    id_metodo_pago: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FinanzasService {
     private readonly api = inject(ApiService);
@@ -100,5 +142,31 @@ export class FinanzasService {
     crearMovimiento(datos: MovimientoPayload): Observable<{ message: string; movimiento: Movimiento }> {
         this.cache.invalidar(CLAVES_CACHE.movimientos, CLAVES_CACHE.metodosPago);
         return this.api.post('/movimientos', datos);
+    }
+
+    obtenerPrestamos(filtros?: { tipo?: TipoPrestamo; estado?: EstadoPrestamo }): Observable<Prestamo[]> {
+        const hasFiltro = filtros && Object.values(filtros).some(v => !!v);
+        if (hasFiltro) {
+            return this.api.get<Prestamo[]>('/prestamos', filtros as Record<string, string | number | undefined>);
+        }
+        return this.cache.swr(CLAVES_CACHE.prestamos, () => this.api.get<Prestamo[]>('/prestamos'));
+    }
+
+    obtenerPrestamo(id_prestamo: number): Observable<Prestamo> {
+        return this.api.get<Prestamo>(`/prestamos/${id_prestamo}`);
+    }
+
+    crearPrestamo(datos: PrestamoPayload): Observable<{ message: string; prestamo: Prestamo; id_movimiento?: number }> {
+        this.cache.invalidar(CLAVES_CACHE.prestamos, CLAVES_CACHE.prestamosDetalle, CLAVES_CACHE.movimientos, CLAVES_CACHE.metodosPago);
+        return this.api.post('/prestamos', datos);
+    }
+
+    registrarAbono(id_prestamo: number, datos: AbonoPayload): Observable<{ message: string; prestamo: Prestamo; id_movimiento?: number }> {
+        this.cache.invalidar(CLAVES_CACHE.prestamos, CLAVES_CACHE.prestamosDetalle, CLAVES_CACHE.movimientos, CLAVES_CACHE.metodosPago);
+        return this.api.post(`/prestamos/${id_prestamo}/abonos`, datos);
+    }
+
+    obtenerAbonos(id_prestamo: number): Observable<PrestamoPago[]> {
+        return this.api.get<PrestamoPago[]>(`/prestamos/${id_prestamo}/abonos`);
     }
 }

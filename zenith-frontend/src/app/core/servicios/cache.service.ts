@@ -16,6 +16,8 @@ export const CLAVES_CACHE = {
     metodosPago: 'metodosPago',
     categorias: 'categorias',
     movimientos: 'movimientos',
+    prestamos: 'prestamos',
+    prestamosDetalle: 'prestamos:detalle',
     gimnasioHoy: 'gimnasio:hoy',
     gimnasioHistorial: 'gimnasio:historial',
     splits: 'splits',
