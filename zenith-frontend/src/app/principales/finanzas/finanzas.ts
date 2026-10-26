@@ -9,7 +9,11 @@ import {
   Categoria,
   Movimiento,
   MovimientoPayload,
-  FiltrosMovimientos
+  FiltrosMovimientos,
+  Prestamo,
+  PrestamoPago,
+  TipoPrestamo,
+  EstadoPrestamo
 } from '../../core/servicios/finanzas.service';
 
 const ETIQUETAS_METODO: Record<MetodoPago['tipo'], string> = {
@@ -57,12 +61,23 @@ export class Finanzas implements OnInit, OnDestroy {
   movimientos = signal<Movimiento[]>([]);
   movimientosVisibles = signal<Movimiento[]>([]);
   filtrando = signal(false);
+  prestamos = signal<Prestamo[]>([]);
+  cargandoPrestamos = signal(false);
+  tabFinanzas = signal<'movimientos' | 'prestamos'>('movimientos');
+  tabPrestamos = signal<TipoPrestamo>('ME_PRESTAN');
+  filtroPrestamosEstado = signal<'' | EstadoPrestamo>('');
 
   modalMetodoAbierto = signal(false);
   modalCategoriaAbierto = signal(false);
   modalMovimientoAbierto = signal(false);
+  modalPrestamoAbierto = signal(false);
+  modalAbonoAbierto = signal(false);
+  modalHistorialAbierto = signal(false);
   modoEdicionCategoria = signal(false);
   categoriaEditandoId = signal<number | null>(null);
+  prestamoSeleccionado = signal<Prestamo | null>(null);
+  abonosPrestamo = signal<PrestamoPago[]>([]);
+  cargandoAbonos = signal(false);
 
   mensajeForm = signal('');
   guardando = signal(false);
@@ -88,6 +103,20 @@ export class Finanzas implements OnInit, OnDestroy {
     descripcion: ['']
   });
 
+  formPrestamo = this.fb.group({
+    persona: ['', [Validators.required, Validators.maxLength(100)]],
+    concepto: ['', Validators.maxLength(150)],
+    monto_total: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    fecha: [this.fechaHoy(), Validators.required],
+    id_metodo_pago: [null as number | null, Validators.required]
+  });
+
+  formAbono = this.fb.group({
+    monto: [null as number | null, [Validators.required, Validators.min(0.01)]],
+    fecha: [this.fechaHoy(), Validators.required],
+    id_metodo_pago: [null as number | null, Validators.required]
+  });
+
   formFiltros = this.fb.group({
     fecha: [''],
     mes: [''],
@@ -97,6 +126,7 @@ export class Finanzas implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.cargarDatos();
+    this.cargarPrestamos();
   }
 
   ngOnDestroy() {
@@ -132,6 +162,25 @@ export class Finanzas implements OnInit, OnDestroy {
         error: (error) => {
           this.error.set(this.authService.manejarError(error));
           this.cargando.set(false);
+        }
+      })
+    );
+  }
+
+  cargarPrestamos() {
+    this.cargandoPrestamos.set(true);
+    const filtros: { tipo?: TipoPrestamo; estado?: EstadoPrestamo } = { tipo: this.tabPrestamos() };
+    const estado = this.filtroPrestamosEstado();
+    if (estado) filtros.estado = estado;
+    this.suscripciones.push(
+      this.finanzasService.obtenerPrestamos(filtros).subscribe({
+        next: (prestamos) => {
+          this.prestamos.set(prestamos);
+          this.cargandoPrestamos.set(false);
+        },
+        error: (error) => {
+          this.error.set(this.authService.manejarError(error));
+          this.cargandoPrestamos.set(false);
         }
       })
     );
@@ -178,6 +227,38 @@ export class Finanzas implements OnInit, OnDestroy {
       valor: `${anio}-${String(i + 1).padStart(2, '0')}`,
       nombre
     }));
+  }
+
+  cambiarTab(tab: 'movimientos' | 'prestamos') {
+    this.tabFinanzas.set(tab);
+    if (tab === 'prestamos') {
+      this.cargarPrestamos();
+    }
+  }
+
+  cambiarTabPrestamos(tipo: TipoPrestamo) {
+    this.tabPrestamos.set(tipo);
+    this.cargarPrestamos();
+  }
+
+  cambiarFiltroPrestamos(estado: '' | EstadoPrestamo) {
+    this.filtroPrestamosEstado.set(estado);
+    this.cargarPrestamos();
+  }
+
+  prestamosFiltrados(): Prestamo[] {
+    return this.prestamos();
+  }
+
+  formatearMonedaValor(valor: number | string): string {
+    const num = Number(valor || 0);
+    return num.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+  }
+
+  fechaCorta(valor: string): string {
+    if (!valor) return '';
+    const d = new Date(`${valor}T00:00:00Z`);
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   }
 
   aplicarFiltros() {
@@ -506,5 +587,168 @@ export class Finanzas implements OnInit, OnDestroy {
         }
       })
     );
+  }
+
+  abrirCrearPrestamo() {
+    this.formPrestamo.reset({
+      persona: '',
+      concepto: '',
+      monto_total: null,
+      fecha: this.fechaHoy(),
+      id_metodo_pago: null
+    });
+    this.mensajeForm.set('');
+    this.modalPrestamoAbierto.set(true);
+  }
+
+  cerrarPrestamo() {
+    this.modalPrestamoAbierto.set(false);
+    this.mensajeForm.set('');
+  }
+
+  guardarPrestamo() {
+    if (this.formPrestamo.invalid) {
+      this.formPrestamo.markAllAsTouched();
+      this.mensajeForm.set('Completa los campos obligatorios.');
+      return;
+    }
+    this.guardando.set(true);
+    this.mensajeForm.set('');
+    const v = this.formPrestamo.value;
+    const payload = {
+      tipo: this.tabPrestamos(),
+      persona: v.persona!,
+      concepto: v.concepto || null,
+      monto_total: v.monto_total!,
+      fecha: v.fecha!,
+      id_metodo_pago: Number(v.id_metodo_pago)
+    };
+    this.suscripciones.push(
+      this.finanzasService.crearPrestamo(payload).subscribe({
+        next: (resp) => {
+          this.guardando.set(false);
+          this.modalPrestamoAbierto.set(false);
+          this.mensajeExito.set(resp.message);
+          setTimeout(() => this.mensajeExito.set(''), 2500);
+          this.cargarPrestamos();
+          this.recargarMovimientos();
+          this.recargarMetodos();
+        },
+        error: (error) => {
+          this.guardando.set(false);
+          this.mensajeForm.set(this.authService.manejarError(error));
+        }
+      })
+    );
+  }
+
+  abrirAbono(prestamo: Prestamo) {
+    this.prestamoSeleccionado.set(prestamo);
+    this.formAbono.reset({
+      monto: null,
+      fecha: this.fechaHoy(),
+      id_metodo_pago: null
+    });
+    this.mensajeForm.set('');
+    this.modalAbonoAbierto.set(true);
+  }
+
+  cerrarAbono() {
+    this.modalAbonoAbierto.set(false);
+    this.mensajeForm.set('');
+  }
+
+  guardarAbono() {
+    const prestamo = this.prestamoSeleccionado();
+    if (!prestamo || this.formAbono.invalid) {
+      this.formAbono.markAllAsTouched();
+      this.mensajeForm.set('Completa los campos obligatorios.');
+      return;
+    }
+    const v = this.formAbono.value;
+    const monto = Number(v.monto);
+    if (monto > Number(prestamo.saldo_pendiente)) {
+      this.mensajeForm.set('El abono no puede ser mayor al saldo pendiente.');
+      return;
+    }
+    this.guardando.set(true);
+    this.mensajeForm.set('');
+    const payload = {
+      monto: v.monto!,
+      fecha: v.fecha!,
+      id_metodo_pago: Number(v.id_metodo_pago)
+    };
+    this.suscripciones.push(
+      this.finanzasService.registrarAbono(prestamo.id_prestamo, payload).subscribe({
+        next: (resp) => {
+          this.guardando.set(false);
+          this.modalAbonoAbierto.set(false);
+          this.mensajeExito.set(resp.message);
+          setTimeout(() => this.mensajeExito.set(''), 2500);
+          this.cargarPrestamos();
+          this.recargarMovimientos();
+          this.recargarMetodos();
+        },
+        error: (error) => {
+          this.guardando.set(false);
+          this.mensajeForm.set(this.authService.manejarError(error));
+        }
+      })
+    );
+  }
+
+  abrirHistorial(prestamo: Prestamo) {
+    this.prestamoSeleccionado.set(prestamo);
+    this.abonosPrestamo.set([]);
+    this.cargandoAbonos.set(true);
+    this.modalHistorialAbierto.set(true);
+    this.suscripciones.push(
+      this.finanzasService.obtenerAbonos(prestamo.id_prestamo).subscribe({
+        next: (abonos) => {
+          this.abonosPrestamo.set(abonos);
+          this.cargandoAbonos.set(false);
+        },
+        error: (error) => {
+          this.error.set(this.authService.manejarError(error));
+          this.cargandoAbonos.set(false);
+        }
+      })
+    );
+  }
+
+  cerrarHistorial() {
+    this.modalHistorialAbierto.set(false);
+  }
+
+  abonosTotal(): number {
+    return this.abonosPrestamo().reduce((acc, a) => acc + Number(a.monto || 0), 0);
+  }
+
+  cambiarTab(tab: 'movimientos' | 'prestamos') {
+    this.tabFinanzas.set(tab);
+    if (tab === 'prestamos') {
+      this.cargarPrestamos();
+    }
+  }
+
+  cambiarTabPrestamos(tipo: TipoPrestamo) {
+    this.tabPrestamos.set(tipo);
+    this.cargarPrestamos();
+  }
+
+  cambiarFiltroPrestamos(estado: '' | EstadoPrestamo) {
+    this.filtroPrestamosEstado.set(estado);
+    this.cargarPrestamos();
+  }
+
+  formatearMonedaValor(valor: number | string): string {
+    const num = Number(valor || 0);
+    return num.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
+  }
+
+  fechaCorta(valor: string): string {
+    if (!valor) return '';
+    const d = new Date(`${valor}T00:00:00Z`);
+    return d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
   }
 }
