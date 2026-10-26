@@ -481,7 +481,7 @@
                     </div>
                     <label class="campo">
                         <span>{{ tabPrestamos() === 'ME_PRESTAN' ? '¿A dónde va ese dinero?' : '¿Con qué método se entregó?' }}</span>
-                        <select class="inputs-texto" formControlName="id_metodo_pago">
+                        <select formControlName="id_metodo_pago">
                             <option [ngValue]="null">Selecciona un método</option>
                             @for (metodo of metodosPago(); track metodo.id_metodo) {
                                 <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} - {{ etiquetaMetodo(metodo.tipo) }}</option>
@@ -523,7 +523,7 @@
                     </div>
                     <label class="campo">
                         <span>{{ prestamoSeleccionado()!.tipo === 'ME_PRESTAN' ? '¿De dónde sale el abono?' : '¿A dónde va el abono?' }}</span>
-                        <select class="inputs-texto" formControlName="id_metodo_pago">
+                        <select formControlName="id_metodo_pago">
                             <option [ngValue]="null">Selecciona un método de pago</option>
                             @for (metodo of metodosPago(); track metodo.id_metodo) {
                                 <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} - {{ etiquetaMetodo(metodo.tipo) }}</option>
