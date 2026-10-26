@@ -730,22 +730,4 @@ export class Finanzas implements OnInit, OnDestroy {
       this.cargarPrestamos();
     }
   }
-
-
-
-  cambiarTabPrestamos(tipo: TipoPrestamo) {
-    this.tabPrestamos.set(tipo);
-    this.cargarPrestamos();
-  }
-
-  cambiarFiltroPrestamos(estado: '' | EstadoPrestamo) {
-    this.filtroPrestamosEstado.set(estado);
-    this.cargarPrestamos();
-  }
-
-  formatearMonedaValor(valor: number | string): string {
-    const num = Number(valor || 0);
-    return num.toLocaleString('es-MX', { style: 'currency', currency: 'MXN' });
-  }
-
 }
