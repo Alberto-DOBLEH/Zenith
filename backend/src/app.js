@@ -22,6 +22,7 @@ import splitsRoutes from "./modules/splits/splits.routes.js";
 import sesionesRoutes from "./modules/sesiones/sesiones.routes.js";
 import entrenamientosRoutes from "./modules/entrenamientos/entrenamientos.routes.js";
 import seriesRoutes from "./modules/series/series.routes.js";
+import prestamosRoutes from "./modules/prestamos/prestamos.routes.js";
 
 const app = express();
 
@@ -82,6 +83,7 @@ app.use("/api/avatares", avataresRoutes);
 app.use("/api/metodos-pago", metodosPagoRoutes);
 app.use("/api/categorias", categoriasRoutes);
 app.use("/api/movimientos", movimientosRoutes);
+app.use("/api/prestamos", prestamosRoutes);
 app.use("/api/ejercicios", ejerciciosRoutes);
 app.use("/api/splits", splitsRoutes);
 app.use("/api/sesiones", sesionesRoutes);
