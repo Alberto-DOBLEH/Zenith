@@ -461,7 +461,7 @@
                 <div class="modal-cuerpo">
                     <label class="campo">
                         <span>{{ tabPrestamos() === 'ME_PRESTAN' ? '¿Quién me prestó?' : '¿A quién le presté?' }}</span>
-                        <input class="inputs-texto" formControlName="persona" placeholder="Nombre">
+                        <input class="inputs-texto" formControlName="persona" placeholder="Nombre o persona">
                     </label>
                     @if (tabPrestamos() === 'ME_PRESTAN') {
                         <label class="campo">
@@ -480,11 +480,11 @@
                         </label>
                     </div>
                     <label class="campo">
-                        <span>{{ tabPrestamos() === 'ME_PRESTAN' ? 'Método de pago donde ingresó el dinero' : 'Método de pago del cual salió el dinero' }}</span>
-                        <select formControlName="id_metodo_pago">
+                        <span>{{ tabPrestamos() === 'ME_PRESTAN' ? '¿A dónde va ese dinero?' : '¿Con qué método se entregó?' }}</span>
+                        <select class="inputs-texto" formControlName="id_metodo_pago">
                             <option [ngValue]="null">Selecciona un método</option>
                             @for (metodo of metodosPago(); track metodo.id_metodo) {
-                                <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} - {{ etiquetaMetodo(metodo.tipo) }} ({{ formatearMonedaValor(metodo.saldo_actual) }})</option>
+                                <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} - {{ etiquetaMetodo(metodo.tipo) }}</option>
                             }
                         </select>
                     </label>
@@ -522,9 +522,9 @@
                         </label>
                     </div>
                     <label class="campo">
-                        <span>{{ prestamoSeleccionado()!.tipo === 'ME_PRESTAN' ? 'Método con el que pago' : 'Método donde recibo el pago' }}</span>
-                        <select formControlName="id_metodo_pago">
-                            <option [ngValue]="null">Selecciona un método</option>
+                        <span>{{ prestamoSeleccionado()!.tipo === 'ME_PRESTAN' ? '¿De dónde sale el abono?' : '¿A dónde va el abono?' }}</span>
+                        <select class="inputs-texto" formControlName="id_metodo_pago">
+                            <option [ngValue]="null">Selecciona un método de pago</option>
                             @for (metodo of metodosPago(); track metodo.id_metodo) {
                                 <option [ngValue]="metodo.id_metodo">{{ metodo.nombre }} - {{ etiquetaMetodo(metodo.tipo) }}</option>
                             }
